@@ -1,5 +1,7 @@
 
-from random import shuffle, randint
+from random import shuffle, choice
+
+from match import JMatch
 
 
 class JLeague(object):
@@ -91,7 +93,8 @@ class JLeague(object):
             scheduled = False
             while not scheduled:
                 if match[0] not in self._schedule[day][0] and match[1] not in self._schedule[day][0]:
-                    self._schedule[day].append(match)
+                    match_entry = JMatch(home_team_id=match[0], away_team_id=match[1], day=day)
+                    self._schedule[day].append(match_entry)
                     self._schedule[day][0].add(match[0])
                     self._schedule[day][0].add(match[1])
                     scheduled = True
@@ -151,17 +154,18 @@ class JLeague(object):
         return res
 
     def QuickSimResult(self):
-        home_score, away_score = 0, 0
-        while home_score == away_score and max(home_score, away_score) != 2:
-            home_score = randint(0, 2)
-            away_score = randint(0, 2)
-        return home_score, away_score
+        possible_outcomes = [(2, 0), (2, 1), (0, 2), (1, 2)]
+        return choice(possible_outcomes)
 
     def GetCurrentMatchByClubId(self, club_id):
         for match in self.current_matches:
-            if club_id in match:
+            if club_id == match.home_team or club_id == match.away_team:
                 return match
         return None
 
     def NextDay(self):
         self._current_day += 1
+
+    def PlayCurrentMatches(self):
+        for match in self.current_matches:
+            match.score = self.QuickSimResult()
