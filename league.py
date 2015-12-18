@@ -1,8 +1,10 @@
 
+import sqlite3
+
 from random import shuffle, choice
 
-from match import JMatch
-from club import JClub
+from match  import JMatch
+from club   import JClub
 
 
 class JLeague(object):
@@ -32,6 +34,11 @@ class JLeague(object):
         else:
             self._exdiv_matches = exdiv_matches + 1
 
+        self._conn = sqlite3.connect("testing.db")
+        self._curs = self._conn.cursor()
+        self._DropAllTables()
+        self._CreateNewTables()
+
     @property
     def clubs( self ):
         """
@@ -43,6 +50,39 @@ class JLeague(object):
             for club in div:
                 res.add(club.club_id)
         return res
+
+    def _DropAllTables(self):
+        try:
+            self._curs.execute("DROP TABLE clubs")
+            self._curs.execute("DROP TABLE matches")
+        except sqlite3.OperationalError:
+            print("There were no tables")
+
+    def _CreateNewTables(self):
+        self._curs.execute(
+            """
+            CREATE TABLE clubs (
+                n_club_id INTEGER PRIMARY KEY,
+                c_club_name TEXT,
+                b_playable BOOL
+            );
+            """
+        )
+        self._curs.execute(
+            """
+            CREATE TABLE matches (
+                n_match_id INTEGER PRIMARY KEY,
+                n_home_team INTEGER,
+                n_away_team INTEGER,
+                n_home_team_pts INTEGER,
+                n_away_team_pts INTEGER,
+                n_day INTEGER,
+                b_is_played BOOL,
+                FOREIGN KEY (n_home_team) REFERENCES clubs(n_club_id),
+                FOREIGN KEY (n_away_team) REFERENCES clubs(n_club_id)
+            )
+            """
+        )
 
     def _MakeDivisions(self, divisions):
         """
@@ -81,6 +121,11 @@ class JLeague(object):
         if club.club_id not in self.clubs:
             div = min(self._divisions, key=len)
             div.add( club )
+            query = "INSERT INTO clubs VALUES({0:d}, '{1:s}', {2:d});".format(
+                club.club_id, club.name, int(club.playable)
+            )
+            self._curs.execute(query)
+
 
     def CreateSchedule(self):
         """
@@ -90,12 +135,16 @@ class JLeague(object):
         matches = self._CreateIntraDivMatches() + self._CreateExtraDivGames()
         self._schedule = [[set()] for i in range(self._days)]
 
+        counter = 0
         for match in matches:
+            counter += 1
             day = 0
             scheduled = False
             while not scheduled:
                 if match[0] not in self._schedule[day][0] and match[1] not in self._schedule[day][0]:
-                    match_entry = JMatch(home_team_id=match[0].club_id, away_team_id=match[1].club_id)
+                    match_entry = JMatch(
+                        match_id=counter, home_team_id=match[0].club_id, away_team_id=match[1].club_id
+                    )
                     self._schedule[day].append(match_entry)
                     self._schedule[day][0].add(match[0])
                     self._schedule[day][0].add(match[1])
@@ -187,7 +236,6 @@ class JLeague(object):
                 if not club.playable:
                     club.SetRandomPlayer()
 
-
     def NextDay(self):
         self._current_day += 1
         for div in self._divisions:
@@ -198,3 +246,29 @@ class JLeague(object):
         for match in self.current_matches:
             match.score = self.QuickSimResult()
             match.SetMatchPlayed()
+            query = """
+                INSERT INTO matches VALUES({0:d}, {1:d}, {2:d}, {3:d}, {4:d}, {5:d}, {6:d});
+            """.format(
+                match.match_id,
+                match.home_team,
+                match.away_team,
+                match.score[0],
+                match.score[1],
+                match.day,
+                int(match.is_played)
+            )
+            self._curs.execute(query)
+
+    def GetCurrentStandings(self):
+        query = """
+        SELECT clubs.c_club_name, sum(CASE
+                WHEN clubs.n_club_id = matches.n_home_team THEN matches.n_home_team_pts
+                WHEN clubs.n_club_id = matches.n_away_team THEN matches.n_away_team_pts
+                ELSE 0
+            END) AS points
+        FROM clubs, matches
+        GROUP BY clubs.c_club_name
+        ORDER BY points DESC
+        """
+        res = self._curs.execute(query)
+        return res.fetchall()

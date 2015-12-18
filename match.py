@@ -1,14 +1,20 @@
 
 class JMatch(object):
-    def __init__(self, home_team_id=None, away_team_id=None, day=0):
+    def __init__(self, match_id=0, home_team_id=None, away_team_id=None, day=0):
         super(JMatch, self).__init__()
-        self._home_team_id = home_team_id
-        self._away_team_id = away_team_id
-        self._day = day
+        self._match_id          = match_id
 
-        self._home_team_points = 0
-        self._away_team_points = 0
-        self._is_played = False
+        self._home_team_id      = home_team_id
+        self._away_team_id      = away_team_id
+        self._day               = day
+
+        self._home_team_points  = 0
+        self._away_team_points  = 0
+        self._is_played         = False
+
+    @property
+    def match_id(self):
+        return self._match_id
 
     @property
     def home_team(self):
@@ -33,9 +39,9 @@ class JMatch(object):
 
     @score.setter
     def score(self, result):
-        self._home_team_points = result[0]
-        self._away_team_points = result[1]
-        self._is_played = True
+        self._home_team_points  = result[0]
+        self._away_team_points  = result[1]
+        self._is_played         = True
 
     @property
     def day(self):

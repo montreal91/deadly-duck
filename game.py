@@ -51,6 +51,12 @@ class JGame( object ):
         else:
             print("You have no upcoming matches.")
 
+    def _ShowCurrentStandings(self):
+        res = self._league.GetCurrentStandings()
+        for row in res:
+            print(row)
+        return PROCESS_INPUT_CODES.DEFAULT
+
     def _ProcessShowCommand(self):
         print("Day:", self._league.current_day)
         if self._league.current_matches:
@@ -116,6 +122,8 @@ class JGame( object ):
             return self._ProcessSelectCommand(tokens)
         elif "mp" in tokens:
             return self._ProcessMyPlayersCommand()
+        elif "cs" in tokens:
+            return self._ShowCurrentStandings()
         else:
             print("Please, enter a valid command")
             return PROCESS_INPUT_CODES.DEFAULT
@@ -139,7 +147,8 @@ class JGame( object ):
                 print("You have to select player!")
                 continue
             if self._league.current_day >= self._league.days:
-                print("The season is over.")
+                print("\nThe season is over.\n")
+                self._ShowCurrentStandings()
                 have_to_exit = True
 
 

@@ -5,11 +5,11 @@ from random import choice
 class JClub(object):
     def __init__(self, club_id=None, name=None, playable=False):
         super(JClub, self).__init__()
-        self._club_id = club_id
-        self._name = name
-        self._players = set()
-        self._playable = playable
-        self._selected_player = None
+        self._club_id           = club_id
+        self._name              = name
+        self._players           = set()
+        self._playable          = playable
+        self._selected_player   = None
 
     @property
     def club_id(self):
