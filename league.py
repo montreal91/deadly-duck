@@ -2,6 +2,7 @@
 from random import shuffle, choice
 
 from match import JMatch
+from club import JClub
 
 
 class JLeague(object):
@@ -32,14 +33,15 @@ class JLeague(object):
             self._exdiv_matches = exdiv_matches + 1
 
     @property
-    def teams(self):
+    def clubs( self ):
         """
-        Returns list of all teams in the league
+        Returns list of all clubs in the league
         :rtype: list
         """
-        res = []
+        res = set()
         for div in self._divisions:
-            res += list(div)
+            for club in div:
+                res.add(club.club_id)
         return res
 
     def _MakeDivisions(self, divisions):
@@ -69,21 +71,21 @@ class JLeague(object):
     def days(self):
         return self._days
 
-    def AddTeam(self, team_id=None):
+    def AddClub( self, club=None ):
         """
-        Adds new team to the division with smallest number of teams
-        :type team_id: int
+        Adds new team to the division with smallest number of clubs
+        :type club: JClub
         """
-        assert team_id
+        assert club
 
-        if team_id not in self.teams:
+        if club.club_id not in self.clubs:
             div = min(self._divisions, key=len)
-            div.add(team_id)
+            div.add( club )
 
     def CreateSchedule(self):
         """
-        Creates schedule for teams, if there are any.
-        If there is no teams raises AssertionError
+        Creates schedule for clubs, if there are any.
+        If there is no clubs raises AssertionError
         """
         matches = self._CreateIntraDivMatches() + self._CreateExtraDivGames()
         self._schedule = [[set()] for i in range(self._days)]
@@ -93,7 +95,7 @@ class JLeague(object):
             scheduled = False
             while not scheduled:
                 if match[0] not in self._schedule[day][0] and match[1] not in self._schedule[day][0]:
-                    match_entry = JMatch(home_team_id=match[0], away_team_id=match[1], day=day)
+                    match_entry = JMatch(home_team_id=match[0].club_id, away_team_id=match[1].club_id)
                     self._schedule[day].append(match_entry)
                     self._schedule[day][0].add(match[0])
                     self._schedule[day][0].add(match[1])
@@ -101,6 +103,12 @@ class JLeague(object):
                 else:
                     day += 1
         shuffle(self._schedule)
+        for day in range(len(self._schedule)):
+            for something in self._schedule[day]:
+                if isinstance(something, set):
+                    continue
+                something.day = day
+
 
     def _CreateIntraDivMatches(self):
         """
@@ -115,7 +123,7 @@ class JLeague(object):
 
     def _CreateExtraDivGames(self):
         """
-        Creates list of matches played by teams in different divisions.
+        Creates list of matches played by clubs in different divisions.
         :rtype: list
         """
         matches_l = []
@@ -128,7 +136,7 @@ class JLeague(object):
 
     def _MakeMatchesBetweenDivisions(self, div1, div2, same_matches):
         """
-        Generates list of matches between teams in two different divisions.
+        Generates list of matches between clubs in two different divisions.
         :type div1: list
         :type div2: list
         :type same_matches: int
@@ -142,7 +150,7 @@ class JLeague(object):
 
     def _MakeMatchesInsideDivision(self, division, same_matches):
         """
-        Creates list of games played by teams in the same divisions.
+        Creates list of games played by clubs in the same divisions.
         :type division: list
         :type same_matches: int
         """
@@ -153,6 +161,7 @@ class JLeague(object):
                     res += [(team1, team2) for k in range(same_matches)]
         return res
 
+    # Simple method for testing purposes
     def QuickSimResult(self):
         possible_outcomes = [(2, 0), (2, 1), (0, 2), (1, 2)]
         return choice(possible_outcomes)
@@ -163,9 +172,29 @@ class JLeague(object):
                 return match
         return None
 
+    def GetClubById(self, club_id):
+        if not club_id in self.clubs:
+            return None
+
+        for division in self._divisions:
+            for club in division:
+                if club.club_id == club_id:
+                    return club
+
+    def _SetPlayersForUnplayableClubs(self):
+        for div in self._divisions:
+            for club in div:
+                if not club.playable:
+                    club.SetRandomPlayer()
+
+
     def NextDay(self):
         self._current_day += 1
+        for div in self._divisions:
+            for club in div:
+                club.Deselect()
 
     def PlayCurrentMatches(self):
         for match in self.current_matches:
             match.score = self.QuickSimResult()
+            match.SetMatchPlayed()
