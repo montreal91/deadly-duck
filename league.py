@@ -19,10 +19,12 @@ class JLeague(object):
         :type days: int
         """
         super(JLeague, self).__init__()
-        self._days          = days
-        self._divisions     = self._MakeDivisions(divisions)
-        self._schedule      = []
-        self._current_day   = 0
+        self._days              = days
+        self._divisions         = self._MakeDivisions(divisions)
+        self._schedule          = []
+        self._current_day       = 0
+        self._current_season    = 1
+        self._total_matches     = 0
 
         if indiv_matches % 2 == 0:
             self._indiv_matches = indiv_matches
@@ -63,8 +65,8 @@ class JLeague(object):
             """
             CREATE TABLE clubs (
                 n_club_id INTEGER PRIMARY KEY,
-                c_club_name TEXT,
-                b_playable BOOL
+                c_club_name TEXT NOT NULL,
+                b_playable BOOL NOT NULL
             );
             """
         )
@@ -74,10 +76,11 @@ class JLeague(object):
                 n_match_id INTEGER PRIMARY KEY,
                 n_home_team INTEGER,
                 n_away_team INTEGER,
-                n_home_team_pts INTEGER,
-                n_away_team_pts INTEGER,
-                n_day INTEGER,
-                b_is_played BOOL,
+                n_home_team_pts INTEGER NOT NULL,
+                n_away_team_pts INTEGER NOT NULL,
+                n_day INTEGER NOT NULL,
+                n_season INTEGER NOT NULL,
+                b_is_played BOOL NOT NULL,
                 FOREIGN KEY (n_home_team) REFERENCES clubs(n_club_id),
                 FOREIGN KEY (n_away_team) REFERENCES clubs(n_club_id)
             )
@@ -98,6 +101,10 @@ class JLeague(object):
     @property
     def current_day(self):
         return  self._current_day
+
+    @property
+    def current_season(self):
+        return self._current_season
 
     @property
     def current_matches(self):
@@ -135,15 +142,16 @@ class JLeague(object):
         matches = self._CreateIntraDivMatches() + self._CreateExtraDivGames()
         self._schedule = [[set()] for i in range(self._days)]
 
-        counter = 0
         for match in matches:
-            counter += 1
+            self._total_matches += 1
             day = 0
             scheduled = False
             while not scheduled:
                 if match[0] not in self._schedule[day][0] and match[1] not in self._schedule[day][0]:
                     match_entry = JMatch(
-                        match_id=counter, home_team_id=match[0].club_id, away_team_id=match[1].club_id
+                        match_id=self._total_matches,
+                        home_team_id=match[0].club_id,
+                        away_team_id=match[1].club_id
                     )
                     self._schedule[day].append(match_entry)
                     self._schedule[day][0].add(match[0])
@@ -247,7 +255,7 @@ class JLeague(object):
             match.score = self.QuickSimResult()
             match.SetMatchPlayed()
             query = """
-                INSERT INTO matches VALUES({0:d}, {1:d}, {2:d}, {3:d}, {4:d}, {5:d}, {6:d});
+                INSERT INTO matches VALUES({0:d}, {1:d}, {2:d}, {3:d}, {4:d}, {5:d}, {6:d}, {7:d});
             """.format(
                 match.match_id,
                 match.home_team,
@@ -255,6 +263,7 @@ class JLeague(object):
                 match.score[0],
                 match.score[1],
                 match.day,
+                self._current_season,
                 int(match.is_played)
             )
             self._curs.execute(query)
@@ -267,8 +276,14 @@ class JLeague(object):
                 ELSE 0
             END) AS points
         FROM clubs, matches
+        WHERE matches.n_season = {0:d}
         GROUP BY clubs.c_club_name
         ORDER BY points DESC
-        """
+        """.format(self._current_season)
         res = self._curs.execute(query)
         return res.fetchall()
+
+    def ProceedToNextSeason(self):
+        self._current_season += 1
+        self._current_day = 0
+        self.CreateSchedule()

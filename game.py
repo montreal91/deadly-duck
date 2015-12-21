@@ -136,8 +136,25 @@ class JGame( object ):
         else:
             return True
 
+    def _ProcessEndOfSeason(self):
+        print("\nThe season is over.\n")
+        self._ShowCurrentStandings()
+
+        print("\nDo you want to play another season? (Y/N)")
+        ui = ""
+        while not ui.upper in ["Y", "N", "YES", "NO"]:
+            print("Please, enter '[Y]es' or '[N]o'")
+            ui = input()
+        if ui.upper() == "Y" or ui.upper() == "YES":
+            self._league.ProceedToNextSeason()
+            print("\nWELCOME TO THE SEASON #{0:d}".format(self._league.current_season))
+            return PROCESS_INPUT_CODES.DEFAULT
+        else:
+            return PROCESS_INPUT_CODES.HAS_TO_EXIT
+
     # Text-based interface for testing purposes
     def PlayTextGame(self):
+        print("WELCOME TO THE SEASON #{0:d}".format(self._league.current_season))
         have_to_exit = False
         while not have_to_exit:
             res = self._ProcessUserInput(input("> "))
@@ -147,9 +164,10 @@ class JGame( object ):
                 print("You have to select player!")
                 continue
             if self._league.current_day >= self._league.days:
-                print("\nThe season is over.\n")
-                self._ShowCurrentStandings()
-                have_to_exit = True
+                if self._ProcessEndOfSeason() == PROCESS_INPUT_CODES.HAS_TO_EXIT:
+                    have_to_exit = True
+                else:
+                    have_to_exit = False
 
 
 if __name__ == "__main__":
