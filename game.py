@@ -103,7 +103,7 @@ class JGame( object ):
             res["ex_div_games"] = 0
 
         ui = 0
-        while ui not in range(30, 100):
+        while ui not in range(10, 100):
             try:
                 print("Input even number of days (for this number it's better to be bigger):")
                 ui = int(input(">>  "))
@@ -114,10 +114,10 @@ class JGame( object ):
 
 
     def _ShowPlayerCurrentMatch(self):
-        res = self._league.GetCurrentMatchByClubId(self._players_club)
+        res = self._league.GetCurrentMatchByClubId(self._players_club)[0]
         if res:
             print("Your match is")
-            print("\t", str(res))
+            print("  {0:s} VS {1:s}".format(res[0], res[1]))
         else:
             print("You have no upcoming matches.")
 
@@ -148,9 +148,9 @@ class JGame( object ):
     def _ProcessShowCommand(self):
         print("Day:", self._league.current_day)
         if self._league.current_matches:
-            print("Upcoming matches.")
+            print("Upcoming matches:")
             for match in self._league.current_matches:
-                print(match)
+                print("  {0:s} VS {1:s}".format(match[2], match[3]))
         else:
             print("No matches for today.")
         return PROCESS_INPUT_CODES.DEFAULT
@@ -162,7 +162,7 @@ class JGame( object ):
             self._league.PlayCurrentMatches()
             print("Today's results")
             for match in self._league.current_matches:
-                print("\t{0:s} {1:d}:{2:d}".format(str(match), match.score[0], match.score[1]))
+                print("  {0:s} VS {1:s} {2:d}:{3:d}".format( match[2], match[3], match[4], match[5] ) )
             self._league.NextDay()
         else:
             print("All quiet today")

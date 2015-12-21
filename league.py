@@ -2,7 +2,6 @@ import sqlite3
 
 from random import shuffle, choice
 
-from match  import JMatch
 from club   import JClub
 
 
@@ -108,11 +107,19 @@ class JLeague(object):
 
     @property
     def current_matches(self):
-        res = []
-        for item in self._schedule[self._current_day]:
-            if type(item) != set:
-                res.append(item)
-        return res
+        get_current_matches_sql = """
+            SELECT matches.n_home_team, matches.n_away_team, clubs.c_club_name, (
+                SELECT c_club_name
+                FROM clubs
+                WHERE n_club_id = matches.n_away_team
+            ), matches.n_home_team_pts, matches.n_away_team_pts, matches.n_match_id
+            FROM matches, clubs
+            WHERE n_day = {0:d}
+            AND n_season = {1:d}
+            AND clubs.n_club_id = matches.n_home_team
+        """.format(self._current_day, self._current_season)
+        query = self._curs.execute(get_current_matches_sql).fetchall()
+        return query
 
     @property
     def days(self):
@@ -143,32 +150,45 @@ class JLeague(object):
         If there is no clubs raises AssertionError
         """
         matches = self._CreateIntraDivMatches() + self._CreateExtraDivGames()
-        self._schedule = [[set()] for i in range(self._days)]
+        shuffle(matches)
+        self._schedule = [set() for i in range(self._days)]
+        playing_clubs = [set() for i in range(self._days)]
 
         for match in matches:
             self._total_matches += 1
             day = 0
             scheduled = False
             while not scheduled:
-                if match[0] not in self._schedule[day][0] and match[1] not in self._schedule[day][0]:
-                    match_entry = JMatch(
-                        match_id=self._total_matches,
-                        home_team_id=match[0].club_id,
-                        away_team_id=match[1].club_id
-                    )
-                    self._schedule[day].append(match_entry)
-                    self._schedule[day][0].add(match[0])
-                    self._schedule[day][0].add(match[1])
+                if match[0] not in playing_clubs[day] and match[1] not in playing_clubs[day]:
+                    playing_clubs[day].add(match[0])
+                    playing_clubs[day].add(match[1])
+                    self._PutNewMatchInDatabase(match[0], match[1], day)
                     scheduled = True
                 else:
                     day += 1
-        shuffle(self._schedule)
-        for day in range(len(self._schedule)):
-            for something in self._schedule[day]:
-                if isinstance(something, set):
-                    continue
-                something.day = day
 
+    def _PutNewMatchInDatabase(self, home_team_id, away_team_id, day):
+        query = """
+            INSERT INTO matches VALUES({0:d}, {1:d}, {2:d}, {3:d}, {4:d}, {5:d}, {6:d}, {7:d});
+        """.format(
+            self._total_matches,
+            home_team_id,
+            away_team_id,
+            0,
+            0,
+            day,
+            self._current_season,
+            int(False)
+        )
+        self._curs.execute(query)
+
+    def _UpdateMatchInDatabase(self, match_id, home_team_pts=0, away_team_pts=0):
+        update_match_sql = """
+            UPDATE matches
+            SET n_home_team_pts={0:d}, n_away_team_pts={1:d}, b_is_played=1
+            WHERE n_match_id = {2:d}
+        """.format(home_team_pts, away_team_pts, match_id)
+        self._curs.execute( update_match_sql )
 
     def _CreateIntraDivMatches(self):
         """
@@ -205,7 +225,7 @@ class JLeague(object):
         res = []
         for team1 in div1:
             for team2 in div2:
-                res += [(team1, team2) for k in range(same_matches)]
+                res += [(team1.club_id, team2.club_id) for k in range(same_matches)]
         return res
 
     def _MakeMatchesInsideDivision(self, division, same_matches):
@@ -218,7 +238,7 @@ class JLeague(object):
         for team1 in division:
             for team2 in division:
                 if team1 != team2:
-                    res += [(team1, team2) for k in range(same_matches)]
+                    res += [(team1.club_id, team2.club_id) for k in range(same_matches)]
         return res
 
     # Simple method for testing purposes
@@ -227,10 +247,26 @@ class JLeague(object):
         return choice(possible_outcomes)
 
     def GetCurrentMatchByClubId(self, club_id):
-        for match in self.current_matches:
-            if club_id == match.home_team or club_id == match.away_team:
-                return match
-        return None
+        get_match_sql = """
+            SELECT clubs.c_club_name, (
+                SELECT clubs.c_club_name
+                FROM matches, clubs
+                WHERE n_day = {0:d}
+                AND n_season = {1:d}
+                AND (n_home_team = {2:d} OR n_away_team = {2:d})
+                AND clubs.n_club_id = matches.n_away_team
+            )
+            FROM matches, clubs
+            WHERE n_day = {0:d}
+            AND n_season = {1:d}
+            AND (n_home_team = {2:d} OR n_away_team = {2:d})
+            AND clubs.n_club_id = matches.n_home_team
+        """.format(self._current_day, self._current_season, club_id)
+        query = self._curs.execute(get_match_sql).fetchall()
+        if query:
+            return query
+        else:
+            return None
 
     def GetClubById(self, club_id):
         if not club_id in self.clubs:
@@ -255,21 +291,8 @@ class JLeague(object):
 
     def PlayCurrentMatches(self):
         for match in self.current_matches:
-            match.score = self.QuickSimResult()
-            match.SetMatchPlayed()
-            query = """
-                INSERT INTO matches VALUES({0:d}, {1:d}, {2:d}, {3:d}, {4:d}, {5:d}, {6:d}, {7:d});
-            """.format(
-                match.match_id,
-                match.home_team,
-                match.away_team,
-                match.score[0],
-                match.score[1],
-                match.day,
-                self._current_season,
-                int(match.is_played)
-            )
-            self._curs.execute(query)
+            res = self.QuickSimResult()
+            self._UpdateMatchInDatabase(match[-1], res[0], res[1])
 
     def GetCurrentLeagueStandings(self):
         query = """
