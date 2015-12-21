@@ -8,10 +8,10 @@ class JStruct:
     pass
 
 
-PROCESS_INPUT_CODES                         = JStruct()
-PROCESS_INPUT_CODES.DEFAULT                 = 0
-PROCESS_INPUT_CODES.HAS_TO_EXIT             = 1
-PROCESS_INPUT_CODES.HAVE_TO_SELECT_PLAYER   = 2
+PROCESS_INPUT_CODES = JStruct()
+PROCESS_INPUT_CODES.DEFAULT = 0
+PROCESS_INPUT_CODES.HAS_TO_EXIT = 1
+PROCESS_INPUT_CODES.HAVE_TO_SELECT_PLAYER = 2
 
 club_names = [
     "Canberra Masters",
@@ -28,12 +28,13 @@ class JGame( object ):
     def __init__(self):
         super( JGame, self ).__init__()
 
-        self._league    = JLeague(days=20)
-        t_players_list  = [i+1 for i in range(len(club_names) * tennis_players)]
+        self._league        = JLeague(days=20)
+        self._players_club  = self._SelectClub()
+        t_players_list      = [i+1 for i in range(len(club_names) * tennis_players)]
         shuffle(t_players_list)
         for i in range(len(club_names)):
-            if i == 0:
-                club = JClub(club_id=1, name=club_names[0], playable=True)
+            if i + 1 == self._players_club:
+                club = JClub(club_id=i+1, name=club_names[i], playable=True)
             else:
                 club = JClub(club_id=i+1, name=club_names[i], playable=False)
 
@@ -41,7 +42,27 @@ class JGame( object ):
                 club.AddPlayer(t_players_list.pop())
             self._league.AddClub(club)
         self._league.CreateSchedule()
-        self._players_club = 1
+
+    def _SelectClub(self):
+        print("\nYou are starting your career as a manager for tennis semipro club in Australia.")
+        print("Choose the club you want to manage.")
+        print("Possible choices are:")
+        i = 0
+        for club in club_names:
+            i += 1
+            print(i, club)
+
+        print("\nYour choice is: (enter corresponding number)")
+        ui = 0
+        while ui not in range(1, len(club_names) + 1):
+            try:
+                print("Please, enter number from 1 to {0:d}.".format(len(club_names)))
+                ui = int(input(">>  "))
+            except ValueError:
+                ui = 0
+
+        print("Your choice is ", club_names[int(ui) - 1])
+        return ui
 
     def _ShowPlayerCurrentMatch(self):
         res = self._league.GetCurrentMatchByClubId(self._players_club)
@@ -54,13 +75,18 @@ class JGame( object ):
     def _ShowCurrentStandings(self):
         res = self._league.GetCurrentStandings()
         for row in res:
-            print(row)
+            if row[0]:
+                print(" +{0:20s} {1:2d}".format(row[1], row[2]))
+            else:
+                print("  {0:20s} {1:2d}".format(row[1], row[2]))
         return PROCESS_INPUT_CODES.DEFAULT
 
     def _ProcessShowCommand(self):
         print("Day:", self._league.current_day)
         if self._league.current_matches:
-            print(self._league.current_matches)
+            print("Upcoming matches.")
+            for match in self._league.current_matches:
+                print(match)
         else:
             print("No matches for today.")
         return PROCESS_INPUT_CODES.DEFAULT
@@ -142,7 +168,7 @@ class JGame( object ):
 
         print("\nDo you want to play another season? (Y/N)")
         ui = ""
-        while not ui.upper in ["Y", "N", "YES", "NO"]:
+        while not ui.upper() in ["Y", "N", "YES", "NO"]:
             print("Please, enter '[Y]es' or '[N]o'")
             ui = input()
         if ui.upper() == "Y" or ui.upper() == "YES":

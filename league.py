@@ -1,4 +1,3 @@
-
 import sqlite3
 
 from random import shuffle, choice
@@ -270,7 +269,7 @@ class JLeague(object):
 
     def GetCurrentStandings(self):
         query = """
-        SELECT clubs.c_club_name, sum(CASE
+        SELECT clubs.b_playable, clubs.c_club_name, sum(CASE
                 WHEN clubs.n_club_id = matches.n_home_team THEN matches.n_home_team_pts
                 WHEN clubs.n_club_id = matches.n_away_team THEN matches.n_away_team_pts
                 ELSE 0
