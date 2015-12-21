@@ -65,6 +65,7 @@ class JLeague(object):
             CREATE TABLE clubs (
                 n_club_id INTEGER PRIMARY KEY,
                 c_club_name TEXT NOT NULL,
+                n_division INTEGER NOT NULL,
                 b_playable BOOL NOT NULL
             );
             """
@@ -127,8 +128,11 @@ class JLeague(object):
         if club.club_id not in self.clubs:
             div = min(self._divisions, key=len)
             div.add( club )
-            query = "INSERT INTO clubs VALUES({0:d}, '{1:s}', {2:d});".format(
-                club.club_id, club.name, int(club.playable)
+            query = "INSERT INTO clubs VALUES({0:d}, '{1:s}', {2:d}, {3:d});".format(
+                club.club_id,
+                club.name,
+                self._divisions.index(div),
+                int(club.playable)
             )
             self._curs.execute(query)
 
@@ -183,7 +187,7 @@ class JLeague(object):
         :rtype: list
         """
         matches_l = []
-        same_matches = self._exdiv_matches / 2
+        same_matches = int(self._exdiv_matches / 2)
         for div1 in self._divisions:
             for div2 in self._divisions:
                 if div1 != div2:
@@ -267,7 +271,7 @@ class JLeague(object):
             )
             self._curs.execute(query)
 
-    def GetCurrentStandings(self):
+    def GetCurrentLeagueStandings(self):
         query = """
         SELECT clubs.b_playable, clubs.c_club_name, sum(CASE
                 WHEN clubs.n_club_id = matches.n_home_team THEN matches.n_home_team_pts
@@ -281,6 +285,45 @@ class JLeague(object):
         """.format(self._current_season)
         res = self._curs.execute(query)
         return res.fetchall()
+
+    def GetCurrentStandingsInMyDiv(self):
+        query = """
+        SELECT clubs.b_playable, clubs.c_club_name, sum(CASE
+                WHEN clubs.n_club_id = matches.n_home_team THEN matches.n_home_team_pts
+                WHEN clubs.n_club_id = matches.n_away_team THEN matches.n_away_team_pts
+                ELSE 0
+            END) AS points
+        FROM clubs, matches
+        WHERE matches.n_season = {0:d}
+        AND   clubs.n_division = (
+            SELECT n_division
+            FROM   clubs
+            WHERE  b_playable = 1
+        )
+        GROUP BY clubs.c_club_name
+        ORDER BY points DESC
+        """.format(self._current_season)
+        res = self._curs.execute(query)
+        return res.fetchall()
+
+    def GetCurrentDivStandings(self):
+        res = []
+        for i in range(len(self._divisions)):
+            query = """
+            SELECT clubs.b_playable, clubs.c_club_name, sum(CASE
+                    WHEN clubs.n_club_id = matches.n_home_team THEN matches.n_home_team_pts
+                    WHEN clubs.n_club_id = matches.n_away_team THEN matches.n_away_team_pts
+                    ELSE 0
+                END) AS points
+            FROM clubs, matches
+            WHERE matches.n_season = {0:d}
+            AND   clubs.n_division = {1:d}
+            GROUP BY clubs.c_club_name
+            ORDER BY points DESC
+            """.format(self._current_season, i)
+            subres = self._curs.execute(query)
+            res.append(subres.fetchall())
+        return res
 
     def ProceedToNextSeason(self):
         self._current_season += 1

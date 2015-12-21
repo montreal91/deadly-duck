@@ -1,4 +1,3 @@
-
 from random import shuffle
 
 from league import JLeague
@@ -15,11 +14,15 @@ PROCESS_INPUT_CODES.HAVE_TO_SELECT_PLAYER = 2
 
 club_names = [
     "Canberra Masters",
-    "Sydney Cangaroos",
+    "Sydney Kangaroos",
     "Dandenong Pianists",
     "Melbourne Slams",
     "Melbourne Rockets",
     "Darwin Genes",
+    "Kingston Whales",
+    "Brisbane Rangers",
+    "Adelaide Thrashers",
+    "Perth Penguins"
 ]
 
 tennis_players = 4
@@ -27,8 +30,13 @@ tennis_players = 4
 class JGame( object ):
     def __init__(self):
         super( JGame, self ).__init__()
-
-        self._league        = JLeague(days=20)
+        params              = self._SetupGameSettings()
+        self._league        = JLeague(
+            days=params["days"],
+            divisions=params["divs"],
+            indiv_matches=params["in_div_games"],
+            exdiv_matches=params["ex_div_games"]
+        )
         self._players_club  = self._SelectClub()
         t_players_list      = [i+1 for i in range(len(club_names) * tennis_players)]
         shuffle(t_players_list)
@@ -64,6 +72,47 @@ class JGame( object ):
         print("Your choice is ", club_names[int(ui) - 1])
         return ui
 
+    def _SetupGameSettings(self):
+        res = {}
+        ui = 0
+        while ui not in range(1, 5):
+            try:
+                print("Input number of divisions (preferably 1-4):")
+                ui = int(input(">>  "))
+            except ValueError:
+                ui = 0
+        res["divs"] = ui
+        ui = 0
+        while ui not in (2, 4, 6):
+            try:
+                print("Input even number of games inside divisions (preferably 2, 4, 6):")
+                ui = int(input(">>  "))
+            except ValueError:
+                ui = 0
+        res["in_div_games"] = ui
+        if res["divs"] > 1:
+            ui = 0
+            while ui not in (2, 4, 6):
+                try:
+                    print("Input even number of games outside divisions (preferably 2, 4, 6):")
+                    ui = int(input(">>  "))
+                except ValueError:
+                    ui = 0
+            res["ex_div_games"] = ui
+        else:
+            res["ex_div_games"] = 0
+
+        ui = 0
+        while ui not in range(30, 100):
+            try:
+                print("Input even number of days (for this number it's better to be bigger):")
+                ui = int(input(">>  "))
+            except ValueError:
+                ui = 0
+        res["days"] = ui
+        return res
+
+
     def _ShowPlayerCurrentMatch(self):
         res = self._league.GetCurrentMatchByClubId(self._players_club)
         if res:
@@ -72,14 +121,29 @@ class JGame( object ):
         else:
             print("You have no upcoming matches.")
 
-    def _ShowCurrentStandings(self):
-        res = self._league.GetCurrentStandings()
-        for row in res:
+    def _PrintStandings(self, row_list):
+        for row in row_list:
             if row[0]:
                 print(" +{0:20s} {1:2d}".format(row[1], row[2]))
             else:
                 print("  {0:20s} {1:2d}".format(row[1], row[2]))
+
+    def _ShowCurrentStandings(self, tokens):
+        standings = []
+        if len(tokens) == 1 or tokens[1] == "l":
+            standings = self._league.GetCurrentLeagueStandings()
+        elif len(tokens) == 2 or (tokens[1] == "div" and tokens[2] == "my"):
+            standings = self._league.GetCurrentStandingsInMyDiv()
+        elif tokens[1] == "div" and tokens[2] == "all":
+            standings = self._league.GetCurrentDivStandings()
+            for table in standings:
+                self._PrintStandings(table)
+                print()
+            return PROCESS_INPUT_CODES.DEFAULT
+
+        self._PrintStandings(standings)
         return PROCESS_INPUT_CODES.DEFAULT
+
 
     def _ProcessShowCommand(self):
         print("Day:", self._league.current_day)
@@ -149,7 +213,7 @@ class JGame( object ):
         elif "mp" in tokens:
             return self._ProcessMyPlayersCommand()
         elif "cs" in tokens:
-            return self._ShowCurrentStandings()
+            return self._ShowCurrentStandings(tokens)
         else:
             print("Please, enter a valid command")
             return PROCESS_INPUT_CODES.DEFAULT
@@ -162,9 +226,9 @@ class JGame( object ):
         else:
             return True
 
-    def _ProcessEndOfSeason(self):
+    def _ProcessEndOfSeason(self, tokens):
         print("\nThe season is over.\n")
-        self._ShowCurrentStandings()
+        self._ShowCurrentStandings(tokens)
 
         print("\nDo you want to play another season? (Y/N)")
         ui = ""
@@ -190,7 +254,7 @@ class JGame( object ):
                 print("You have to select player!")
                 continue
             if self._league.current_day >= self._league.days:
-                if self._ProcessEndOfSeason() == PROCESS_INPUT_CODES.HAS_TO_EXIT:
+                if self._ProcessEndOfSeason(["cs"]) == PROCESS_INPUT_CODES.HAS_TO_EXIT:
                     have_to_exit = True
                 else:
                     have_to_exit = False
