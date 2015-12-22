@@ -25,6 +25,7 @@ class JMainWindow(QWidget):
         super(JMainWindow, self).__init__()
         self.widget = Ui_JMainWindow()
         self.widget.setupUi(self)
+        self._league = None
 
     def CreateLeague(self, param_dict):
         self._league = JLeague(

@@ -32,7 +32,6 @@ class JGame( object ):
         super( JGame, self ).__init__()
         params              = self._SetupGameSettings()
         self._league        = JLeague(
-            days=params["days"],
             divisions=params["divs"],
             indiv_matches=params["in_div_games"],
             exdiv_matches=params["ex_div_games"]
@@ -101,15 +100,6 @@ class JGame( object ):
             res["ex_div_games"] = ui
         else:
             res["ex_div_games"] = 0
-
-        ui = 0
-        while ui not in range(10, 100):
-            try:
-                print("Input even number of days (for this number it's better to be bigger):")
-                ui = int(input(">>  "))
-            except ValueError:
-                ui = 0
-        res["days"] = ui
         return res
 
 

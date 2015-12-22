@@ -8,18 +8,17 @@ from club   import JClub
 class JLeague(object):
     """docstring for JLeague"""
 
-    def __init__(self, divisions=1, indiv_matches=2, exdiv_matches=2, days=12):
+    def __init__(self, divisions=1, indiv_matches=2, exdiv_matches=2):
         """
         Constructor for JLeague
         :type divisions: int
         :type indiv_matches: int
         :type exdiv_matches: int
-        :type days: int
         """
         super(JLeague, self).__init__()
-        self._days              = days
+        self._days              = None
         self._divisions         = self._MakeDivisions(divisions)
-        self._schedule          = []
+        # self._schedule          = []
         self._current_day       = 0
         self._total_matches     = 0
 
@@ -158,21 +157,28 @@ class JLeague(object):
         """
         matches = self._CreateIntraDivMatches() + self._CreateExtraDivGames()
         shuffle(matches)
-        self._schedule = [set() for i in range(self._days)]
-        playing_clubs = [set() for i in range(self._days)]
+        # self._schedule = [set() for i in range(self._days)]
+        playing_clubs = []
 
         for match in matches:
             self._total_matches += 1
             day = 0
             scheduled = False
             while not scheduled:
-                if match[0] not in playing_clubs[day] and match[1] not in playing_clubs[day]:
+                if day == len(playing_clubs):
+                    playing_clubs.append(set())
+                    playing_clubs[day].add(match[0])
+                    playing_clubs[day].add(match[1])
+                    self._PutNewMatchInDatabase(match[0], match[1], day)
+                    scheduled = True
+                elif match[0] not in playing_clubs[day] and match[1] not in playing_clubs[day]:
                     playing_clubs[day].add(match[0])
                     playing_clubs[day].add(match[1])
                     self._PutNewMatchInDatabase(match[0], match[1], day)
                     scheduled = True
                 else:
                     day += 1
+        self._days = len(playing_clubs)
 
     def _PutNewMatchInDatabase(self, home_team_id, away_team_id, day):
         query = """
