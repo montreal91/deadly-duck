@@ -5,8 +5,11 @@ from PySide.QtGui                       import QWidget, QApplication
 
 from gui.widgets.title_window_ui        import Ui_JTitleWindow
 from gui.configuration_window           import JConfigurationWindow
+from gui.main_window                    import JMainWindow
 
 qt_app = QApplication(sys.argv)
+
+
 
 class JApplication( QWidget ):
     def __init__(self):
@@ -16,6 +19,7 @@ class JApplication( QWidget ):
         self._configuration = dict()
 
         self.config_window = JConfigurationWindow()
+        self.main_window = JMainWindow()
 
         self._SetUpEvents()
 
@@ -38,8 +42,17 @@ class JApplication( QWidget ):
         self.config_window.close()
         self._configuration["teams"]    = self.config_window.working_window.days_sb.value()
         self._configuration["divs"]     = self.config_window.working_window.divs_sb.value()
-        self._configuration["in_div"]   = self.config_window.working_window.inside_sb.value()
-        self._configuration["oit_div"]  = self.config_window.working_window.outside_sb.value()
+        self._configuration["in_div_games"]   = self.config_window.working_window.inside_sb.value()
+        self._configuration["out_div_games"]  = self.config_window.working_window.outside_sb.value()
+        self._configuration["days"]     = self.config_window.working_window.days_sb.value()
+
+        self.main_window.CreateLeague(self._configuration)
+        self.main_window.show()
+
+    @Slot()
+    def _QuitMainWindowSlot(self):
+        self.main_window.close()
+        self.show()
 
 
     def Run( self ):
@@ -51,3 +64,4 @@ class JApplication( QWidget ):
         self.title_window.new_game_btn.clicked.connect( self._ShowConfigWindowSlot )
         self.config_window.working_window.back_btn.clicked.connect(self._CloseConfigWindowSlot)
         self.config_window.working_window.ok_btn.clicked.connect(self._OkConfigWindowSlot)
+        self.main_window.widget.quit_btn.clicked.connect(self._QuitMainWindowSlot)

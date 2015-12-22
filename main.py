@@ -1,5 +1,5 @@
 
-from gui.title_window import JApplication
+from gui.application import JApplication
 
 if __name__ == '__main__':
     app = JApplication( )
