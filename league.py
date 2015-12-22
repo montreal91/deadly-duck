@@ -21,7 +21,6 @@ class JLeague(object):
         self._divisions         = self._MakeDivisions(divisions)
         self._schedule          = []
         self._current_day       = 0
-        self._current_season    = 1
         self._total_matches     = 0
 
         if indiv_matches % 2 == 0:
@@ -36,8 +35,12 @@ class JLeague(object):
 
         self._conn = sqlite3.connect("testing.db")
         self._curs = self._conn.cursor()
-        self._DropAllTables()
-        self._CreateNewTables()
+        self._current_season = self._GetLastSeason()
+        if self._current_season is None:
+            self._CreateNewTables()
+            self._current_season = 1
+        else:
+            self._current_season += 1
 
     @property
     def clubs( self ):
@@ -51,15 +54,17 @@ class JLeague(object):
                 res.add(club.club_id)
         return res
 
-    def _DropAllTables(self):
+    def _GetLastSeason( self ):
         try:
-            self._curs.execute("DROP TABLE clubs")
-            self._curs.execute("DROP TABLE matches")
+            sql = "SELECT max(n_season) FROM matches"
+            res = self._curs.execute(sql).fetchall()
+            return res[0][0]
         except sqlite3.OperationalError:
-            print("There were no tables")
+            return 0
 
     def _CreateNewTables(self):
-        self._curs.execute(
+        try:
+            self._curs.execute(
             """
             CREATE TABLE clubs (
                 n_club_id INTEGER PRIMARY KEY,
@@ -68,8 +73,8 @@ class JLeague(object):
                 b_playable BOOL NOT NULL
             );
             """
-        )
-        self._curs.execute(
+            )
+            self._curs.execute(
             """
             CREATE TABLE matches (
                 n_match_id INTEGER PRIMARY KEY,
@@ -84,7 +89,9 @@ class JLeague(object):
                 FOREIGN KEY (n_away_team) REFERENCES clubs(n_club_id)
             )
             """
-        )
+            )
+        except sqlite3.OperationalError:
+            pass
 
     def _MakeDivisions(self, divisions):
         """
@@ -300,7 +307,13 @@ class JLeague(object):
                 WHEN clubs.n_club_id = matches.n_home_team THEN matches.n_home_team_pts
                 WHEN clubs.n_club_id = matches.n_away_team THEN matches.n_away_team_pts
                 ELSE 0
-            END) AS points
+                END
+            ) AS points, sum(CASE
+                WHEN clubs.n_club_id = matches.n_home_team AND matches.b_is_played = 1 THEN 1
+                WHEN clubs.n_club_id = matches.n_away_team AND matches.b_is_played = 1 THEN 1
+                ELSE 0
+                END
+            )
         FROM clubs, matches
         WHERE matches.n_season = {0:d}
         GROUP BY clubs.c_club_name
@@ -309,35 +322,22 @@ class JLeague(object):
         res = self._curs.execute(query)
         return res.fetchall()
 
-    def GetCurrentStandingsInMyDiv(self):
-        query = """
-        SELECT clubs.b_playable, clubs.c_club_name, sum(CASE
-                WHEN clubs.n_club_id = matches.n_home_team THEN matches.n_home_team_pts
-                WHEN clubs.n_club_id = matches.n_away_team THEN matches.n_away_team_pts
-                ELSE 0
-            END) AS points
-        FROM clubs, matches
-        WHERE matches.n_season = {0:d}
-        AND   clubs.n_division = (
-            SELECT n_division
-            FROM   clubs
-            WHERE  b_playable = 1
-        )
-        GROUP BY clubs.c_club_name
-        ORDER BY points DESC
-        """.format(self._current_season)
-        res = self._curs.execute(query)
-        return res.fetchall()
 
     def GetCurrentDivStandings(self):
         res = []
         for i in range(len(self._divisions)):
             query = """
             SELECT clubs.b_playable, clubs.c_club_name, sum(CASE
-                    WHEN clubs.n_club_id = matches.n_home_team THEN matches.n_home_team_pts
-                    WHEN clubs.n_club_id = matches.n_away_team THEN matches.n_away_team_pts
-                    ELSE 0
-                END) AS points
+                WHEN clubs.n_club_id = matches.n_home_team THEN matches.n_home_team_pts
+                WHEN clubs.n_club_id = matches.n_away_team THEN matches.n_away_team_pts
+                ELSE 0
+                END
+            ) AS points, sum(CASE
+                WHEN clubs.n_club_id = matches.n_home_team AND matches.b_is_played = 1 THEN 1
+                WHEN clubs.n_club_id = matches.n_away_team AND matches.b_is_played = 1 THEN 1
+                ELSE 0
+                END
+            )
             FROM clubs, matches
             WHERE matches.n_season = {0:d}
             AND   clubs.n_division = {1:d}

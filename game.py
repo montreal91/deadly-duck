@@ -124,24 +124,20 @@ class JGame( object ):
     def _PrintStandings(self, row_list):
         for row in row_list:
             if row[0]:
-                print(" +{0:20s} {1:2d}".format(row[1], row[2]))
+                print(" +{0:20s} {1:2d} {2:2d}".format(row[1], row[2], row[3]))
             else:
-                print("  {0:20s} {1:2d}".format(row[1], row[2]))
+                print("  {0:20s} {1:2d} {2:2d}".format(row[1], row[2], row[3]))
 
     def _ShowCurrentStandings(self, tokens):
-        standings = []
         if len(tokens) == 1 or tokens[1] == "l":
             standings = self._league.GetCurrentLeagueStandings()
+            self._PrintStandings(standings)
         elif len(tokens) == 2 or (tokens[1] == "div" and tokens[2] == "my"):
-            standings = self._league.GetCurrentStandingsInMyDiv()
-        elif tokens[1] == "div" and tokens[2] == "all":
             standings = self._league.GetCurrentDivStandings()
             for table in standings:
                 self._PrintStandings(table)
                 print()
-            return PROCESS_INPUT_CODES.DEFAULT
 
-        self._PrintStandings(standings)
         return PROCESS_INPUT_CODES.DEFAULT
 
 
