@@ -18,7 +18,6 @@ class JLeague(object):
         super(JLeague, self).__init__()
         self._days              = None
         self._divisions         = self._MakeDivisions(divisions)
-        # self._schedule          = []
         self._current_day       = 0
         self._total_matches     = 0
 

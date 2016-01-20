@@ -1,3 +1,5 @@
 /.idea
 *.db
 *_ui.py
+*.pyc
+*.sqlite

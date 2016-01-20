@@ -1,0 +1,36 @@
+
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block subtitle %}Home{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>
+            Welcome,
+            {% if current_user.is_authenticated %}
+                {{ current_user.username }}!
+            {% else %}
+                Stranger!
+            {% endif %}
+        </h1>
+    </div>
+    {% if current_user.is_authenticated %}
+    <div class="col-md-8">
+        Welcome to the Deadly Duck, the browser-based tennis club manager.
+    </div>
+    <div class="col-md-4">
+        <a href="#" class="btn btn-default btn-block btn-lg disabled" role="button">Continue Career</a>
+        <a href="#" class="btn btn-default btn-block btn-lg" role="button">Start New Career</a>
+    </div>
+    {% else %}
+    <p>
+        Deadly Duck is the browser-based tennis club manager.
+    </p>
+    <p>
+        To play this game and to look at results of other players you need to
+        <a href="{{ url_for('auth.Login') }}">login</a>.
+    </p>
+    {% endif %}
+
+{% endblock %}

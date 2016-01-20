@@ -29,7 +29,7 @@ class JMainWindow(QWidget):
 
     def CreateLeague(self, param_dict):
         self._league = JLeague(
-            days=param_dict["days"],
+            # days=param_dict["days"],
             divisions=param_dict["divs"],
             indiv_matches=param_dict["in_div_games"],
             exdiv_matches=param_dict["out_div_games"]
