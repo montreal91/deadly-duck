@@ -33,15 +33,15 @@ class DdRole( db.Model ):
     @staticmethod
     def InsertRoles():
         roles = {
-            "User": ( 
-                DdPermission.FOLLOW | 
-                DdPermission.COMMENT | 
-                DdPermission.WRITE_ARTICLES, 
+            "User": (
+                DdPermission.FOLLOW |
+                DdPermission.COMMENT |
+                DdPermission.WRITE_ARTICLES,
                 True,
             ),
             "Moderator": (
-                DdPermission.FOLLOW | 
-                DdPermission.COMMENT | 
+                DdPermission.FOLLOW |
+                DdPermission.COMMENT |
                 DdPermission.WRITE_ARTICLES |
                 DdPermission.MODERATE_COMMENTS,
                 False,
@@ -209,7 +209,7 @@ class DdUser( UserMixin, db.Model ):
 
     def get_id( self ):
         return self.pk
-    
+
 
     def __repr__( self ):
         return "<User %r>" % self.username
@@ -247,9 +247,9 @@ class DdClub( db.Model ):
     def InsertClubs():
         for div in range( len( club_names ) ):
             for name in club_names[div]:
-                club = DdClub()
-                club.club_name_c = name
-                club.division_n = div
+                club                = DdClub()
+                club.club_name_c    = name
+                club.division_n     = div
                 db.session.add( club )
         db.session.commit()
 
