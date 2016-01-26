@@ -1,13 +1,14 @@
 
-club_names = [
-    [
+club_names = {
+    1: [
         "Canberra Masters",
         "Melbourne Slams",
         "Melbourne Rockets",
         "Sydney Cangaroos",
         "Brisbane Rangers",
         "Dandenong Pianists",
-    ], [
+    ],
+    2: [
         "Darwin Ducks",
         "Perth Penguins",
         "Adelaide Thrashers",
@@ -15,4 +16,4 @@ club_names = [
         "Mandurah Turtles",
         "Bunbury Pandas",
     ]
-]
+}

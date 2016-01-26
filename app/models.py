@@ -245,7 +245,7 @@ class DdClub( db.Model ):
 
     @staticmethod
     def InsertClubs():
-        for div in range( len( club_names ) ):
+        for div in  club_names:
             for name in club_names[div]:
                 club                = DdClub()
                 club.club_name_c    = name

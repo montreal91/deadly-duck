@@ -1,0 +1,22 @@
+
+{% extends "base.html" %}
+
+{% block subtitle %}Start New Career{% endblock %}
+
+{% block page_content %}
+    <h1>Welcome</h1>
+    <p>
+        <strong>To your very first season.</strong> <br>
+        Please, select one of the following teams!
+    </p>
+    {% for div in divisions %}
+    <div class="col-md-5">
+        {% for club in div %}
+            <a href="{{ url_for('game.ChooseManagedClub', pk=club.club_id_n) }}" class="btn btn-default btn-block btn-lg">
+                {{ club.club_name_c }}
+            </a>
+            <br>
+        {% endfor %}
+    </div>
+    {% endfor %}
+{% endblock %}

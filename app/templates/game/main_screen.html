@@ -1,0 +1,12 @@
+
+{% extends "base.html" %}
+
+{% block subtitle %}
+    Season: {{ current_user.current_season_n }} Day: {{ current_user.current_day_n }}
+{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h2>{{ club.club_name_c }}</h2>
+    </div>
+{% endblock %}
