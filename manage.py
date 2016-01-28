@@ -8,7 +8,7 @@ from flask.ext.migrate  import Migrate, MigrateCommand
 
 from app                import CreateApp, db
 from app.models         import DdUser, DdRole, DdPermission
-from app.models         import DdPost, DdClub
+from app.models         import DdPost, DdClub, DdMatch
 
 
 app     = CreateApp( os.getenv( "FLASK_CONFIG" ) or "default" )
@@ -23,7 +23,8 @@ def MakeShellContext():
         DdRole=DdRole,
         DdPermission=DdPermission,
         DdPost=DdPost,
-        DdClub=DdClub
+        DdClub=DdClub,
+        DdMatch=DdMatch
     )
 
 manager.add_command( "shell", Shell( make_context=MakeShellContext ) )

@@ -17,3 +17,8 @@ club_names = {
         "Bunbury Pandas",
     ]
 }
+
+# This values should be even
+class DdLeagueConfig:
+    INDIV_MATCHES = 6
+    EXDIV_MATCHES = 2

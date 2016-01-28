@@ -255,3 +255,28 @@ class DdClub( db.Model ):
 
     def __repr__( self ):
         return "<Club %r>" % self.club_name_c
+
+
+class DdMatch( db.Model ):
+    __tablename__   = "matches"
+    match_pk_n      = db.Column( db.Integer, primary_key=True )
+    home_team_pk    = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) )
+    away_team_pk    = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) )
+    user_pk         = db.Column( db.Integer, db.ForeignKey( "users.pk" ) )
+    season_n        = db.Column( db.Integer, default=0 )
+    day_n           = db.Column( db.Integer, default=0 )
+    is_played       = db.Column( db.Boolean, default=False )
+
+    home_sets_n     = db.Column( db.Integer, default=0 )
+    away_sets_n     = db.Column( db.Integer, default=0 )
+    home_games_n    = db.Column( db.Integer, default=0 )
+    away_games_n    = db.Column( db.Integer, default=0 )
+    home_pts_n      = db.Column( db.Integer, default=0 )
+    away_pts_n      = db.Column( db.Integer, default=0 )
+
+    def __repr__( self ):
+        return "<Match #{0:d} {1:d} vs {2:d}>".format(
+            self.match_pk_n,
+            self.home_team_pk,
+            self.away_team_pk
+        )
