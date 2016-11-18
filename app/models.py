@@ -243,6 +243,9 @@ class DdClub( db.Model ):
     club_name_c     = db.Column( db.String( 64 ) )
     division_n      = db.Column( db.Integer )
 
+    # home_matches    = db.relationship("DdMatch", backref="home_club", foreign_keys=[home_team_pk])
+    # away_matches    = db.relationship("DdMatch", backref="away_club", foreign_keys=[away_team_pk])
+
     @staticmethod
     def InsertClubs():
         for div in  club_names:
@@ -273,6 +276,9 @@ class DdMatch( db.Model ):
     away_games_n    = db.Column( db.Integer, default=0 )
     home_pts_n      = db.Column( db.Integer, default=0 )
     away_pts_n      = db.Column( db.Integer, default=0 )
+
+    home_club = db.relationship("DdClub", foreign_keys=[home_team_pk])
+    away_club = db.relationship("DdClub", foreign_keys=[away_team_pk])
 
     def __repr__( self ):
         return "<Match #{0:d} {1:d} vs {2:d}>".format(
