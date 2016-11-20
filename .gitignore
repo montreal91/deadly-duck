@@ -3,3 +3,4 @@
 *_ui.py
 *.pyc
 *.sqlite
+*.sql

@@ -1,5 +1,5 @@
 
-from random import choice
+from random             import choice
 
 from flask              import render_template, redirect, request
 from flask              import url_for, flash
@@ -25,6 +25,43 @@ FROM matches
 WHERE season_n = {1:d}
 AND   day_n = {2:d}
 AND   (home_team_pk = {0:d} OR away_team_pk = {0:d})
+"""
+
+STANDINGS_SQL = """
+SELECT club_id_n, club_name_c, (
+    SELECT Sum(
+        CASE WHEN home_team_pk = clubs.club_id_n
+        THEN home_sets_n
+        ELSE 0 END +
+        CASE WHEN away_team_pk = clubs.club_id_n
+        THEN away_sets_n
+        ELSE 0 END
+    )
+    FROM  matches
+    WHERE season_n = {0:d}
+    AND   user_pk = {1:d}
+    AND   is_played = 1
+) AS sets, (
+    SELECT Sum(
+        CASE WHEN home_team_pk = clubs.club_id_n
+        THEN home_games_n
+        ELSE 0 END +
+        CASE WHEN away_team_pk = clubs.club_id_n
+        THEN away_games_n
+        ELSE 0 END
+    )
+    FROM  matches
+    WHERE season_n = {0:d}
+    AND   user_pk = {1:d}
+    AND   is_played = 1
+) AS games, (
+    SELECT Count(*)
+    FROM matches
+    WHERE (home_team_pk = clubs.club_id_n OR away_team_pk = clubs.club_id_n)
+    AND is_played = 1
+) AS played
+FROM clubs
+ORDER BY sets DESC, games DESC
 """
 
 @game.route( "/start-new-career/" )
@@ -70,6 +107,7 @@ def MainScreen():
     else:
         return redirect( url_for( "main.Index" ) )
 
+
 @game.route("/nextday/")
 @login_required
 def NextDay():
@@ -83,6 +121,7 @@ def NextDay():
         res = QuickSimResult()
         match.home_sets_n = res[0]
         match.away_sets_n = res[1]
+        match.is_played = True
 
     current_user.current_day_n += 1
     db.session.add_all(today_matches)
@@ -110,6 +149,17 @@ def DayResults(season, day):
         season=season,
         day=day
     )
+
+@game.route("/standings/<int:season>/")
+@login_required
+def Standings(season):
+    table = db.engine.execute(STANDINGS_SQL.format(season, current_user.pk)).fetchall()
+    return render_template(
+        "game/standings.html",
+        table=table,
+        season=season
+    )
+
 
 def QuickSimResult():
     possible_outcomes = [(2, 0), (2, 1), (0, 2), (1, 2)]

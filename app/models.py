@@ -243,9 +243,6 @@ class DdClub( db.Model ):
     club_name_c     = db.Column( db.String( 64 ) )
     division_n      = db.Column( db.Integer )
 
-    # home_matches    = db.relationship("DdMatch", backref="home_club", foreign_keys=[home_team_pk])
-    # away_matches    = db.relationship("DdMatch", backref="away_club", foreign_keys=[away_team_pk])
-
     @staticmethod
     def InsertClubs():
         for div in  club_names:
