@@ -11,11 +11,13 @@
     </div>
     <p>
         Ongoing season: <mark>{{ current_user.current_season_n }}</mark><br>
-        Today is: <mark>{{ current_user.current_day_n }}</mark>
+        Today is: <mark>{{ current_user.current_day_n }}|{{ current_user.season_last_day }}</mark>
     </p>
     {% if match %}
         <h4>Upcoming match is</h4>
         <h3>{{ match[0] }} versus {{ match[1] }}</h3>
+        {% else %}
+        <h3>No matches for today</h3>
     {% endif %}
     <p>
         <a href="{{ url_for('game.NextDay') }}">Next Day</a>

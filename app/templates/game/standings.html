@@ -15,7 +15,7 @@
         <th>Games</th>
     </tr>
     {% for row in table %}
-    <tr>
+    <tr {% if row[0] == current_user.managed_club_pk%}class="success"{% endif %}>
         <td>{{ loop.index }}</td>
         <td>{{ row[1]}}</td>
         <td>{{ row[4]}}</td>

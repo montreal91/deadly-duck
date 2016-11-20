@@ -11,6 +11,7 @@ from flask.ext.login    import UserMixin, AnonymousUserMixin
 
 from .                  import db, login_manager
 from config_game        import club_names
+from app.custom_queries import MAX_DAY_IN_SEASON_SQL
 
 
 class DdPermission:
@@ -227,7 +228,10 @@ login_manager.anonymous_user = DdAnonymousUser
 
 @login_manager.user_loader
 def load_user( user_id ):
-    return DdUser.query.get( int( user_id ) )
+    user = DdUser.query.get( int( user_id ) )
+    max_day = db.engine.execute(MAX_DAY_IN_SEASON_SQL.format(user.pk, user.current_season_n)).fetchall()
+    user.season_last_day = max_day[0][0]
+    return user
 
 class DdPost( db.Model ):
     __tablename__   = "posts"
