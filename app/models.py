@@ -81,7 +81,7 @@ class DdUser( UserMixin, db.Model ):
 
     managed_club_pk     = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) )
     current_season_n    = db.Column( db.Integer, default=1 )
-    current_day_n       = db.Column( db.Integer, default=1 )
+    current_day_n       = db.Column( db.Integer, default=0 )
 
 
     def __init__( self, **kwargs ):

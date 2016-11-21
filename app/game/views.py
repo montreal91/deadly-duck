@@ -8,7 +8,7 @@ from flask.ext.login    import login_required, current_user
 from .                  import game
 from ..                 import db
 from app.game.league    import DdLeague
-from app.custom_queries import CURRENT_MATCH_SQL, STANDINGS_SQL
+from app.custom_queries import CURRENT_MATCH_SQL, STANDINGS_SQL, STANDINGS_FOR_DIVISION_SQL
 from app.models         import DdUser, DdClub, DdMatch
 from config_game        import club_names
 
@@ -48,7 +48,8 @@ def MainScreen():
             CURRENT_MATCH_SQL.format(
                 current_user.managed_club_pk,
                 current_user.current_season_n,
-                current_user.current_day_n
+                current_user.current_day_n,
+                current_user.pk
             )
         ).fetchall()
         if len(match) > 0:
@@ -105,6 +106,8 @@ def DayResults(season, day):
         DdMatch.season_n == season
     ).filter(
         DdMatch.day_n == day
+    ).filter(
+        DdMatch.user_pk == current_user.pk
     ).all()
     if len(today_matches) == 0:
         return redirect(url_for("game.MainScreen"))
@@ -129,10 +132,28 @@ def Standings(season):
         season=season
     )
 
+@game.route("/standings/<int:season>/div<int:division>/")
+@login_required
+def DivisionStandings(season, division):
+    if season > current_user.current_season_n or not 0 < division <3:
+        return redirect(url_for("game.Standings", season=current_user.current_season_n))
+        print(STANDINGS_FOR_DIVISION_SQL)
+    table = db.engine.execute(
+        STANDINGS_FOR_DIVISION_SQL.format(
+            season,
+            current_user.pk,
+            division
+        )
+    ).fetchall()
+    return render_template(
+        "game/standings.html",
+        table=table,
+        season=season
+    )
 
 def StartNextSeason(user):
     user.current_season_n += 1
-    user.current_day_n = 1
+    user.current_day_n = 0
     db.session.add(user)
     db.session.commit()
     DdLeague.CreateScheduleForUser(user)

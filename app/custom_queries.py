@@ -20,6 +20,7 @@ FROM matches
 WHERE season_n = {1:d}
 AND   day_n = {2:d}
 AND   (home_team_pk = {0:d} OR away_team_pk = {0:d})
+AND   user_pk = {3:d}
 """
 
 STANDINGS_SQL = """
@@ -55,7 +56,10 @@ SELECT club_id_n, club_name_c, (
     WHERE (home_team_pk = clubs.club_id_n OR away_team_pk = clubs.club_id_n)
     AND is_played = 1
     AND season_n = {0:d}
+    AND user_pk = {1:d}
 ) AS played
 FROM clubs
 ORDER BY sets DESC, games DESC
 """
+
+STANDINGS_FOR_DIVISION_SQL = STANDINGS_SQL[0:-31] + "WHERE division_n = {2:d}\n" + STANDINGS_SQL[-31:]
