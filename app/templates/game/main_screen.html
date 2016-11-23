@@ -23,6 +23,15 @@
         <a href="{{ url_for('game.NextDay') }}">Next Day</a>
     </p>
     <p>
+        <a href="{{ url_for('game.SelectPlayerScreen') }}">Select Player</a>
+    </p>
+    <p>
         <a href="{{ url_for('game.Standings', season=current_user.current_season_n) }}">Standings</a>
+    </p>
+    <p>
+        <h3>Players</h3>
+        {% for player in players %}
+            {{ player.first_name_c }} {{ player.last_name_c }} [{{ player.skill_n }}]<br>
+        {% endfor %}
     </p>
 {% endblock %}

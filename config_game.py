@@ -18,6 +18,39 @@ club_names = {
     ]
 }
 
+first_names = [
+    "Joana",
+    "Skyler",
+    "Marie",
+    "Justine",
+    "Amelie",
+    "Emma",
+    "Mirela",
+    "Anastasia",
+    "Katie",
+    "Michelle",
+    "Samantha",
+    "Angelique"
+]
+
+last_names = [
+    "Smith",
+    "McAlister",
+    "Lee",
+    "Black",
+    "Green",
+    "Gray",
+    "Baker",
+    "Lake",
+    "Watson",
+    "Williams",
+    "Head",
+    "Prince",
+    "Ardenne",
+    "Kerber",
+    "Stosur",
+]
+
 # This values should be even
 class DdLeagueConfig:
     INDIV_MATCHES = 6

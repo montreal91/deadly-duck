@@ -4,3 +4,5 @@
 *.pyc
 *.sqlite
 *.sql
+.project
+.pydevproject
