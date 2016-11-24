@@ -43,7 +43,7 @@ class DdMatchResult( object ):
         self._away_games += val
 
     def AppendSetToFullScore( self, home_games, away_games ):
-        s = "{0:d}: {1:d}".format( home_games, away_games )
+        s = "{0:d}:{1:d}".format( home_games, away_games )
         if len( self._full_score ) > 0:
             self._full_score += " "
         self._full_score += s
@@ -79,7 +79,10 @@ class DdMatchProcessor( object ):
     def ProcessMatch( home_player, away_player, sets_to_win ):
         res = DdMatchResult()
         while not DdMatchProcessor._IsMatchOver( res.home_sets, res.away_sets, 2 ):
-            home_games, away_games = DdMatchProcessor._ProcessSet( home_player, away_player )
+            home_games, away_games = DdMatchProcessor._ProcessSet(
+                home_player,
+                away_player
+            )
             res.AddHomeGames( home_games )
             res.AddAwayGames( away_games )
             res.AppendSetToFullScore( home_games, away_games )
@@ -88,6 +91,7 @@ class DdMatchProcessor( object ):
             else:
                 res.AddAwaySets( 1 )
         return res
+
 
 def LoadedToss( probability ):
     return random() < probability

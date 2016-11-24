@@ -31,7 +31,9 @@
     <p>
         <h3>Players</h3>
         {% for player in players %}
-            {{ player.first_name_c }} {{ player.last_name_c }} [{{ player.skill_n }}]<br>
+        <a href="{{ url_for('game.PlayerDetails', player_pk=player.pk_n) }}">    
+            {{ player.first_name_c }} {{ player.last_name_c }}
+        </a><br>
         {% endfor %}
     </p>
 {% endblock %}

@@ -1,15 +1,18 @@
 
-from . import db, login_manager
-from app.custom_queries import MAX_DAY_IN_SEASON_SQL
-from collections import namedtuple
-from config_game import club_names, first_names, last_names
-from datetime import datetime
-from flask import current_app, request
-from flask.ext.login import AnonymousUserMixin, UserMixin
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from random import choice, randint
-from werkzeug.security import check_password_hash, generate_password_hash
 import hashlib
+from collections        import namedtuple
+from datetime           import datetime
+from random             import choice, randint
+
+from flask              import current_app, request
+from flask.ext.login    import AnonymousUserMixin, UserMixin
+from itsdangerous       import TimedJSONWebSignatureSerializer as Serializer
+from werkzeug.security  import check_password_hash, generate_password_hash
+
+from .                  import db, login_manager
+from app.custom_queries import MAX_DAY_IN_SEASON_SQL, RECENT_PLAYER_MATCHES_SQL
+from config_game        import club_names, first_names, last_names
+from config_game        import number_of_recent_matches
 
 
 class DdPermission:
@@ -269,6 +272,18 @@ class DdClub( db.Model ):
     def __repr__( self ):
         return "<Club %r>" % self.club_name_c
 
+DdMatchProxy = namedtuple(
+    "DdMathcProxy", 
+    [
+        "pk",
+        "home_team",
+        "away_team",
+        "home_player",
+        "away_player",
+        "full_score"
+    ],
+    rename=True 
+)
 
 class DdMatch( db.Model ):
     __tablename__ = "matches"
@@ -301,7 +316,19 @@ class DdMatch( db.Model ):
             self.home_team_pk,
             self.away_team_pk
         )
-DdPlayerProxy = namedtuple( "DdPlayerProxy", ["pk", "skill", "first_name", "last_name", "second_name"], rename=True )
+
+DdPlayerProxy = namedtuple(
+    "DdPlayerProxy",
+    [
+        "pk",
+        "skill",
+        "first_name",
+        "last_name",
+        "second_name"
+    ],
+    rename=True 
+)
+
 class DdPlayer( db.Model ):
     __tablename__ = "players"
     pk_n = db.Column( db.Integer, primary_key=True )
@@ -343,3 +370,23 @@ class DdPlayer( db.Model ):
                 player.club_pk = club.club_id_n
                 db.session.add( player )
         db.session.commit()
+
+    @staticmethod
+    def GetPlayerRecentMatches( player_pk, season ):
+        query_res = db.engine.execute(
+            RECENT_PLAYER_MATCHES_SQL.format(
+                player_pk,
+                season,
+                number_of_recent_matches
+            )
+        ).fetchall()
+        return [
+            DdMatchProxy(
+                pk=res[0],
+                home_team=res[1],
+                away_team=res[2],
+                home_player=res[3],
+                away_player=res[4],
+                full_score=res[5]
+            ) for res in query_res
+        ]

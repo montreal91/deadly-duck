@@ -63,3 +63,29 @@ ORDER BY sets DESC, games DESC
 """
 
 STANDINGS_FOR_DIVISION_SQL = STANDINGS_SQL[0:-31] + "WHERE division_n = {2:d}\n" + STANDINGS_SQL[-31:]
+
+RECENT_PLAYER_MATCHES_SQL = """
+SELECT   match_pk_n, (
+    SELECT club_name_c
+    FROM   clubs
+    WHERE  clubs.club_id_n = matches.home_team_pk
+), (
+    SELECT club_name_c
+    FROM   clubs
+    WHERE  clubs.club_id_n = matches.away_team_pk
+), (
+    SELECT players.first_name_c || ' ' || players.second_name_c || ' ' || players.last_name_c
+    FROM   players
+    WHERE  players.pk_n = matches.home_player_pk
+), (
+    SELECT players.first_name_c || ' ' || players.second_name_c || ' ' || players.last_name_c
+    FROM   players
+    WHERE  players.pk_n = matches.away_player_pk
+), full_score_c
+FROM     matches
+WHERE    (home_player_pk = {0:d} OR away_player_pk = {0:d})
+AND      season_n = {1:d}
+AND      is_played = 1
+ORDER BY day_n DESC
+LIMIT    {2:d}
+"""

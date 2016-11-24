@@ -5,8 +5,8 @@
 
 {% block page_content %}
     {% for player in players %}
-        <a href="{{ url_for('game.SelectPlayer', pk=player.pk_n) }}">
-            {{ player.first_name_c }} {{ player.last_name_c }} [{{ player.skill_n}}]
+        <a href="{{ url_for('game.SelectPlayer', pk=player.pk) }}">
+            {{ player.first_name }} {{ player.last_name }} [{{ player.skill }}]
         </a><br>
     {% endfor %}
     <a href="{{ url_for('game.MainScreen') }}"></a>

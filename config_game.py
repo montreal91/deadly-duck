@@ -51,6 +51,8 @@ last_names = [
     "Stosur",
 ]
 
+number_of_recent_matches = 5
+
 # This values should be even
 class DdLeagueConfig:
     INDIV_MATCHES = 6

@@ -1,0 +1,39 @@
+
+{% extends "base.html" %}
+
+{% block subtitle %}
+{{ player.first_name[0]}}. {{ player.second_name[0]}}. {{ player.last_name }}
+{% endblock %}
+
+{% block page_content %}
+<h2>{{ player.first_name }} {{ player.second_name }} {{ player.last_name }}</h2>
+<p><label>Club</label>: {{ club.club_name_c }}</p>
+
+{% if show %}
+<p><label>Skill</label>: {{ player.skill }}</p>
+{% endif %}
+
+{% if matches %}    
+<p>
+    <label>Recent matches</label>
+    <table class="table">    
+    {% for match in matches %}
+        <tr>
+        <td>    
+        {{ match.home_player }} vs. {{ match.away_player }}<td>
+        <td>
+        <mark>{{ match.full_score }}</mark>
+        </td>
+        <td>
+        {{ match.home_team }} vs. {{ match.away_team }}
+        </td>
+        </tr>
+    {% endfor %}
+    </table>
+</p>
+{% else %}
+    <strong>This player has not played any matches in current season yet.</strong>
+{% endif %}
+
+{% include "includes/current_match_or_standings.html" %}
+{% endblock %}
