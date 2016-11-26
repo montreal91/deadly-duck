@@ -1,4 +1,5 @@
 
+import json
 import hashlib
 from collections        import namedtuple
 from datetime           import datetime
@@ -11,8 +12,7 @@ from werkzeug.security  import check_password_hash, generate_password_hash
 
 from .                  import db, login_manager
 from app.custom_queries import MAX_DAY_IN_SEASON_SQL, RECENT_PLAYER_MATCHES_SQL
-from config_game        import club_names, first_names, last_names
-from config_game        import number_of_recent_matches
+from config_game        import number_of_recent_matches, retirement_age
 
 
 class DdPermission:
@@ -272,8 +272,8 @@ class DdClub( db.Model ):
     def __repr__( self ):
         return "<Club %r>" % self.club_name_c
 
-DdMatchProxy = namedtuple(
-    "DdMathcProxy", 
+DdMatchProxy = namedtuple( 
+    "DdMathcProxy",
     [
         "pk",
         "home_team",
@@ -282,8 +282,8 @@ DdMatchProxy = namedtuple(
         "away_player",
         "full_score"
     ],
-    rename=True 
-)
+    rename=True
+ )
 
 class DdMatch( db.Model ):
     __tablename__ = "matches"
@@ -317,17 +317,19 @@ class DdMatch( db.Model ):
             self.away_team_pk
         )
 
-DdPlayerProxy = namedtuple(
+DdPlayerProxy = namedtuple( 
     "DdPlayerProxy",
     [
         "pk",
         "skill",
         "first_name",
         "last_name",
-        "second_name"
+        "second_name",
+        "age",
+        "club_pk"
     ],
-    rename=True 
-)
+    rename=True
+ )
 
 class DdPlayer( db.Model ):
     __tablename__ = "players"
@@ -337,6 +339,8 @@ class DdPlayer( db.Model ):
     last_name_c = db.Column( db.String( 64 ), nullable=False )
 
     skill_n = db.Column( db.Integer, nullable=False, default=5 )
+    age_n = db.Column( db.Integer, default=20 )
+    is_active = db.Column( db.Boolean, default=True )
 
     user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ) )
     club_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) )
@@ -346,7 +350,20 @@ class DdPlayer( db.Model ):
 
     @property
     def proxy( self ):
-        return DdPlayerProxy( pk=self.pk_n, skill=self.skill_n, first_name=self.first_name_c, second_name=self.second_name_c, last_name=self.last_name_c )
+        return DdPlayerProxy( 
+            pk=self.pk_n,
+            skill=self.skill_n,
+            first_name=self.first_name_c,
+            second_name=self.second_name_c,
+            last_name=self.last_name_c,
+            age=self.age_n,
+            club_pk=self.club_pk
+        )
+
+    def AgeUp( self ):
+        self.age_n += 1
+        if self.age_n >= retirement_age:
+            self.is_active = False
 
     def __repr__( self ):
         return "<Player {0:d} {1}. {2}. {3}>".format( 
@@ -357,7 +374,14 @@ class DdPlayer( db.Model ):
         )
 
     @staticmethod
+    def GetNames():
+        with open( "names.json" ) as datafile:
+            all_names = json.load( datafile )
+        return all_names["names"], all_names["surnames"]
+
+    @staticmethod
     def CreatePlayersForUser( user ):
+        first_names, last_names = DdPlayer.GetNames()
         clubs = DdClub.query.all()
         for i in range( 4 ):
             for club in clubs:
@@ -366,22 +390,84 @@ class DdPlayer( db.Model ):
                 player.second_name_c = choice( first_names )
                 player.last_name_c = choice( last_names )
                 player.skill_n = randint( 1, 10 )
+                player.age_n = randint( 18, 22 )
                 player.user_pk = user.pk
                 player.club_pk = club.club_id_n
                 db.session.add( player )
         db.session.commit()
 
     @staticmethod
+    def CreateNewcomersForUser( user ):
+        first_names, last_names = DdPlayer.GetNames()
+        for i in range( 24 ):
+            player = DdPlayer()
+            player.first_name_c = choice( first_names )
+            player.second_name_c = choice( first_names )
+            player.last_name_c = choice( last_names )
+            player.skill_n = randint( 1, 10 )
+            player.age_n = randint( 17, 20 )
+            player.user_pk = user.pk
+            db.session.add( player )
+        db.session.commit()
+
+    @staticmethod
+    def GetNewcomersProxiesForUser( user ):
+        players = DdPlayer.query.filter_by( user=user ).filter_by( club_pk=None ).order_by( DdPlayer.skill_n ).all()
+        return [plr.proxy for plr in players]
+
+    @staticmethod
+    def SaveByProxy( proxy ):
+        plr = DdPlayer.query.get( proxy.pk )
+        plr.first_name_c = proxy.first_name
+        plr.second_name_c = proxy.second_name
+        plr.last_name_c = proxy.last_name
+        plr.skill_n = proxy.skill
+        plr.age_n = proxy.age
+        plr.is_active = proxy.age < retirement_age
+        db.session.add( plr )
+        db.session.commit()
+
+    @staticmethod
+    def SaveByProxyList( proxy_list ):
+        all = []
+        for proxy in proxy_list:
+            plr = DdPlayer.query.get( proxy.pk )
+            plr.first_name_c = proxy.first_name
+            plr.second_name_c = proxy.second_name
+            plr.last_name_c = proxy.last_name
+            plr.skill_n = proxy.skill
+            plr.age_n = proxy.age
+            plr.is_active = proxy.age < retirement_age
+        db.session.add_all( all )
+        db.session.commit()
+
+    @staticmethod
+    def SaveClubRoster( club_pk=0, roster=[] ):
+        all = []
+        for proxy in roster:
+            plr = DdPlayer.query.get( proxy.pk )
+            plr.first_name_c = proxy.first_name
+            plr.second_name_c = proxy.second_name
+            plr.last_name_c = proxy.last_name
+            plr.skill_n = proxy.skill
+            plr.age_n = proxy.age
+            plr.is_active = proxy.age < retirement_age
+            plr.club_pk = club_pk
+            all.append( plr )
+        db.session.add_all( all )
+        db.session.commit()
+
+    @staticmethod
     def GetPlayerRecentMatches( player_pk, season ):
-        query_res = db.engine.execute(
-            RECENT_PLAYER_MATCHES_SQL.format(
+        query_res = db.engine.execute( 
+            RECENT_PLAYER_MATCHES_SQL.format( 
                 player_pk,
                 season,
                 number_of_recent_matches
             )
         ).fetchall()
         return [
-            DdMatchProxy(
+            DdMatchProxy( 
                 pk=res[0],
                 home_team=res[1],
                 away_team=res[2],

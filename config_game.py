@@ -18,42 +18,12 @@ club_names = {
     ]
 }
 
-first_names = [
-    "Joana",
-    "Skyler",
-    "Marie",
-    "Justine",
-    "Amelie",
-    "Emma",
-    "Mirela",
-    "Anastasia",
-    "Katie",
-    "Michelle",
-    "Samantha",
-    "Angelique"
-]
-
-last_names = [
-    "Smith",
-    "McAlister",
-    "Lee",
-    "Black",
-    "Green",
-    "Gray",
-    "Baker",
-    "Lake",
-    "Watson",
-    "Williams",
-    "Head",
-    "Prince",
-    "Ardenne",
-    "Kerber",
-    "Stosur",
-]
-
 number_of_recent_matches = 5
+
+# This number is for testing purposes, real should be much bigger
+retirement_age = 22
 
 # This values should be even
 class DdLeagueConfig:
-    INDIV_MATCHES = 6
+    INDIV_MATCHES = 2
     EXDIV_MATCHES = 2

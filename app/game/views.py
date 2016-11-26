@@ -1,6 +1,7 @@
 
 from flask                      import flash, g, redirect
 from flask                      import render_template, request, url_for
+from flask                      import abort
 from flask.ext.login            import current_user, login_required
 
 from .                          import game
@@ -53,7 +54,7 @@ def MainScreen():
             DdPlayer.user_pk == current_user.pk
         ).filter( 
             DdPlayer.club_pk == current_user.managed_club_pk
-        ).all()
+        ).filter_by( is_active=True ).all()
         match = db.engine.execute( 
             CURRENT_MATCH_SQL.format( 
                 current_user.managed_club_pk,
@@ -103,11 +104,9 @@ def NextDay():
         flash( "You should choose player to play next match first." )
         return redirect( url_for( "game.MainScreen" ) )
     if current_user.current_day_n > current_user.season_last_day:
-        StartNextSeason( current_user )
-        flash( "Season #{0:d} is started.".format( 
-            current_user.current_season_n
-        ) )
-        return redirect( url_for( "game.MainScreen" ) )
+        StartDraft( current_user )
+        flash( "Welcome to the entry draft." )
+        return redirect( url_for( "game.Draft" ) )
 
     today_matches = DdMatch.query.filter( 
         DdMatch.season_n == current_user.current_season_n
@@ -215,6 +214,42 @@ def ClubDetails( club_pk ):
         club=club,
         players=players
     )
+@game.route( "/draft/" )
+@login_required
+def Draft():
+    if not current_user.pk in game.contexts or not game.contexts[current_user.pk].is_draft:
+        abort( 403 )
+
+    ctx = game.contexts[current_user.pk]
+    while ctx.available_newcomers > 0:
+        club_pk = ctx.GetPickingClubPk()
+        if club_pk == current_user.managed_club_pk:
+            # TODO: don't forget to increment pick_pointer when user picks a player
+            return redirect( url_for( "game.PickScreen" ) )
+        player = ctx.DoBestAiChoice()
+        ctx.AddPlayerToClubRoster( club_pk, player )
+        ctx.IncrementPickPointer()
+    ctx.SaveRosters()
+    ctx.EndDraft()
+    StartNextSeason( current_user )
+    flash( "Season #{0:d} is started".format( current_user.current_season_n ) )
+    return redirect( url_for( "game.MainScreen" ) )
+
+
+@game.route( "/pick/" )
+@login_required
+def PickScreen():
+    ctx = game.contexts[current_user.pk]
+    return render_template( "game/pick_screen.html", players=ctx.GetNewcomers() )
+
+@game.route( "/pick/<int:player_pk>/" )
+@login_required
+def PickPlayer( player_pk ):
+    ctx = game.contexts[current_user.pk]
+    selected_player = ctx.PickPlayer( player_pk )
+    ctx.AddPlayerToClubRoster( current_user.managed_club_pk, selected_player )
+    ctx.IncrementPickPointer()
+    return redirect( url_for( "game.Draft" ) )
 
 
 @game.route( "/player/<int:player_pk>/" )
@@ -236,9 +271,38 @@ def PlayerDetails( player_pk ):
 def StartNextSeason( user ):
     user.current_season_n += 1
     user.current_day_n = 0
+    players = DdPlayer.query.filter_by( user_pk=user.pk ).filter_by( is_active=True ).all()
+    for player in players:
+        player.AgeUp()
+
+    db.session.add_all( players )
     db.session.add( user )
     db.session.commit()
     DdLeague.CreateScheduleForUser( user )
+    game.contexts[user.pk] = DdGameContext()
+    AddRostersToContext( user )
+
+
+def StartDraft( user ):
+    if user.pk in game.contexts:
+        ctx = game.contexts[user.pk]
+    else:
+        ctx = DdGameContext()
+
+    ctx.is_draft = True
+    DdPlayer.CreateNewcomersForUser( current_user )
+    newcomers = DdPlayer.GetNewcomersProxiesForUser( current_user )
+    ctx.SetNewcomers( newcomers )
+    table = db.engine.execute( 
+        STANDINGS_SQL.format( 
+            current_user.current_season_n,
+            current_user.pk
+        )
+    ).fetchall()
+    standings = [row[0] for row in reversed( table )]
+    ctx.SetStandings( standings )
+    game.contexts[user.pk] = ctx
+
 
 def PlayerProxyComparator( player_proxy ):
     return player_proxy.skill
@@ -279,7 +343,7 @@ def AddRostersToContext( user ):
             DdPlayer.user_pk == user.pk
         ).filter( 
             DdPlayer.club_pk == club.club_id_n
-        ).all()
+        ).filter_by( is_active=True ).all()
         proxies = [player.proxy for player in players]
         ctx.SetClubRoster( club_pk=club.club_id_n, players_list=proxies )
     game.contexts[user.pk] = ctx
