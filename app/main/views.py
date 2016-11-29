@@ -7,8 +7,8 @@ from .                  import main
 from .forms             import DdEditProfileForm, DdEditProfileAdminForm, DdPostForm
 from ..                 import db
 from ..decorators       import AdminRequired
-from ..models           import DdUser, DdRole, DdPermission
-from ..models           import DdPost
+from app.data.models    import DdUser, DdRole, DdPermission
+from app.data.models    import DdPost
 
 
 @main.route( "/", methods=["GET", "POST"] )
@@ -24,7 +24,7 @@ def Index():
 
     #     return redirect( url_for( ".Index" ) )
     # posts = DdPost.query.order_by( DdPost.timestamp.desc() ).all()
-    return render_template( "index.html" ) #, form=form, posts=posts, Permission=DdPermission )
+    return render_template( "index.html" ) # , form=form, posts=posts, Permission=DdPermission )
 
 
 @main.route( "/user/<username>/" )
@@ -42,9 +42,9 @@ def User( username ):
 def EditProfile():
     form = DdEditProfileForm()
     if form.validate_on_submit():
-        current_user.name       = form.name.data
-        current_user.location   = form.location.data
-        current_user.about_me   = form.about_me.data
+        current_user.name = form.name.data
+        current_user.location = form.location.data
+        current_user.about_me = form.about_me.data
 
         db.session.add( current_user )
         db.session.commit()
@@ -52,9 +52,9 @@ def EditProfile():
         flash( "Your profile has been updated." )
         return redirect( url_for( ".User", username=current_user.username ) )
 
-    form.name.data      = current_user.name
-    form.location.data  = current_user.location
-    form.about_me.data  = current_user.about_me
+    form.name.data = current_user.name
+    form.location.data = current_user.location
+    form.about_me.data = current_user.about_me
     return render_template( "edit_profile.html", form=form )
 
 
@@ -65,13 +65,13 @@ def EditProfileAdmin( pk ):
     user = DdUser.query.get_or_404( pk )
     form = DdEditProfileAdminForm( user=user )
     if form.validate_on_submit():
-        user.email      = form.email.data
-        user.username   = form.username.data
-        user.confirmed  = form.confirmed.data
-        user.role       = DdRole.query.get( form.role.data )
-        user.name       = form.name.data
-        user.location   = form.location.data
-        user.about_me   = form.about_me.data
+        user.email = form.email.data
+        user.username = form.username.data
+        user.confirmed = form.confirmed.data
+        user.role = DdRole.query.get( form.role.data )
+        user.name = form.name.data
+        user.location = form.location.data
+        user.about_me = form.about_me.data
 
         db.session.add( user )
         db.session.commit()
@@ -79,11 +79,11 @@ def EditProfileAdmin( pk ):
         flash( "The profile has been updated." )
         return redirect( url_for( ".User", username=user.username ) )
 
-    form.email.data     = user.email
-    form.username.data  = user.username
+    form.email.data = user.email
+    form.username.data = user.username
     form.confirmed.data = user.confirmed
-    form.role.data      = user.role_pk
-    form.name.data      = user.name
-    form.location.data  = user.location
-    form.about_me.data  = user.about_me
+    form.role.data = user.role_pk
+    form.name.data = user.name
+    form.location.data = user.location
+    form.about_me.data = user.about_me
     return render_template( "edit_profile.html", form=form, user=user )

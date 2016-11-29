@@ -15,8 +15,8 @@
     </p>
     {% if match %}
         <h4>Upcoming match is</h4>
-        <h3>{{ match[0] }} versus {{ match[1] }}</h3>
-        {% else %}
+        <h3>{{ match.home_team }} versus {{ match.away_team }}</h3>
+    {% else %}
         <h3>No matches for today</h3>
     {% endif %}
     <p>
@@ -31,8 +31,8 @@
     <p>
         <h3>Players</h3>
         {% for player in players %}
-        <a href="{{ url_for('game.PlayerDetails', player_pk=player.pk_n) }}">    
-            {{ player.first_name_c }} {{ player.last_name_c }}
+        <a href="{{ url_for('game.PlayerDetails', player_pk=player.pk) }}">    
+            {{ player.first_name }} {{ player.last_name }}
         </a><br>
         {% endfor %}
     </p>

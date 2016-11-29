@@ -13,11 +13,11 @@
     {% for match in matches %}
         <tr>
             <td>{{ loop.index }}</td>
-            <td>{{ match.home_club.club_name_c }} : {{ match.away_club.club_name_c }}</td>
+            <td>{{ match.home_team }} : {{ match.away_team }}</td>
             <td>
-                {{ match.home_player.first_name_c }} {{ match.home_player.last_name_c}} [{{ match.home_player.skill_n }}] : {{ match.away_player.first_name_c }} {{ match.away_player.last_name_c}} [{{match.away_player.skill_n}}]
+                {{ match.home_player }} [{{ match.home_skill }}] : {{ match.away_player }} [{{ match.away_skill }}]
             </td>
-            <td><strong>{{ match.full_score_c }}</strong></td>
+            <td><strong>{{ match.full_score }}</strong></td>
         </tr>
     {% else %}
         <p>

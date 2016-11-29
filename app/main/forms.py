@@ -6,41 +6,36 @@ from wtforms                import BooleanField, SelectField, ValidationError
 from wtforms.validators     import Required, Length, Email
 from wtforms.validators     import Regexp
 
-from ..models               import DdRole, DdUser
-
-
-# class XNameForm( Form ):
-#     name    = StringField( "What is your name?", validators=[Required()] )
-#     submit  = SubmitField( "Submit" )
+from app.data.models        import DdRole, DdUser
 
 
 class DdEditProfileForm( Form ):
-    name        = StringField( "Real Name", validators=[Length( 0, 64 )] )
-    location    = StringField( "Location", validators=[Length( 0, 64 )] )
-    about_me    = TextAreaField( "About me" )
-    submit      = SubmitField( "Submit" )
+    name = StringField( "Real Name", validators=[Length( 0, 64 )] )
+    location = StringField( "Location", validators=[Length( 0, 64 )] )
+    about_me = TextAreaField( "About me" )
+    submit = SubmitField( "Submit" )
 
 
 class DdEditProfileAdminForm( Form ):
-    email       = StringField( "Email", validators=[Required(), Length( 1, 64 ), Email()] )
-    username    = StringField(
+    email = StringField( "Email", validators=[Required(), Length( 1, 64 ), Email()] )
+    username = StringField( 
         "Username",
-        validators= [
+        validators=[
             Required(),
             Length( 1, 64 ),
-            Regexp(
+            Regexp( 
                 "^[A-Za-z][A-Za-z0-9.]*$",
                 0,
                 "Usernames must have only letters, numbers, dots and underscores."
             )
         ]
     )
-    confirmed   = BooleanField( "Confirmed" )
-    role        = SelectField( "Role", coerce=int )
-    name        = StringField( "Real Name", validators=[Length( 0, 64 )] )
-    location    = StringField( "Location", validators=[Length( 0, 64 )] )
-    about_me    = TextAreaField( "About me" )
-    submit      = SubmitField( "Submit" )
+    confirmed = BooleanField( "Confirmed" )
+    role = SelectField( "Role", coerce=int )
+    name = StringField( "Real Name", validators=[Length( 0, 64 )] )
+    location = StringField( "Location", validators=[Length( 0, 64 )] )
+    about_me = TextAreaField( "About me" )
+    submit = SubmitField( "Submit" )
 
     def __init__( self, user, *args, **kwargs ):
         super( XEditProfileAdminForm, self ).__init__( *args, **kwargs )
@@ -62,5 +57,5 @@ class DdEditProfileAdminForm( Form ):
 
 
 class DdPostForm( Form ):
-    body    = TextAreaField( "What's on your mind?", validators=[Required()] )
-    submit  = SubmitField( "Submit" )
+    body = TextAreaField( "What's on your mind?", validators=[Required()] )
+    submit = SubmitField( "Submit" )

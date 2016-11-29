@@ -4,7 +4,7 @@ from functools          import wraps
 from flask              import abort
 from flask.ext.login    import current_user
 
-from .models            import DdPermission
+from app.data.models    import DdPermission
 
 
 def PermissionRequired( permission ):

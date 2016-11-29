@@ -7,7 +7,7 @@ AND    season_n = {1:d}
 """
 
 CURRENT_MATCH_SQL = """
-SELECT (
+SELECT match_pk_n, (
     SELECT club_name_c
     FROM   clubs
     WHERE  club_id_n = matches.home_team_pk
@@ -88,4 +88,45 @@ AND      season_n = {1:d}
 AND      is_played = 1
 ORDER BY day_n DESC
 LIMIT    {2:d}
+"""
+
+CLUB_PLAYERS_SQL = """
+SELECT pk_n, first_name_c, second_name_c, last_name_c, skill_n, age_n, club_pk
+FROM  players
+WHERE user_pk = {0:d}
+AND   club_pk = {1:d}
+AND   is_active = 1
+"""
+
+DAY_RESULTS_SQL = """
+SELECT match_pk_n, (
+    SELECT club_name_c
+    FROM   clubs
+    WHERE  clubs.club_id_n = matches.home_team_pk
+), (
+    SELECT club_name_c
+    FROM   clubs
+    WHERE  clubs.club_id_n = matches.away_team_pk
+), (
+    SELECT first_name_c || ' ' || last_name_c
+    FROM   players
+    WHERE  players.pk_n = matches.home_player_pk
+), (
+    SELECT first_name_c || ' ' || last_name_c
+    FROM   players
+    WHERE  players.pk_n = matches.away_player_pk
+), (
+    SELECT skill_n
+    FROM   players
+    WHERE  players.pk_n = matches.home_player_pk
+), (
+    SELECT skill_n
+    FROM   players
+    WHERE  players.pk_n = matches.away_player_pk
+), full_score_c
+FROM matches
+WHERE user_pk = {0:d} 
+AND season_n = {1:d}
+AND day_n = {2:d}
+AND is_played = 1
 """

@@ -15,7 +15,10 @@ from app.custom_queries         import STANDINGS_SQL
 from app.game.game_context      import DdGameContext
 from app.game.league            import DdLeague
 from app.game.match_processor   import DdMatchProcessor
-from app.models                 import DdClub, DdMatch, DdPlayer, DdUser
+from app.data.models            import DdUser
+from app.data.game.club         import DdClub
+from app.data.game.match        import DdMatch
+from app.data.game.player       import DdPlayer
 
 
 @game.route( "/start-new-career/" )
@@ -24,10 +27,10 @@ def StartNewCareer():
     if current_user.managed_club_pk is None:
         divisions = []
         for div in club_names:
-            res = DdClub.query.filter_by( division_n=div )
-            divisions.append( res.all() )
+            res = game.service.GetAllClubsInDivision( div )
+            divisions.append( res )
         DdLeague.CreateScheduleForUser( current_user )
-        DdPlayer.CreatePlayersForUser( current_user )
+        game.service.CreatePlayersForUser( current_user )
         return render_template( "game/start_new_career.html", divisions=divisions )
     else:
         return redirect( url_for( "main.Index" ) )
@@ -49,26 +52,14 @@ def ChooseManagedClub( pk ):
 @login_required
 def MainScreen():
     if current_user.managed_club_pk is not None:
-        club = DdClub.query.get( current_user.managed_club_pk )
-        players = DdPlayer.query.filter( 
-            DdPlayer.user_pk == current_user.pk
-        ).filter( 
-            DdPlayer.club_pk == current_user.managed_club_pk
-        ).filter_by( is_active=True ).all()
-        match = db.engine.execute( 
-            CURRENT_MATCH_SQL.format( 
-                current_user.managed_club_pk,
-                current_user.current_season_n,
-                current_user.current_day_n,
-                current_user.pk
-            )
-        ).fetchall()
-
-        if len( match ) > 0:
-            match = match[0]
-        else:
-            match = []
-
+        club = game.service.GetClub( current_user.managed_club_pk )
+        if current_user.pk not in game.contexts:
+            AddRostersToContext( current_user )
+        players = game.contexts[current_user.pk].GetClubRoster( 
+            current_user.managed_club_pk
+        )
+        match = game.service.GetCurrentMatch( current_user )
+        game.contexts[current_user.pk].next_match = match is not None
         return render_template( 
             "game/main_screen.html",
             club=club,
@@ -91,16 +82,17 @@ def SelectPlayerScreen():
 @game.route( "/select_player/<int:pk>/" )
 @login_required
 def SelectPlayer( pk ):
-    plr = DdPlayer.query.get( pk )
+    plr = game.service.GetPlayer( pk )
     assert plr.club_pk == current_user.managed_club_pk
-    game.selected_players[current_user.pk] = plr.proxy
+    game.contexts[current_user.pk].selected_player = plr.snapshot
     return redirect( url_for( "game.MainScreen" ) )
 
 @game.route( "/nextday/" )
 @login_required
 def NextDay():
     assert current_user.managed_club_pk is not None
-    if current_user.pk not in game.selected_players or game.selected_players[current_user.pk] is None:
+    ctx = game.contexts[current_user.pk]
+    if ctx.NeedToSelectPlayer():
         flash( "You should choose player to play next match first." )
         return redirect( url_for( "game.MainScreen" ) )
     if current_user.current_day_n > current_user.season_last_day:
@@ -108,18 +100,15 @@ def NextDay():
         flash( "Welcome to the entry draft." )
         return redirect( url_for( "game.Draft" ) )
 
-    today_matches = DdMatch.query.filter( 
-        DdMatch.season_n == current_user.current_season_n
-    ).filter( 
-        DdMatch.day_n == current_user.current_day_n
-    ).all()
+    today_matches = game.service.GetTodayMatches( current_user )
     for match in today_matches:
         ProcessMatch( current_user, match )
 
+    game.service.SaveMatches( today_matches )
     current_user.current_day_n += 1
     db.session.add( current_user )
     db.session.commit()
-    game.selected_players[current_user.pk] = None
+    ctx.selected_player = None
     return redirect( 
         url_for( 
             ".DayResults",
@@ -129,16 +118,10 @@ def NextDay():
     )
 
 
-@game.route( "/day/<season>/<day>/" )
+@game.route( "/day/<int:season>/<int:day>/" )
 @login_required
 def DayResults( season, day ):
-    today_matches = DdMatch.query.filter( 
-        DdMatch.season_n == season
-    ).filter( 
-        DdMatch.day_n == day
-    ).filter( 
-        DdMatch.user_pk == current_user.pk
-    ).all()
+    today_matches = game.service.GetDayResults( current_user.pk, season, day )
     if len( today_matches ) == 0:
         return redirect( url_for( "game.MainScreen" ) )
     else:
@@ -154,18 +137,8 @@ def DayResults( season, day ):
 @login_required
 def Standings( season ):
     if season > current_user.current_season_n:
-        return redirect( 
-            url_for( 
-                "game.Standings",
-                season=current_user.current_season_n
-            )
-        )
-    table = db.engine.execute( 
-        STANDINGS_SQL.format( 
-            season,
-            current_user.pk
-        )
-    ).fetchall()
+        abort( 404 )
+    table = game.service.GetLeagueStandings( user_pk=current_user.pk, season=season )
     return render_template( 
         "game/standings.html",
         table=table,
@@ -176,19 +149,8 @@ def Standings( season ):
 @login_required
 def DivisionStandings( season, division ):
     if season > current_user.current_season_n or not 0 < division < 3:
-        return redirect( 
-            url_for( 
-                "game.Standings",
-                season=current_user.current_season_n
-            )
-        )
-    table = db.engine.execute( 
-        STANDINGS_FOR_DIVISION_SQL.format( 
-            season,
-            current_user.pk,
-            division
-        )
-    ).fetchall()
+        abort( 404 )
+    table = game.service.GetDivisionStandings( user_pk=current_user.pk, season=season, division=division )
     return render_template( 
         "game/standings.html",
         table=table,
@@ -198,22 +160,18 @@ def DivisionStandings( season, division ):
 @game.route( "/club/<int:club_pk>/" )
 @login_required
 def ClubDetails( club_pk ):
-    club = DdClub.query.get_or_404( club_pk )
+    club = game.service.GetClub( club_pk )
     players = []
     if current_user.pk in game.contexts:
         players = game.contexts[current_user.pk].GetClubRoster( club_pk )
     else:
-        players = DdPlayer.query.filter( 
-            DdPlayer.club_pk == club_pk
-        ).filter( 
-            DdPlayer.user_pk == current_user.pk
-        ).all()
-        players = [player.proxy for player in players]
+        players = game.service.GetClubPlayers( current_user.pk, club_pk )
     return render_template( 
         "game/club_details.html",
         club=club,
         players=players
     )
+
 @game.route( "/draft/" )
 @login_required
 def Draft():
@@ -224,12 +182,12 @@ def Draft():
     while ctx.available_newcomers > 0:
         club_pk = ctx.GetPickingClubPk()
         if club_pk == current_user.managed_club_pk:
-            # TODO: don't forget to increment pick_pointer when user picks a player
+            # don't forget to increment pick_pointer when user picks a player
             return redirect( url_for( "game.PickScreen" ) )
         player = ctx.DoBestAiChoice()
         ctx.AddPlayerToClubRoster( club_pk, player )
         ctx.IncrementPickPointer()
-    ctx.SaveRosters()
+    game.service.SaveRosters( ctx.rosters )
     ctx.EndDraft()
     StartNextSeason( current_user )
     flash( "Season #{0:d} is started".format( current_user.current_season_n ) )
@@ -239,12 +197,16 @@ def Draft():
 @game.route( "/pick/" )
 @login_required
 def PickScreen():
+    if not current_user.pk in game.contexts or not game.contexts[current_user.pk].is_draft:
+        abort( 403 )
     ctx = game.contexts[current_user.pk]
     return render_template( "game/pick_screen.html", players=ctx.GetNewcomers() )
 
 @game.route( "/pick/<int:player_pk>/" )
 @login_required
 def PickPlayer( player_pk ):
+    if not current_user.pk in game.contexts or not game.contexts[current_user.pk].is_draft:
+        abort( 403 )
     ctx = game.contexts[current_user.pk]
     selected_player = ctx.PickPlayer( player_pk )
     ctx.AddPlayerToClubRoster( current_user.managed_club_pk, selected_player )
@@ -256,13 +218,13 @@ def PickPlayer( player_pk ):
 @login_required
 def PlayerDetails( player_pk ):
     player = DdPlayer.query.get_or_404( player_pk )
-    matches = DdPlayer.GetPlayerRecentMatches( 
+    matches = game.service.GetPlayerRecentMatches( 
         player_pk,
         current_user.current_season_n
     )
     return render_template( 
         "game/player_details.html",
-        player=player.proxy,
+        player=player.snapshot,
         club=player.club,
         matches=matches,
         show=player.club_pk == current_user.managed_club_pk
@@ -271,11 +233,7 @@ def PlayerDetails( player_pk ):
 def StartNextSeason( user ):
     user.current_season_n += 1
     user.current_day_n = 0
-    players = DdPlayer.query.filter_by( user_pk=user.pk ).filter_by( is_active=True ).all()
-    for player in players:
-        player.AgeUp()
-
-    db.session.add_all( players )
+    game.service.AgeUpAllActivePlayers( user )
     db.session.add( user )
     db.session.commit()
     DdLeague.CreateScheduleForUser( user )
@@ -290,16 +248,10 @@ def StartDraft( user ):
         ctx = DdGameContext()
 
     ctx.is_draft = True
-    DdPlayer.CreateNewcomersForUser( current_user )
-    newcomers = DdPlayer.GetNewcomersProxiesForUser( current_user )
+    game.service.CreateNewcomersForUser( current_user )
+    newcomers = game.service.GetNewcomersProxiesForUser( current_user )
     ctx.SetNewcomers( newcomers )
-    table = db.engine.execute( 
-        STANDINGS_SQL.format( 
-            current_user.current_season_n,
-            current_user.pk
-        )
-    ).fetchall()
-    standings = [row[0] for row in reversed( table )]
+    standings = game.service.GetRecentStandings( user )
     ctx.SetStandings( standings )
     game.contexts[user.pk] = ctx
 
@@ -311,13 +263,13 @@ def ProcessMatch( user, match ):
     home_player, away_player = None, None
     ctx = game.contexts[user.pk]
     if match.home_team_pk == user.managed_club_pk:
-        home_player = game.selected_players[user.pk]
+        home_player = ctx.selected_player
         ai_players = ctx.GetClubRoster( match.away_team_pk )
         away_player = max( ai_players, key=PlayerProxyComparator )
     elif match.away_team_pk == user.managed_club_pk:
         ai_players = ctx.GetClubRoster( match.home_team_pk )
         home_player = max( ai_players, key=PlayerProxyComparator )
-        away_player = game.selected_players[user.pk]
+        away_player = ctx.selected_player
     else:
         home_ai = ctx.GetClubRoster( match.home_team_pk )
         away_ai = ctx.GetClubRoster( match.away_team_pk )
@@ -332,18 +284,13 @@ def ProcessMatch( user, match ):
     match.away_player_pk = away_player.pk
     match.full_score_c = result.full_score
     match.is_played = True
-    db.session.add( match )
-    db.session.commit()
+#     db.session.add( match )
+#     db.session.commit()
 
 def AddRostersToContext( user ):
-    clubs = DdClub.query.all()
+    clubs = game.service.GetAllClubs()
     ctx = DdGameContext()
     for club in clubs:
-        players = DdPlayer.query.filter( 
-            DdPlayer.user_pk == user.pk
-        ).filter( 
-            DdPlayer.club_pk == club.club_id_n
-        ).filter_by( is_active=True ).all()
-        proxies = [player.proxy for player in players]
-        ctx.SetClubRoster( club_pk=club.club_id_n, players_list=proxies )
+        players = game.service.GetClubPlayers( user_pk=user.pk, club_pk=club.club_id_n )
+        ctx.SetClubRoster( club_pk=club.club_id_n, players_list=players )
     game.contexts[user.pk] = ctx

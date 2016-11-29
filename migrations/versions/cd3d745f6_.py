@@ -1,13 +1,13 @@
 """empty message
 
-Revision ID: 3badd9d6ef7
+Revision ID: cd3d745f6
 Revises: None
-Create Date: 2016-11-22 16:54:55.793135
+Create Date: 2016-11-27 16:01:11.064562
 
 """
 
 # revision identifiers, used by Alembic.
-revision = '3badd9d6ef7'
+revision = 'cd3d745f6'
 down_revision = None
 
 from alembic import op
@@ -59,6 +59,8 @@ def upgrade():
     sa.Column('second_name_c', sa.String(length=64), nullable=True),
     sa.Column('last_name_c', sa.String(length=64), nullable=False),
     sa.Column('skill_n', sa.Integer(), nullable=False),
+    sa.Column('age_n', sa.Integer(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('user_pk', sa.Integer(), nullable=True),
     sa.Column('club_pk', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['club_pk'], ['clubs.club_id_n'], ),
@@ -83,13 +85,13 @@ def upgrade():
     sa.Column('away_player_pk', sa.Integer(), nullable=True),
     sa.Column('season_n', sa.Integer(), nullable=True),
     sa.Column('day_n', sa.Integer(), nullable=True),
+    sa.Column('context_json', sa.Text(), nullable=True),
     sa.Column('is_played', sa.Boolean(), nullable=True),
     sa.Column('home_sets_n', sa.Integer(), nullable=True),
     sa.Column('away_sets_n', sa.Integer(), nullable=True),
     sa.Column('home_games_n', sa.Integer(), nullable=True),
     sa.Column('away_games_n', sa.Integer(), nullable=True),
-    sa.Column('home_pts_n', sa.Integer(), nullable=True),
-    sa.Column('away_pts_n', sa.Integer(), nullable=True),
+    sa.Column('full_score_c', sa.String(length=128), nullable=True),
     sa.ForeignKeyConstraint(['away_player_pk'], ['players.pk_n'], ),
     sa.ForeignKeyConstraint(['away_team_pk'], ['clubs.club_id_n'], ),
     sa.ForeignKeyConstraint(['home_player_pk'], ['players.pk_n'], ),

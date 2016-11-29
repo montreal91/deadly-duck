@@ -4,9 +4,12 @@
 import os
 
 from app                import CreateApp, db
-from app.models         import DdPlayer
-from app.models         import DdPost, DdClub, DdMatch
-from app.models         import DdUser, DdRole, DdPermission
+from app.data.models    import DdPost
+from app.data.models    import DdUser, DdRole, DdPermission
+from app.data.game.club import DdClub
+from app.data.game.match import DdMatch
+from app.data.game.player import DdPlayer
+from app.data.game.game_service import DdGameService
 from flask.ext.migrate  import Migrate, MigrateCommand
 from flask.ext.script   import Manager, Shell
 
@@ -40,8 +43,9 @@ def test():
 
 @manager.command
 def initapp():
+    service = DdGameService()
     DdUser.GenerateTestingUser()
-    DdClub.InsertClubs()
+    service.InsertClubs()
 
 if __name__ == '__main__':
     manager.run()
