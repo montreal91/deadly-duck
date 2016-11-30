@@ -1,24 +1,27 @@
 
 from random             import shuffle, choice
 
+from . import game
 from ..                 import db
-from ..models           import DdUser, DdClub, DdMatch
+from app.data.models    import DdUser
+from app.data.game.club import DdClub
+from app.data.game.match import DdMatch
 from config_game        import DdLeagueConfig, club_names
 
 
 class DdLeague( object ):
     @staticmethod
     def CreateScheduleForUser( user ):
-        divisions       = dict()
-        current_season  = user.current_season_n
+        divisions = dict()
+        current_season = user.current_season_n
         for div in club_names:
             divisions[div] = DdClub.query.filter_by( division_n=div ).all()
 
-        indiv = DdLeague._CreateIntraDivMatches(
+        indiv = DdLeague._CreateIntraDivMatches( 
             divisions,
             DdLeagueConfig.INDIV_MATCHES
         )
-        exdiv = DdLeague._CreateExtraDivMatches(
+        exdiv = DdLeague._CreateExtraDivMatches( 
             divisions,
             DdLeagueConfig.EXDIV_MATCHES
         )
@@ -26,39 +29,40 @@ class DdLeague( object ):
         shuffle( matches )
 
         playing_clubs = []
+        db_matches = []
 
         for match in matches:
-            day         = 0
-            scheduled   = False
+            day = 0
+            scheduled = False
             while not scheduled:
                 if day == len( playing_clubs ):
                     playing_clubs.append( set() )
                     playing_clubs[day].add( match[0] )
                     playing_clubs[day].add( match[1] )
-                    db_match = DdMatch(
+                    db_match = game.service.CreateNewMatch( 
                         user_pk=user.pk,
-                        season_n=current_season,
-                        day_n=day,
+                        season=current_season,
+                        day=day,
                         home_team_pk=match[0],
                         away_team_pk=match[1]
                     )
-                    db.session.add( db_match )
+                    db_matches.append( db_match )
                     scheduled = True
                 elif match[0] not in playing_clubs[day] and match[1] not in playing_clubs[day]:
                     playing_clubs[day].add( match[0] )
                     playing_clubs[day].add( match[1] )
-                    db_match = DdMatch(
+                    db_match = game.service.CreateNewMatch( 
                         user_pk=user.pk,
-                        season_n=current_season,
-                        day_n=day,
+                        season=current_season,
+                        day=day,
                         home_team_pk=match[0],
                         away_team_pk=match[1]
                     )
-                    db.session.add( db_match )
+                    db_matches.append( db_match )
                     scheduled = True
                 else:
                     day += 1
-        db.session.commit()
+        game.service.SaveMatches( matches=db_matches )
 
 
     @staticmethod
@@ -67,10 +71,10 @@ class DdLeague( object ):
         Generates list of matches inside all divisions.
         :rtype: list
         """
-        matches_l       = []
-        same_matches    = int( indiv_matches / 2)
+        matches_l = []
+        same_matches = int( indiv_matches / 2 )
         for division in divisions:
-            matches_l += DdLeague._MakeMatchesInsideDivision(
+            matches_l += DdLeague._MakeMatchesInsideDivision( 
                 divisions[division],
                 same_matches
             )
@@ -88,7 +92,7 @@ class DdLeague( object ):
         for team1 in division:
             for team2 in division:
                 if team1 != team2:
-                    res += [(team1.club_id_n, team2.club_id_n) for k in range(same_matches)]
+                    res += [( team1.club_id_n, team2.club_id_n ) for k in range( same_matches )]
         return res
 
     @staticmethod
@@ -97,12 +101,12 @@ class DdLeague( object ):
         Creates list of matches played by clubs in different divisions.
         :rtype: list
         """
-        matches_l       = []
-        same_matches    = int( exdiv_matches / 2 )
+        matches_l = []
+        same_matches = int( exdiv_matches / 2 )
         for div1 in divisions:
             for div2 in divisions:
                 if div1 != div2:
-                    matches_l += DdLeague._MakeMatchesBetweenDivisions(
+                    matches_l += DdLeague._MakeMatchesBetweenDivisions( 
                         divisions[div1],
                         divisions[div2],
                         same_matches

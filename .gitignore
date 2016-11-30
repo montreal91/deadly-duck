@@ -3,3 +3,6 @@
 *_ui.py
 *.pyc
 *.sqlite
+*.sql
+.project
+.pydevproject

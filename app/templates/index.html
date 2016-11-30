@@ -22,7 +22,6 @@
     <div class="col-md-4">
         {% if current_user.managed_club_pk %}
             <a href="{{ url_for('game.MainScreen')}}" class="btn btn-default btn-block btn-lg" role="button">Continue Career</a>
-            <a href="#" class="btn btn-default btn-block btn-lg" role="button">Drop Career</a>
         {% else %}
             <a href="{{ url_for('game.StartNewCareer') }}" class="btn btn-default btn-block btn-lg" role="button">Start New Career</a>
         {% endif %}

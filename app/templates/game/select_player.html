@@ -1,0 +1,13 @@
+
+{% extends "base.html" %}
+
+{% block subtitle %} Player Selection{% endblock %}
+
+{% block page_content %}
+    {% for player in players %}
+        <a href="{{ url_for('game.SelectPlayer', pk=player.pk) }}">
+            {{ player.first_name }} {{ player.last_name }} [{{ player.skill }}]
+        </a><br>
+    {% endfor %}
+    <a href="{{ url_for('game.MainScreen') }}"></a>
+{% endblock %}

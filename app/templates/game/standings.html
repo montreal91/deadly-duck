@@ -1,0 +1,37 @@
+
+{% extends "base.html" %}
+
+{% block subtitle %}Season {{ season }}{% endblock %}
+
+{% block page_content %}
+
+<h3>Season {{ season }}</h3>
+<p>
+    <a href="{{url_for('game.Standings', season=current_user.current_season_n)}}">League</a> | <a href="{{url_for('game.DivisionStandings', season=current_user.current_season_n, division=1)}}">Division Red</a> | <a href="{{url_for('game.DivisionStandings', season=current_user.current_season_n, division=2)}}">Division Blue</a>
+</p>
+<table class="table">
+    <tr>
+        <th>#</th>
+        <th>Team</th>
+        <th>Matches</th>
+        <th>Sets</th>
+        <th>Games</th>
+    </tr>
+    {% for row in table %}
+    <tr {% if row[0] == current_user.managed_club_pk%}class="info"{% endif %}>
+        <td>{{ loop.index }}</td>
+        <td>
+        <a href="{{ url_for('game.ClubDetails', club_pk=row[0]) }}">    
+        {{ row.club_name}}
+        </a>
+        </td>
+        <td>{{ row.played_matches}}</td>
+        <td>{{ row.sets_won}}</td>
+        <td>{{ row.games_won}}</td>
+    </tr>
+    {% endfor %}
+</table>
+<p>
+    <a href="{{url_for('game.MainScreen')}}">Go to upcoming match.</a>
+</p>
+{% endblock %}

@@ -8,7 +8,7 @@ from flask.ext.login    import current_user
 from .                  import auth
 from ..                 import db
 from ..email            import SendEmail
-from ..models           import DdUser
+from app.data.models    import DdUser
 from .forms             import DdLoginForm, DdRegistrationForm, DdChangePasswordForm
 from .forms             import DdPasswordResetRequestForm, DdPasswordResetForm
 from .forms             import DdChangeEmailForm
@@ -56,21 +56,21 @@ def Logout():
 def Register():
     form = DdRegistrationForm()
     if form.validate_on_submit():
-        user            = DdUser()
-        user.email      = form.email.data
-        user.username   = form.username.data
-        user.password   = form.password.data
+        user = DdUser()
+        user.email = form.email.data
+        user.username = form.username.data
+        user.password = form.password.data
         db.session.add( user )
         db.session.commit()
-        token = user.GenerateConfirmationToken()
+#         token = user.GenerateConfirmationToken()
         flash( "A confirmation email has been sent to you by email." )
-        SendEmail(
-            user.email,
-            "Confirm Your Account",
-            "auth/email/confirm",
-            user=user,
-            token=token
-        )
+#         SendEmail(
+#             user.email,
+#             "Confirm Your Account",
+#             "auth/email/confirm",
+#             user=user,
+#             token=token
+#         )
         return redirect( url_for( "auth.Login" ) )
     return render_template( "auth/register.html", form=form )
 
@@ -91,7 +91,7 @@ def Confirm( token ):
 @login_required
 def ResendConfirmation():
     token = current_user.GenerateConfirmationToken()
-    SendEmail(
+    SendEmail( 
         current_user.email,
         "Confirm Your Account",
         "auth/email/confirm",
@@ -124,10 +124,10 @@ def PasswordResetRequest():
 
     form = DdPasswordResetRequestForm()
     if form.validate_on_submit():
-        user = DdUser.query.filter_by(email=form.email.data).first()
+        user = DdUser.query.filter_by( email=form.email.data ).first()
         if user:
             token = user.GenerateResetToken()
-            SendEmail(
+            SendEmail( 
                 user.email,
                 "Reset Your Password",
                 "auth/email/reset_password",
@@ -168,14 +168,14 @@ def ChangeEmailRequest():
         if current_user.VerifyPassword( form.password.data ):
             new_email = form.email.data
             token = current_user.GenerateEmailChangeToken( new_email )
-            SendEmail(
+            SendEmail( 
                 new_email,
                 "Confirm your email address",
                 "auth/email/change_email",
                 user=current_user,
                 token=token
             )
-            flash(
+            flash( 
                 """An email with instructions to confirm your new email address
                 has been sent to you."""
             )

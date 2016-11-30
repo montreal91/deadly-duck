@@ -9,4 +9,35 @@
     <div class="page-header">
         <h2>{{ club.club_name_c }}</h2>
     </div>
+    <p>
+        Ongoing season: <mark>{{ current_user.current_season_n }}</mark><br>
+        Today is: <mark>{{ current_user.current_day_n }}|{{ current_user.season_last_day }}</mark><br>
+        Cash: <mark>{{ account.money }}</mark>
+    </p>
+    {% if match %}
+        <h4>Upcoming match is</h4>
+        <h3>{{ match.home_team }} versus {{ match.away_team }}</h3>
+    {% else %}
+        <h3>No matches for today</h3>
+    {% endif %}
+    <p>
+        <a href="{{ url_for('game.NextDay') }}">Next Day</a>
+    </p>
+    <p>
+        <a href="{{ url_for('game.SelectPlayerScreen') }}">Select Player</a>
+    </p>
+    <p>
+        <a href="{{ url_for('game.Standings', season=current_user.current_season_n) }}">Standings</a>
+    </p>
+    <p>
+        <a href="{{ url_for('game.FreeAgents') }}">Free Agents</a>
+    </p>
+    <p>
+        <h3>Players</h3>
+        {% for player in players %}
+        <a href="{{ url_for('game.PlayerDetails', player_pk=player.pk) }}">    
+            {{ player.first_name }} {{ player.last_name }}
+        </a><br>
+        {% endfor %}
+    </p>
 {% endblock %}
