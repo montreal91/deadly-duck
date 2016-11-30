@@ -62,15 +62,15 @@ def Register():
         user.password = form.password.data
         db.session.add( user )
         db.session.commit()
-        token = user.GenerateConfirmationToken()
+#         token = user.GenerateConfirmationToken()
         flash( "A confirmation email has been sent to you by email." )
-        SendEmail( 
-            user.email,
-            "Confirm Your Account",
-            "auth/email/confirm",
-            user=user,
-            token=token
-        )
+#         SendEmail(
+#             user.email,
+#             "Confirm Your Account",
+#             "auth/email/confirm",
+#             user=user,
+#             token=token
+#         )
         return redirect( url_for( "auth.Login" ) )
     return render_template( "auth/register.html", form=form )
 

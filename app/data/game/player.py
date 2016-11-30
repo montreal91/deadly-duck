@@ -1,12 +1,13 @@
 
 import json
+import math
 from collections import namedtuple
 from random             import choice, randint
 
 from sqlalchemy import and_
 
 from app import db
-from app.custom_queries import MAX_DAY_IN_SEASON_SQL, RECENT_PLAYER_MATCHES_SQL, CLUB_PLAYERS_SQL
+from app.custom_queries import RECENT_PLAYER_MATCHES_SQL, CLUB_PLAYERS_SQL
 from app.data.game.match import DdMatchSnapshot
 from app.data.game.club import DdClub
 from config_game        import number_of_recent_matches, retirement_age
@@ -21,7 +22,9 @@ DdPlayerSnapshot = namedtuple(
         "last_name",
         "second_name",
         "age",
-        "club_pk"
+        "club_pk",
+        "match_salary",
+        "passive_salary",
     ],
     rename=True
  )
@@ -44,6 +47,15 @@ class DdPlayer( db.Model ):
     club = db.relationship( "DdClub", foreign_keys=[club_pk] )
 
     @property
+    def match_salary( self ):
+        return DdPlayer.CalculateSalary( skill=self.skill_n, age=self.age_n )
+
+    @property
+    def passive_salary( self ):
+        res = DdPlayer.CalculateSalary( skill=self.skill_n, age=self.age_n ) / 2
+        return round( res, 2 )
+
+    @property
     def snapshot( self ):
         return DdPlayerSnapshot( 
             pk=self.pk_n,
@@ -52,7 +64,9 @@ class DdPlayer( db.Model ):
             second_name=self.second_name_c,
             last_name=self.last_name_c,
             age=self.age_n,
-            club_pk=self.club_pk
+            club_pk=self.club_pk,
+            match_salary=self.match_salary,
+            passive_salary=self.passive_salary
         )
 
     def AgeUp( self ):
@@ -75,18 +89,8 @@ class DdPlayer( db.Model ):
         return all_names["names"], all_names["surnames"]
 
     @staticmethod
-    def CreateNewcomersForUser( user ):
-        first_names, last_names = DdPlayer.GetNames()
-        for i in range( 24 ):
-            player = DdPlayer()
-            player.first_name_c = choice( first_names )
-            player.second_name_c = choice( first_names )
-            player.last_name_c = choice( last_names )
-            player.skill_n = randint( 1, 10 )
-            player.age_n = randint( 17, 20 )
-            player.user_pk = user.pk
-            db.session.add( player )
-        db.session.commit()
+    def CalculateSalary( skill=0, age=0 ):
+        return round( skill * 10 - math.exp( age - retirement_age ) + 100, 2 )
 
 
 class DdDaoPlayer( object ):
@@ -94,7 +98,12 @@ class DdDaoPlayer( object ):
     Data Access Object for DdPlayer class
     """
     def GetAllActivePlayers( self, user_pk ):
-        return DdPlayer.query.filter( and_( DdPlayer.user_pk == user_pk, DdPlayer.is_active == True ) ).all()
+        return DdPlayer.query.filter(
+            and_(
+                DdPlayer.user_pk == user_pk,
+                DdPlayer.is_active == True
+            )
+        ).all()
 
     def GetClubPlayers( self, user_pk=0, club_pk=0 ):
         query_res = db.engine.execute( CLUB_PLAYERS_SQL.format( user_pk, club_pk ) )
@@ -106,12 +115,30 @@ class DdDaoPlayer( object ):
                 last_name=row[3],
                 skill=row[4],
                 age=row[5],
-                club_pk=club_pk
+                club_pk=club_pk,
+                match_salary=DdPlayer.CalculateSalary( skill=row[4], age=row[5] ),
+                passive_salary=round( DdPlayer.CalculateSalary( skill=row[4], age=row[5] ) / 2, 2 )
             ) for row in query_res
         ]
 
+    def GetFreeAgents( self, user_pk ):
+        res = DdPlayer.query.filter(
+            and_(
+                DdPlayer.user_pk == user_pk,
+                DdPlayer.club_pk == None
+            )
+        )
+        return [player.snapshot for player in res]
+
+    # TODO: rename this method to GetNewcomersSnapshots
     def GetNewcomersProxiesForUser( self, user ):
-        players = DdPlayer.query.filter( and_( DdPlayer.user_pk == user.pk , DdPlayer.club_pk == None ) ).order_by( DdPlayer.skill_n ).all()
+        players = DdPlayer.query.filter(
+            and_(
+                DdPlayer.user_pk == user.pk,
+                DdPlayer.club_pk == None,
+                DdPlayer.age_n <= 20
+            )
+        ).order_by( DdPlayer.skill_n ).all()
         return [plr.snapshot for plr in players]
 
     def GetPlayer( self, player_pk ):
@@ -169,6 +196,10 @@ class DdDaoPlayer( object ):
                 player.club_pk = club.club_id_n
                 players.append( player )
         db.session.add_all( players )
+        db.session.commit()
+
+    def SavePlayer( self, player ):
+        db.session.add( player )
         db.session.commit()
 
     def SavePlayers( self, players=[] ):

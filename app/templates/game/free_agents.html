@@ -1,0 +1,33 @@
+
+{% extends "base.html" %}
+
+{% block subtitle %}
+Free Agents Market
+{% endblock %}
+
+{% block page_content %}
+<h3>Free Agents</h3>
+{% include "includes/current_match_or_standings.html" %}
+
+{% if agents %}
+<table class="table">
+    <tr>
+        <th>Name</th>
+        <th>Skill</th>
+        <th>Salary per match</th>
+        <th>Hire</th>
+    </tr>
+    {% for player in agents %}
+    <tr>
+        <td>{{ player.first_name }} {{ player.second_name }} {{ player.last_name }}</td>
+        <td>{{ player.skill }}</td>
+        <td>{{ player.match_salary }}</td>
+        <td><a href="{{ url_for('game.HirePlayer', player_pk=player.pk) }}">Hire</a></td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+No free agents available.
+{% endif %}
+
+{% endblock %}

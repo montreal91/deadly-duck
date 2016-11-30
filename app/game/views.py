@@ -1,24 +1,17 @@
 
-from flask                      import flash, g, redirect
-from flask                      import render_template, request, url_for
+from flask                      import flash, redirect
+from flask                      import render_template, url_for
 from flask                      import abort
-from flask.ext.login            import current_user, login_required
+from flask_login                import current_user, login_required
 
 from .                          import game
 from ..                         import db
 
 from config_game                import club_names
 
-from app.custom_queries         import CURRENT_MATCH_SQL
-from app.custom_queries         import STANDINGS_FOR_DIVISION_SQL
-from app.custom_queries         import STANDINGS_SQL
 from app.game.game_context      import DdGameContext
 from app.game.league            import DdLeague
 from app.game.match_processor   import DdMatchProcessor
-from app.data.models            import DdUser
-from app.data.game.club         import DdClub
-from app.data.game.match        import DdMatch
-from app.data.game.player       import DdPlayer
 
 
 @game.route( "/start-new-career/" )
@@ -31,6 +24,7 @@ def StartNewCareer():
             divisions.append( res )
         DdLeague.CreateScheduleForUser( current_user )
         game.service.CreatePlayersForUser( current_user )
+        game.service.CreateStartingAccounts( current_user )
         return render_template( "game/start_new_career.html", divisions=divisions )
     else:
         return redirect( url_for( "main.Index" ) )
@@ -59,12 +53,14 @@ def MainScreen():
             current_user.managed_club_pk
         )
         match = game.service.GetCurrentMatch( current_user )
+        account = game.service.GetFinancialAccount( current_user.pk, current_user.managed_club_pk )
         game.contexts[current_user.pk].next_match = match is not None
         return render_template( 
             "game/main_screen.html",
             club=club,
             match=match,
-            players=players
+            players=players,
+            account=account
         )
     else:
         return redirect( url_for( "main.Index" ) )
@@ -105,6 +101,8 @@ def NextDay():
         ProcessMatch( current_user, match )
 
     game.service.SaveMatches( today_matches )
+    game.service.UpdateAccountsAfterMatch( today_matches )
+    game.service.UpdateAccountsDaily( current_user )
     current_user.current_day_n += 1
     db.session.add( current_user )
     db.session.commit()
@@ -161,6 +159,7 @@ def DivisionStandings( season, division ):
 @login_required
 def ClubDetails( club_pk ):
     club = game.service.GetClub( club_pk )
+    account = game.service.GetFinancialAccount( user_pk=current_user.pk, club_pk=club_pk )
     players = []
     if current_user.pk in game.contexts:
         players = game.contexts[current_user.pk].GetClubRoster( club_pk )
@@ -169,7 +168,8 @@ def ClubDetails( club_pk ):
     return render_template( 
         "game/club_details.html",
         club=club,
-        players=players
+        players=players,
+        account=account,
     )
 
 @game.route( "/draft/" )
@@ -217,7 +217,7 @@ def PickPlayer( player_pk ):
 @game.route( "/player/<int:player_pk>/" )
 @login_required
 def PlayerDetails( player_pk ):
-    player = DdPlayer.query.get_or_404( player_pk )
+    player = game.service.GetPlayer( player_pk )
     matches = game.service.GetPlayerRecentMatches( 
         player_pk,
         current_user.current_season_n
@@ -229,6 +229,37 @@ def PlayerDetails( player_pk ):
         matches=matches,
         show=player.club_pk == current_user.managed_club_pk
     )
+
+@game.route( "/fire_player/<int:player_pk>/" )
+@login_required
+def FirePlayer( player_pk ):
+    player = game.service.GetPlayer( player_pk )
+    if player.club_pk != current_user.managed_club_pk:
+        abort( 403 )
+    if len( game.service.GetClubPlayers( user_pk=current_user.pk, club_pk=current_user.managed_club_pk ) ) <= 2:
+        flash( "You must have at least 2 players in your club." )
+        return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
+    player.club_pk = None
+    game.service.SavePlayer( player )
+    AddRostersToContext( current_user )
+    return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
+
+@game.route( "/hire_player/<int:player_pk>/" )
+@login_required
+def HirePlayer( player_pk ):
+    player = game.service.GetPlayer( player_pk )
+    if player.club_pk is not None:
+        abort( 403 )
+    player.club_pk = current_user.managed_club_pk
+    game.service.SavePlayer( player )
+    AddRostersToContext( current_user )
+    return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
+
+@game.route( "/free_agents/" )
+@login_required
+def FreeAgents():
+    agents = game.service.GetFreeAgents( current_user.pk )
+    return render_template( "game/free_agents.html", agents=agents )
 
 def StartNextSeason( user ):
     user.current_season_n += 1
@@ -284,8 +315,6 @@ def ProcessMatch( user, match ):
     match.away_player_pk = away_player.pk
     match.full_score_c = result.full_score
     match.is_played = True
-#     db.session.add( match )
-#     db.session.commit()
 
 def AddRostersToContext( user ):
     clubs = game.service.GetAllClubs()

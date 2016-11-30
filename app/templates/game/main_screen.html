@@ -11,7 +11,8 @@
     </div>
     <p>
         Ongoing season: <mark>{{ current_user.current_season_n }}</mark><br>
-        Today is: <mark>{{ current_user.current_day_n }}|{{ current_user.season_last_day }}</mark>
+        Today is: <mark>{{ current_user.current_day_n }}|{{ current_user.season_last_day }}</mark><br>
+        Cash: <mark>{{ account.money }}</mark>
     </p>
     {% if match %}
         <h4>Upcoming match is</h4>
@@ -27,6 +28,9 @@
     </p>
     <p>
         <a href="{{ url_for('game.Standings', season=current_user.current_season_n) }}">Standings</a>
+    </p>
+    <p>
+        <a href="{{ url_for('game.FreeAgents') }}">Free Agents</a>
     </p>
     <p>
         <h3>Players</h3>

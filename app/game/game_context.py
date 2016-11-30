@@ -1,6 +1,4 @@
 
-from app.data.game.player import DdPlayer
-
 class DdGameContext( object ):
     def __init__( self ):
         super( DdGameContext, self ).__init__()

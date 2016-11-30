@@ -7,12 +7,18 @@
 
 {% block page_content %}
 <h2>{{ player.first_name }} {{ player.second_name }} {{ player.last_name }}</h2>
-<p><label>Club</label>: {{ club.club_name_c }}</p>
+{% if player.club_pk %}
+<p><label>Club</label>: <a href="{{ url_for('game.ClubDetails', club_pk=player.club_pk)}}">{{ club.club_name_c }}</a></p>
+{% else %}
+<p><a href="{{ url_for('game.HirePlayer', player_pk=player.pk) }}">Hire</a></p>
+{% endif %}
 
 {% if show %}
 <p><label>Skill</label>: {{ player.skill }}</p>
 <p><label>Age</label>: {{ player.age }}</p>
 {% endif %}
+<p><label>Salary per match</label>: {{ player.match_salary }}</p>
+<p><label>Salary per day</label>: {{ player.passive_salary }}</p>
 
 {% if matches %}    
 <p>
@@ -34,6 +40,11 @@
 </p>
 {% else %}
     <strong>This player has not played any matches in current season yet.</strong>
+{% endif %}
+
+{% if show %}
+<p>
+    <a href="{{ url_for('game.FirePlayer', player_pk=player.pk) }}">Fire Player</a></p>
 {% endif %}
 
 {% include "includes/current_match_or_standings.html" %}

@@ -18,6 +18,25 @@ app = CreateApp( os.getenv( "FLASK_CONFIG" ) or "default" )
 manager = Manager( app )
 migrate = Migrate( app, db )
 
+def ConfirmUser( username=None, email=None ):
+    u = None
+    if username:
+        u = DdUser.query.filter_by( username=username ).first()
+    elif email:
+        u = DdUser.query.filter_by( email=email ).first()
+    else:
+        print( "You should specify username or email" )
+        return
+
+    if u is None:
+        print( "No such user in the database." )
+        return
+
+    u.confirmed = True
+    db.session.add( u )
+    db.session.commit()
+
+
 def MakeShellContext():
     return dict( 
         app=app,
@@ -29,6 +48,7 @@ def MakeShellContext():
         DdPost=DdPost,
         DdRole=DdRole,
         DdUser=DdUser,
+        ConfirmUser=ConfirmUser
     )
 
 manager.add_command( "shell", Shell( make_context=MakeShellContext ) )

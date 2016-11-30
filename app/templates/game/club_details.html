@@ -14,6 +14,9 @@
     {% endif %}
 </p>
 <p>
+    <label>Account</label>: {{ account.money }}
+</p>
+<p>
 {% for player in players %}
     <a href="{{ url_for('game.PlayerDetails', player_pk=player.pk) }}">    
     {{ player.first_name }} {{ player.second_name }} {{ player.last_name }}<br>
