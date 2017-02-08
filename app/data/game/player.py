@@ -11,6 +11,8 @@ from app.custom_queries import RECENT_PLAYER_MATCHES_SQL, CLUB_PLAYERS_SQL
 from app.data.game.match import DdMatchSnapshot
 from app.data.game.club import DdClub
 from config_game        import number_of_recent_matches, retirement_age
+from config_game        import DdPlayerSkills
+from stat_tools         import GeneratePositiveIntegerGauss
 
 
 DdPlayerSnapshot = namedtuple( 
@@ -173,7 +175,11 @@ class DdDaoPlayer( object ):
             player.first_name_c = choice( first_names )
             player.second_name_c = choice( first_names )
             player.last_name_c = choice( last_names )
-            player.skill_n = randint( 1, 10 )
+            player.skill_n = GeneratePositiveIntegerGauss(
+                DdPlayerSkills.MEAN_VALUE,
+                DdPlayerSkills.STANDARD_DEVIATION,
+                DdPlayerSkills.MAX_VALUE
+            )
             player.age_n = randint( 17, 20 )
             player.user_pk = user.pk
             players.append( player )

@@ -27,3 +27,8 @@ retirement_age = 22
 class DdLeagueConfig:
     INDIV_MATCHES = 2
     EXDIV_MATCHES = 2
+
+class DdPlayerSkills:
+    MEAN_VALUE = 5
+    MAX_VALUE = 10
+    STANDARD_DEVIATION = 2.5
