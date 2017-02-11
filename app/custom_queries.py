@@ -91,11 +91,12 @@ LIMIT    {2:d}
 """
 
 CLUB_PLAYERS_SQL = """
-SELECT pk_n, first_name_c, second_name_c, last_name_c, skill_n, age_n, club_pk
+SELECT pk_n, first_name_c, second_name_c, last_name_c, skill_n, age_n, club_pk, endurance_n, current_stamina_n
 FROM  players
 WHERE user_pk = {0:d}
 AND   club_pk = {1:d}
 AND   is_active = 1
+AND   is_drafted = 1
 """
 
 DAY_RESULTS_SQL = """

@@ -27,7 +27,7 @@ class DdGameService( object ):
         self._dao_player.CreateNewcomersForUser( user )
 
     def CreateNewMatch( self, user_pk=0, season=0, day=0, home_team_pk=0, away_team_pk=0 ):
-        return self._dao_match.CreateNewMatch(
+        return self._dao_match.CreateNewMatch( 
             user_pk=user_pk,
             season=season,
             day=day,
@@ -70,8 +70,8 @@ class DdGameService( object ):
     def GetFreeAgents( self, user_pk ):
         return self._dao_player.GetFreeAgents( user_pk )
 
-    def GetNewcomersProxiesForUser( self, user ):
-        return self._dao_player.GetNewcomersProxiesForUser( user )
+    def GetNewcomersSnapshotsForUser( self, user ):
+        return self._dao_player.GetNewcomersSnapshotsForUser( user )
 
     def GetPlayer( self, player_pk ):
         return self._dao_player.GetPlayer( player_pk )
@@ -98,26 +98,26 @@ class DdGameService( object ):
         return self._dao_match.GetDayResults( user_pk, season, day )
 
     def GetDivisionStandings( self, user_pk=0, season=0, division=0 ):
-        return self._dao_match.GetDivisionStandings(
+        return self._dao_match.GetDivisionStandings( 
             user_pk=user_pk,
             season=season,
             division=division
         )
 
     def GetLeagueStandings( self, user_pk=0, season=0 ):
-        return self._dao_match.GetLeagueStandings(
+        return self._dao_match.GetLeagueStandings( 
             user_pk=user_pk,
             season=season
         )
 
+    def GetNumberOfUndraftedPlayers( self, user ):
+        return self._dao_player.GetNumberOfUndraftedPlayers( user )
+
     def GetPlayerRecentMatches( self, player_pk=0, season=0 ):
-        return self._dao_player.GetPlayerRecentMatches(
+        return self._dao_player.GetPlayerRecentMatches( 
             player_pk,
             season
         )
-
-    def CreatePlayersForUser( self, user ):
-        self._dao_player.CreatePlayersForUser( user )
 
     def SavePlayer( self, player ):
         self._dao_player.SavePlayer( player )
@@ -128,10 +128,18 @@ class DdGameService( object ):
     def SaveRosters( self, rosters={} ):
         self._dao_player.SaveRosters( rosters )
 
+    def SyncListOfPlayersSnapshots( self, player_snapshots_list=[] ):
+        player_models_list = []
+        for plr_snapshot in player_snapshots_list:
+            plr_model = self._dao_player.GetPlayer( plr_snapshot.pk )
+            plr_model.UpdateBySnapshot( snapshot=plr_snapshot )
+            player_models_list.append( plr_model )
+        self._dao_player.SavePlayers( players=player_models_list )
+
     def UpdateAccountsAfterMatch( self, matches=[] ):
         accounts = []
         for match in matches:
-            home_account = self._dao_club_financial_account.GetFinancialAccount(
+            home_account = self._dao_club_financial_account.GetFinancialAccount( 
                 match.user_pk,
                 match.home_team_pk
             )
@@ -139,7 +147,7 @@ class DdGameService( object ):
             home_account.money_nn += Decimal( money )
             accounts.append( home_account )
 
-            away_account = self._dao_club_financial_account.GetFinancialAccount(
+            away_account = self._dao_club_financial_account.GetFinancialAccount( 
                 match.user_pk,
                 match.away_team_pk
             )
@@ -152,11 +160,11 @@ class DdGameService( object ):
         clubs = self._dao_club.GetAllClubs()
         accounts = []
         for club in clubs:
-            account = self._dao_club_financial_account.GetFinancialAccount(
+            account = self._dao_club_financial_account.GetFinancialAccount( 
                 user_pk=user.pk,
                 club_pk=club.club_id_n
             )
-            club_players = self._dao_player.GetClubPlayers(
+            club_players = self._dao_player.GetClubPlayers( 
                 user_pk=user.pk,
                 club_pk=club.club_id_n
             )

@@ -7,7 +7,7 @@ from flask_login                import current_user, login_required
 from .                          import game
 from ..                         import db
 
-from config_game                import club_names
+from config_game                import club_names, DdPlayerSkills
 
 from app.game.game_context      import DdGameContext
 from app.game.league            import DdLeague
@@ -23,7 +23,7 @@ def StartNewCareer():
             res = game.service.GetAllClubsInDivision( div )
             divisions.append( res )
         DdLeague.CreateScheduleForUser( current_user )
-        game.service.CreatePlayersForUser( current_user )
+        game.service.CreateNewcomersForUser( current_user )
         game.service.CreateStartingAccounts( current_user )
         return render_template( "game/start_new_career.html", divisions=divisions )
     else:
@@ -48,13 +48,21 @@ def MainScreen():
     if current_user.managed_club_pk is not None:
         club = game.service.GetClub( current_user.managed_club_pk )
         if current_user.pk not in game.contexts:
-            AddRostersToContext( current_user )
-        players = game.contexts[current_user.pk].GetClubRoster( 
+            DdLeague.AddRostersToContext( current_user )
+        ctx = game.contexts[current_user.pk]
+        if game.service.GetNumberOfUndraftedPlayers( current_user ) > 0:
+            DdLeague.AddRostersToContext( current_user, ctx=ctx )
+            DdLeague.StartDraft( current_user, ctx, need_to_create_newcomers=False )
+            return redirect( url_for( "game.Draft" ) )
+        players = ctx.GetClubRoster( 
             current_user.managed_club_pk
         )
         match = game.service.GetCurrentMatch( current_user )
-        account = game.service.GetFinancialAccount( current_user.pk, current_user.managed_club_pk )
-        game.contexts[current_user.pk].next_match = match is not None
+        account = game.service.GetFinancialAccount( 
+            current_user.pk,
+            current_user.managed_club_pk
+        )
+        ctx.next_match = match is not None
         return render_template( 
             "game/main_screen.html",
             club=club,
@@ -69,7 +77,7 @@ def MainScreen():
 @login_required
 def SelectPlayerScreen():
     if current_user.pk not in game.contexts:
-        AddRostersToContext( current_user )
+        DdLeague.AddRostersToContext( current_user )
     players = game.contexts[current_user.pk].GetClubRoster( 
         current_user.managed_club_pk
     )
@@ -78,9 +86,16 @@ def SelectPlayerScreen():
 @game.route( "/select_player/<int:pk>/" )
 @login_required
 def SelectPlayer( pk ):
-    plr = game.service.GetPlayer( pk )
-    assert plr.club_pk == current_user.managed_club_pk
-    game.contexts[current_user.pk].selected_player = plr.snapshot
+    if current_user.pk not in game.contexts:
+        DdLeague.AddRostersToContext( current_user )
+    players = game.contexts[current_user.pk].GetClubRoster( 
+        current_user.managed_club_pk
+    )
+    # Hack!
+    player = [plr for plr in players if plr.pk == pk]
+    if len( player ) != 1:
+        abort( 403 )
+    game.contexts[current_user.pk].selected_player = player[0]
     return redirect( url_for( "game.MainScreen" ) )
 
 @game.route( "/nextday/" )
@@ -92,7 +107,8 @@ def NextDay():
         flash( "You should choose player to play next match first." )
         return redirect( url_for( "game.MainScreen" ) )
     if current_user.current_day_n > current_user.season_last_day:
-        StartDraft( current_user )
+        DdLeague.StartNextSeason( current_user )
+        DdLeague.StartDraft( current_user, ctx )
         flash( "Welcome to the entry draft." )
         return redirect( url_for( "game.Draft" ) )
 
@@ -100,9 +116,11 @@ def NextDay():
     for match in today_matches:
         ProcessMatch( current_user, match )
 
+    ProcessDailyRecovery( current_user )
     game.service.SaveMatches( today_matches )
     game.service.UpdateAccountsAfterMatch( today_matches )
     game.service.UpdateAccountsDaily( current_user )
+    game.service.SyncListOfPlayersSnapshots( ctx.TakePlayersToUpdate() )
     current_user.current_day_n += 1
     db.session.add( current_user )
     db.session.commit()
@@ -182,14 +200,12 @@ def Draft():
     while ctx.available_newcomers > 0:
         club_pk = ctx.GetPickingClubPk()
         if club_pk == current_user.managed_club_pk:
-            # don't forget to increment pick_pointer when user picks a player
             return redirect( url_for( "game.PickScreen" ) )
         player = ctx.DoBestAiChoice()
         ctx.AddPlayerToClubRoster( club_pk, player )
         ctx.IncrementPickPointer()
     game.service.SaveRosters( ctx.rosters )
     ctx.EndDraft()
-    StartNextSeason( current_user )
     flash( "Season #{0:d} is started".format( current_user.current_season_n ) )
     return redirect( url_for( "game.MainScreen" ) )
 
@@ -200,7 +216,7 @@ def PickScreen():
     if not current_user.pk in game.contexts or not game.contexts[current_user.pk].is_draft:
         abort( 403 )
     ctx = game.contexts[current_user.pk]
-    return render_template( "game/pick_screen.html", players=ctx.GetNewcomers() )
+    return render_template( "game/pick_screen.html", players=ctx.newcomers )
 
 @game.route( "/pick/<int:player_pk>/" )
 @login_required
@@ -241,7 +257,7 @@ def FirePlayer( player_pk ):
         return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
     player.club_pk = None
     game.service.SavePlayer( player )
-    AddRostersToContext( current_user )
+    DdLeague.AddRostersToContext( current_user )
     return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
 
 @game.route( "/hire_player/<int:player_pk>/" )
@@ -252,7 +268,7 @@ def HirePlayer( player_pk ):
         abort( 403 )
     player.club_pk = current_user.managed_club_pk
     game.service.SavePlayer( player )
-    AddRostersToContext( current_user )
+    DdLeague.AddRostersToContext( current_user )
     return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
 
 @game.route( "/free_agents/" )
@@ -261,34 +277,22 @@ def FreeAgents():
     agents = game.service.GetFreeAgents( current_user.pk )
     return render_template( "game/free_agents.html", agents=agents )
 
-def StartNextSeason( user ):
-    user.current_season_n += 1
-    user.current_day_n = 0
-    game.service.AgeUpAllActivePlayers( user )
-    db.session.add( user )
-    db.session.commit()
-    DdLeague.CreateScheduleForUser( user )
-    game.contexts[user.pk] = DdGameContext()
-    AddRostersToContext( user )
+# Those methods should be static in DdGameService class
+def PlayerSnapshotComparator( player_snapshot ):
+    return player_snapshot.actual_skill
 
 
-def StartDraft( user ):
-    if user.pk in game.contexts:
-        ctx = game.contexts[user.pk]
-    else:
-        ctx = DdGameContext()
+def ProcessDailyRecovery( user ):
+    ctx = game.contexts[user.pk]
+    rosters = game.contexts[user.pk].rosters
+    for club in rosters:
+        for player in rosters[club]:
+            if player.current_stamina < player.max_stamina:
+                player.RecoverStamina( 
+                    player.max_stamina * DdPlayerSkills.DAILY_RECOVERY_FACTOR
+                )
+                ctx.AddPlayerToUpdate( player )
 
-    ctx.is_draft = True
-    game.service.CreateNewcomersForUser( current_user )
-    newcomers = game.service.GetNewcomersProxiesForUser( current_user )
-    ctx.SetNewcomers( newcomers )
-    standings = game.service.GetRecentStandings( user )
-    ctx.SetStandings( standings )
-    game.contexts[user.pk] = ctx
-
-
-def PlayerProxyComparator( player_proxy ):
-    return player_proxy.skill
 
 def ProcessMatch( user, match ):
     home_player, away_player = None, None
@@ -296,17 +300,18 @@ def ProcessMatch( user, match ):
     if match.home_team_pk == user.managed_club_pk:
         home_player = ctx.selected_player
         ai_players = ctx.GetClubRoster( match.away_team_pk )
-        away_player = max( ai_players, key=PlayerProxyComparator )
+        away_player = max( ai_players, key=PlayerSnapshotComparator )
     elif match.away_team_pk == user.managed_club_pk:
         ai_players = ctx.GetClubRoster( match.home_team_pk )
-        home_player = max( ai_players, key=PlayerProxyComparator )
+        home_player = max( ai_players, key=PlayerSnapshotComparator )
         away_player = ctx.selected_player
     else:
         home_ai = ctx.GetClubRoster( match.home_team_pk )
         away_ai = ctx.GetClubRoster( match.away_team_pk )
-        home_player = max( home_ai, key=PlayerProxyComparator )
-        away_player = max( away_ai, key=PlayerProxyComparator )
-    result = DdMatchProcessor.ProcessMatch( home_player, away_player, 2 )
+        home_player = max( home_ai, key=PlayerSnapshotComparator )
+        away_player = max( away_ai, key=PlayerSnapshotComparator )
+    match_processor = DdMatchProcessor()
+    result = match_processor.ProcessMatch( home_player, away_player, 2 )
     match.home_sets_n = result.home_sets
     match.away_sets_n = result.away_sets
     match.home_games_n = result.home_games
@@ -316,10 +321,7 @@ def ProcessMatch( user, match ):
     match.full_score_c = result.full_score
     match.is_played = True
 
-def AddRostersToContext( user ):
-    clubs = game.service.GetAllClubs()
-    ctx = DdGameContext()
-    for club in clubs:
-        players = game.service.GetClubPlayers( user_pk=user.pk, club_pk=club.club_id_n )
-        ctx.SetClubRoster( club_pk=club.club_id_n, players_list=players )
-    game.contexts[user.pk] = ctx
+    home_player.RemoveStaminaLostInMatch( result.home_stamina_lost )
+    away_player.RemoveStaminaLostInMatch( result.away_stamina_lost )
+    ctx.AddPlayerToUpdate( home_player )
+    ctx.AddPlayerToUpdate( away_player )

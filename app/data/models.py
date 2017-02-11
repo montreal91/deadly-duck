@@ -217,13 +217,20 @@ class DdUser( UserMixin, db.Model ):
 
 
     @staticmethod
-    def GenerateTestingUser():
+    def GenerateTestingUsers():
         user = DdUser()
         user.username = "turtle"
         user.email = "foo@bar.com"
         user.password = "ninja"
         user.confirmed = True
-        db.session.add( user )
+
+        user1 = DdUser()
+        user1.username = "montreal"
+        user1.email = "foo1@bar.com"
+        user1.password = "qazzaq"
+        user1.confirmed = True
+
+        db.session.add_all( [user, user1] )
         db.session.commit()
 
 

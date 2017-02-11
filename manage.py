@@ -64,7 +64,7 @@ def test():
 @manager.command
 def initapp():
     service = DdGameService()
-    DdUser.GenerateTestingUser()
+    DdUser.GenerateTestingUsers()
     service.InsertClubs()
 
 if __name__ == '__main__':
