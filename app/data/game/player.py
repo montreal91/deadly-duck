@@ -18,7 +18,7 @@ class DdPlayerSnapshot( object ):
     def __init__( 
         self,
         pk=0,
-        skill=0,
+        technique=0,
         current_stamina=0,
         endurance=0,
         first_name="",
@@ -31,9 +31,9 @@ class DdPlayerSnapshot( object ):
     ):
         super( DdPlayerSnapshot, self ).__init__()
         self._pk = pk
-        self._skill = skill
-        self._current_stamina = current_stamina
-        self._endurance = endurance
+        self._technique = Decimal( technique )
+        self._current_stamina = Decimal( current_stamina )
+        self._endurance = Decimal( endurance )
         self._first_name = first_name
         self._last_name = last_name
         self._second_name = second_name
@@ -47,17 +47,17 @@ class DdPlayerSnapshot( object ):
         return self._pk
 
     @property
-    def skill( self ):
-        return self._skill
+    def technique( self ):
+        return round(self._technique, DdPlayerSkills.SKILL_PRECISION)
 
     @property
-    def actual_skill( self ):
-        stamina_factor = self._current_stamina / self.max_stamina
-        return round( self._skill * stamina_factor, 2 )
+    def actual_technique( self ):
+        stamina_factor = Decimal( self._current_stamina ) / Decimal( self.max_stamina )
+        return round( self._technique * stamina_factor, DdPlayerSkills.SKILL_PRECISION )
 
     @property
     def current_stamina( self ):
-        return self._current_stamina
+        return round(self._current_stamina, DdPlayerSkills.SKILL_PRECISION)
 
     @property
     def max_stamina( self ):
@@ -65,7 +65,7 @@ class DdPlayerSnapshot( object ):
 
     @property
     def endurance( self ):
-        return self._endurance
+        return round(self._endurance, DdPlayerSkills.SKILL_PRECISION)
 
     @property
     def first_name( self ):
@@ -101,7 +101,7 @@ class DdPlayerSnapshot( object ):
             self._current_stamina = self.max_stamina
 
     def RemoveStaminaLostInMatch( self, lost_stamina=0 ):
-        self._current_stamina -= lost_stamina
+        self._current_stamina -= Decimal( lost_stamina )
         if self._current_stamina < 0:
             self._current_stamina = 0
 
@@ -121,7 +121,7 @@ class DdPlayer( db.Model ):
     second_name_c = db.Column( db.String( 64 ) ) # @UndefinedVariable
     last_name_c = db.Column( db.String( 64 ), nullable=False ) # @UndefinedVariable
 
-    skill_n = db.Column( db.Numeric( 5, 2 ), nullable=False, default=5.0 ) # @UndefinedVariable
+    technique_n = db.Column( db.Numeric( 5, 2 ), nullable=False, default=5.0 ) # @UndefinedVariable
     endurance_n = db.Column( db.Numeric( 5, 2 ), default=5.0 ) # @UndefinedVariable
     current_stamina_n = db.Column( db.Numeric( 5, 2 ), default=100.0 ) # @UndefinedVariable
     age_n = db.Column( db.Integer, default=20 ) # @UndefinedVariable
@@ -136,18 +136,18 @@ class DdPlayer( db.Model ):
 
     @property
     def match_salary( self ):
-        return DdPlayer.CalculateSalary( skill=self.skill_n, age=self.age_n )
+        return DdPlayer.CalculateSalary( skill=self.technique_n, age=self.age_n )
 
     @property
     def passive_salary( self ):
-        res = DdPlayer.CalculateSalary( skill=self.skill_n, age=self.age_n ) / 2
+        res = DdPlayer.CalculateSalary( skill=self.technique_n, age=self.age_n ) / 2
         return round( res, 2 )
 
     @property
     def snapshot( self ):
         return DdPlayerSnapshot( 
             pk=self.pk_n,
-            skill=self.skill_n,
+            technique=self.technique_n,
             current_stamina=self.current_stamina_n,
             endurance=self.endurance_n,
             first_name=self.first_name_c,
@@ -211,7 +211,7 @@ class DdDaoPlayer( object ):
                 first_name=row[1],
                 second_name=row[2],
                 last_name=row[3],
-                skill=row[4],
+                technique=row[4],
                 current_stamina=row[8],
                 endurance=row[7],
                 age=row[5],
@@ -236,7 +236,7 @@ class DdDaoPlayer( object ):
                 DdPlayer.user_pk == user.pk,
                 DdPlayer.is_drafted == False
             )
-        ).order_by( DdPlayer.skill_n ).all()
+        ).order_by( DdPlayer.technique_n ).all()
         return [plr.snapshot for plr in players]
 
     def GetNumberOfUndraftedPlayers( self, user ):
@@ -257,7 +257,7 @@ class DdDaoPlayer( object ):
                 season,
                 number_of_recent_matches
             )
-        ).fetchall()
+        ).fetchall() # @UndefinedVariable
         return [
             DdMatchSnapshot( 
                 pk=res[0],
@@ -279,7 +279,7 @@ class DdDaoPlayer( object ):
             player.first_name_c = choice( first_names )
             player.second_name_c = choice( first_names )
             player.last_name_c = choice( last_names )
-            player.skill_n = GeneratePositiveGauss( 
+            player.technique_n = GeneratePositiveGauss( 
                 DdPlayerSkills.MEAN_VALUE,
                 DdPlayerSkills.STANDARD_DEVIATION,
                 DdPlayerSkills.MAX_VALUE
@@ -306,7 +306,7 @@ class DdDaoPlayer( object ):
                 player.first_name_c = choice( first_names )
                 player.second_name_c = choice( first_names )
                 player.last_name_c = choice( last_names )
-                player.skill_n = randint( 1, 10 )
+                player.technique_n = randint( 1, 10 )
                 player.age_n = randint( 18, 22 )
                 player.user_pk = user.pk
                 player.club_pk = club.club_id_n

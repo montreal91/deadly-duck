@@ -1,3 +1,4 @@
+from decimal import Decimal
 
 club_names = {
     1: [
@@ -36,4 +37,5 @@ class DdPlayerSkills:
     ENDURANCE_FACTOR = 10
     MIN_STAMINA_LOST = 1
     MAX_STAMINA_LOST = 3
-    DAILY_RECOVERY_FACTOR = 0.25
+    DAILY_RECOVERY_FACTOR = Decimal( 0.25 )
+    SKILL_PRECISION = 2

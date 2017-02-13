@@ -91,7 +91,7 @@ LIMIT    {2:d}
 """
 
 CLUB_PLAYERS_SQL = """
-SELECT pk_n, first_name_c, second_name_c, last_name_c, skill_n, age_n, club_pk, endurance_n, current_stamina_n
+SELECT pk_n, first_name_c, second_name_c, last_name_c, technique_n, age_n, club_pk, endurance_n, current_stamina_n
 FROM  players
 WHERE user_pk = {0:d}
 AND   club_pk = {1:d}
@@ -117,11 +117,11 @@ SELECT match_pk_n, (
     FROM   players
     WHERE  players.pk_n = matches.away_player_pk
 ), (
-    SELECT skill_n
+    SELECT (technique_n + endurance_n) / 2
     FROM   players
     WHERE  players.pk_n = matches.home_player_pk
 ), (
-    SELECT skill_n
+    SELECT (technique_n + endurance_n) / 2
     FROM   players
     WHERE  players.pk_n = matches.away_player_pk
 ), full_score_c

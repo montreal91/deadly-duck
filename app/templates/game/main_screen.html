@@ -14,6 +14,8 @@
         Today is: <mark>{{ current_user.current_day_n }}|{{ current_user.season_last_day }}</mark><br>
         Cash: <mark>{{ account.money }}</mark>
     </p>
+    <div class="col-md-6">
+        
     {% if match %}
         <h4>Upcoming match is</h4>
         <h3>{{ match.home_team }} versus {{ match.away_team }}</h3>
@@ -32,12 +34,39 @@
     <p>
         <a href="{{ url_for('game.FreeAgents') }}">Free Agents</a>
     </p>
-    <p>
-        <h3>Players</h3>
-        {% for player in players %}
-        <a href="{{ url_for('game.PlayerDetails', player_pk=player.pk) }}">    
-            {{ player.first_name }} {{ player.last_name }}
-        </a><br>
-        {% endfor %}
-    </p>
+    </div>
+    <div class="col-md-6">
+    
+    <h3>Players</h3>
+    <table class="table">
+        <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Technique</th>
+            <th>Endurance</th>
+            <th></th>
+        </tr>
+        {% for plr in players %}
+        <tr>
+        <td>
+        {{ loop.index }}
+        </td>
+        <td>
+        <a href="{{ url_for('game.SelectPlayer', pk=plr.pk) }}">
+            {{ plr.first_name }} {{ plr.last_name }}
+        </a>
+        </td>
+        <td>
+            <strong>{{ plr.actual_technique }}</strong> / {{ plr.technique }}
+        </td>
+        <td>
+        {{ plr.endurance }}
+        </td>
+        <td>
+            <a href="{{ url_for('game.PlayerDetails', player_pk=plr.pk)}}">Details</a>
+        </td>
+    </tr>
+    {% endfor %}
+    </table>
+    </div>
 {% endblock %}

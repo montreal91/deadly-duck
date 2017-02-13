@@ -164,7 +164,7 @@ def NextDay():
     assert current_user.managed_club_pk is not None
     ctx = game.contexts[current_user.pk]
     if ctx.NeedToSelectPlayer():
-        flash( "You should choose player to play next match first." )
+        flash( "You have to select player to play next match." )
         return redirect( url_for( "game.MainScreen" ) )
     if current_user.current_day_n > current_user.season_last_day:
         DdLeague.StartNextSeason( current_user )
@@ -237,14 +237,22 @@ def PlayerDetails( player_pk ):
 def SelectPlayer( pk ):
     if current_user.pk not in game.contexts:
         DdLeague.AddRostersToContext( current_user )
-    players = game.contexts[current_user.pk].GetClubRoster( 
+    ctx = game.contexts[current_user.pk]
+    players = ctx.GetClubRoster( 
         current_user.managed_club_pk
     )
     # Hack!
     player = [plr for plr in players if plr.pk == pk]
     if len( player ) != 1:
         abort( 403 )
-    game.contexts[current_user.pk].selected_player = player[0]
+    ctx.selected_player = player[0]
+    flash( 
+        "{0:s}. {1:s}. {2:s} has been selected for the next game.".format( 
+            ctx.selected_player.first_name[0],
+            ctx.selected_player.second_name[0],
+            ctx.selected_player.last_name
+        )
+    )
     return redirect( url_for( "game.MainScreen" ) )
 
 
@@ -290,7 +298,7 @@ def StartNewCareer():
 
 # Those methods should be static in DdGameService class
 def PlayerSnapshotComparator( player_snapshot ):
-    return player_snapshot.actual_skill
+    return player_snapshot.actual_technique
 
 
 def ProcessDailyRecovery( user ):

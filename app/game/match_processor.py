@@ -142,7 +142,7 @@ class DdMatchProcessor( object ):
     def _CalculateActualSkill( self, player, actual_stamina=0 ):
         max_stamina = player.endurance * DdPlayerSkills.ENDURANCE_FACTOR
         stamina_factor = actual_stamina / Decimal( max_stamina )
-        return Decimal( player.skill ) * stamina_factor
+        return Decimal( player.technique ) * stamina_factor
 
     def _CalculateActualStamina( self, player, lost_stamina=0 ):
         actual_stamina = Decimal( player.current_stamina ) - Decimal( lost_stamina )
