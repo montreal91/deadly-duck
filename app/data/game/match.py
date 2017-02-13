@@ -13,7 +13,9 @@ DdMatchSnapshot = namedtuple(
     [
         "pk",
         "home_team",
+        "home_team_pk",
         "away_team",
+        "away_team_pk",
         "home_player",
         "away_player",
         "home_skill",
@@ -93,9 +95,27 @@ class DdDaoMatch( object ):
         return match
 
     def GetCurrentMatch( self, user ):
-        match = db.engine.execute( CURRENT_MATCH_SQL.format( user.managed_club_pk, user.current_season_n, user.current_day_n, user.pk ) ).first() # @UndefinedVariable
+        match = db.engine.execute( # @UndefinedVariable
+            CURRENT_MATCH_SQL.format( 
+                user.managed_club_pk,
+                user.current_season_n,
+                user.current_day_n,
+                user.pk
+            )
+        ).first() # @UndefinedVariable
         if match:
-            return DdMatchSnapshot( pk=match[0], home_team=match[1], away_team=match[2], home_player=None, away_player=None, home_skill=None, away_skill=None, full_score="" )
+            return DdMatchSnapshot( 
+                pk=match[0],
+                home_team=match[1],
+                away_team=match[2],
+                home_player=None,
+                away_player=None,
+                home_skill=None,
+                away_skill=None,
+                full_score="",
+                home_team_pk=match[3],
+                away_team_pk=match[4]
+            )
         else:
             return None
 
@@ -156,13 +176,21 @@ class DdDaoMatch( object ):
                 away_player=row[4],
                 home_skill=round( row[5], 2 ),
                 away_skill=round( row[6], 2 ),
-                full_score=row[7]
+                full_score=row[7],
+                home_team_pk=None,
+                away_team_pk=None
             )
             for row in query_res
         ]
 
     def GetTodayMatches( self, user ):
-        return DdMatch.query.filter( and_( DdMatch.season_n == user.current_season_n, DdMatch.day_n == user.current_day_n, DdMatch.user_pk == user.pk ) ).all()
+        return DdMatch.query.filter( 
+            and_( 
+                DdMatch.season_n == user.current_season_n,
+                DdMatch.day_n == user.current_day_n,
+                DdMatch.user_pk == user.pk
+            )
+        ).all()
 
     def SaveMatch( self, match=None ):
         db.session.add( match ) # @UndefinedVariable

@@ -19,6 +19,14 @@
     {% if match %}
         <h4>Upcoming match is</h4>
         <h3>{{ match.home_team }} versus {{ match.away_team }}</h3>
+        {% if away_player %}
+            <p>
+                <label>Away Team Player:</label>
+                <a href="{{ url_for('game.PlayerDetails', player_pk=away_player.pk)}}">
+                    {{ away_player.first_name[0] }}. {{ away_player.second_name[0] }}. {{ away_player.last_name }}
+                </a>
+            </p>
+        {% endif %}
     {% else %}
         <h3>No matches for today</h3>
     {% endif %}

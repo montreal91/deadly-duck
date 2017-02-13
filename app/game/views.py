@@ -142,6 +142,11 @@ def MainScreen():
             current_user.managed_club_pk
         )
         match = game.service.GetCurrentMatch( current_user )
+        if match is not None and match.home_team_pk == current_user.managed_club_pk:
+            ai_players = ctx.GetClubRoster( match.away_team_pk )
+            away_player = max( ai_players, key=PlayerSnapshotComparator )
+        else:
+            away_player = None
         account = game.service.GetFinancialAccount( 
             current_user.pk,
             current_user.managed_club_pk
@@ -152,6 +157,7 @@ def MainScreen():
             club=club,
             match=match,
             players=players,
+            away_player=away_player,
             account=account
         )
     else:

@@ -48,7 +48,7 @@ class DdPlayerSnapshot( object ):
 
     @property
     def technique( self ):
-        return round(self._technique, DdPlayerSkills.SKILL_PRECISION)
+        return round( self._technique, DdPlayerSkills.SKILL_PRECISION )
 
     @property
     def actual_technique( self ):
@@ -57,7 +57,7 @@ class DdPlayerSnapshot( object ):
 
     @property
     def current_stamina( self ):
-        return round(self._current_stamina, DdPlayerSkills.SKILL_PRECISION)
+        return round( self._current_stamina, DdPlayerSkills.SKILL_PRECISION )
 
     @property
     def max_stamina( self ):
@@ -65,7 +65,7 @@ class DdPlayerSnapshot( object ):
 
     @property
     def endurance( self ):
-        return round(self._endurance, DdPlayerSkills.SKILL_PRECISION)
+        return round( self._endurance, DdPlayerSkills.SKILL_PRECISION )
 
     @property
     def first_name( self ):
@@ -267,7 +267,9 @@ class DdDaoPlayer( object ):
                 away_player=res[4],
                 home_skill=None,
                 away_skill=None,
-                full_score=res[5]
+                full_score=res[5],
+                home_team_pk=None,
+                away_team_pk=None
             ) for res in query_res
         ]
 

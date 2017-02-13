@@ -15,7 +15,7 @@ SELECT match_pk_n, (
     SELECT club_name_c
     FROM   clubs
     WHERE  club_id_n = matches.away_team_pk
-)
+), home_team_pk, away_team_pk
 FROM matches
 WHERE season_n = {1:d}
 AND   day_n = {2:d}
