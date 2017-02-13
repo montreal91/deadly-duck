@@ -1,18 +1,18 @@
 
 import json
 import math
-from collections import namedtuple
-from random             import choice, randint
+from decimal                import Decimal
+from random                 import choice, randint
 
-from sqlalchemy import and_
+from sqlalchemy             import and_
 
-from app import db
-from app.custom_queries import RECENT_PLAYER_MATCHES_SQL, CLUB_PLAYERS_SQL
-from app.data.game.match import DdMatchSnapshot
-from app.data.game.club import DdClub
-from config_game        import number_of_recent_matches, retirement_age
-from config_game        import DdPlayerSkills
-from stat_tools         import GeneratePositiveIntegerGauss
+from app                    import db
+from app.custom_queries     import RECENT_PLAYER_MATCHES_SQL, CLUB_PLAYERS_SQL
+from app.data.game.match    import DdMatchSnapshot
+from app.data.game.club     import DdClub
+from config_game            import number_of_recent_matches, retirement_age
+from config_game            import DdPlayerSkills
+from stat_tools             import GeneratePositiveGauss
 
 class DdPlayerSnapshot( object ):
     def __init__( 
@@ -116,23 +116,23 @@ class DdPlayerSnapshot( object ):
 
 class DdPlayer( db.Model ):
     __tablename__ = "players"
-    pk_n = db.Column( db.Integer, primary_key=True )
-    first_name_c = db.Column( db.String( 64 ), nullable=False )
-    second_name_c = db.Column( db.String( 64 ) )
-    last_name_c = db.Column( db.String( 64 ), nullable=False )
+    pk_n = db.Column( db.Integer, primary_key=True ) # @UndefinedVariable
+    first_name_c = db.Column( db.String( 64 ), nullable=False ) # @UndefinedVariable
+    second_name_c = db.Column( db.String( 64 ) ) # @UndefinedVariable
+    last_name_c = db.Column( db.String( 64 ), nullable=False ) # @UndefinedVariable
 
-    skill_n = db.Column( db.Integer, nullable=False, default=5 )
-    endurance_n = db.Column( db.Integer, default=10 )
-    current_stamina_n = db.Column( db.Integer, default=100 )
-    age_n = db.Column( db.Integer, default=20 )
-    is_active = db.Column( db.Boolean, default=True )
-    is_drafted = db.Column( db.Boolean, default=False )
+    skill_n = db.Column( db.Numeric( 5, 2 ), nullable=False, default=5.0 ) # @UndefinedVariable
+    endurance_n = db.Column( db.Numeric( 5, 2 ), default=5.0 ) # @UndefinedVariable
+    current_stamina_n = db.Column( db.Numeric( 5, 2 ), default=100.0 ) # @UndefinedVariable
+    age_n = db.Column( db.Integer, default=20 ) # @UndefinedVariable
+    is_active = db.Column( db.Boolean, default=True ) # @UndefinedVariable
+    is_drafted = db.Column( db.Boolean, default=False ) # @UndefinedVariable
 
-    user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ) )
-    club_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) )
+    user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ) ) # @UndefinedVariable
+    club_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) ) # @UndefinedVariable
 
-    user = db.relationship( "DdUser", foreign_keys=[user_pk] )
-    club = db.relationship( "DdClub", foreign_keys=[club_pk] )
+    user = db.relationship( "DdUser", foreign_keys=[user_pk] ) # @UndefinedVariable
+    club = db.relationship( "DdClub", foreign_keys=[club_pk] ) # @UndefinedVariable
 
     @property
     def match_salary( self ):
@@ -180,7 +180,7 @@ class DdPlayer( db.Model ):
 
     @staticmethod
     def CalculateSalary( skill=0, age=0 ):
-        return round( skill * 10 - math.exp( age - retirement_age ) + 100, 2 )
+        return round( Decimal( skill * 10 ) - Decimal( math.exp( age - retirement_age ) ) + 100, 2 )
 
     def __repr__( self ):
         return "<Player {0:d} {1}. {2}. {3}>".format( 
@@ -204,7 +204,7 @@ class DdDaoPlayer( object ):
         ).all()
 
     def GetClubPlayers( self, user_pk=0, club_pk=0 ):
-        query_res = db.engine.execute( CLUB_PLAYERS_SQL.format( user_pk, club_pk ) )
+        query_res = db.engine.execute( CLUB_PLAYERS_SQL.format( user_pk, club_pk ) ) # @UndefinedVariable
         return [
             DdPlayerSnapshot( 
                 pk=row[0],
@@ -230,12 +230,10 @@ class DdDaoPlayer( object ):
         )
         return [player.snapshot for player in res]
 
-    # TODO: rename this method to GetNewcomersSnapshots
     def GetNewcomersSnapshotsForUser( self, user ):
         players = DdPlayer.query.filter( 
             and_( 
                 DdPlayer.user_pk == user.pk,
-#                 DdPlayer.club_pk == None,
                 DdPlayer.is_drafted == False
             )
         ).order_by( DdPlayer.skill_n ).all()
@@ -253,7 +251,7 @@ class DdDaoPlayer( object ):
         return DdPlayer.query.get_or_404( player_pk )
 
     def GetPlayerRecentMatches( self, player_pk, season ):
-        query_res = db.engine.execute( 
+        query_res = db.engine.execute( # @UndefinedVariable
             RECENT_PLAYER_MATCHES_SQL.format( 
                 player_pk,
                 season,
@@ -276,17 +274,17 @@ class DdDaoPlayer( object ):
     def CreateNewcomersForUser( self, user ):
         first_names, last_names = DdPlayer.GetNames()
         players = []
-        for i in range( 24 ):
+        for i in range( 24 ): # @UnusedVariable
             player = DdPlayer()
             player.first_name_c = choice( first_names )
             player.second_name_c = choice( first_names )
             player.last_name_c = choice( last_names )
-            player.skill_n = GeneratePositiveIntegerGauss( 
+            player.skill_n = GeneratePositiveGauss( 
                 DdPlayerSkills.MEAN_VALUE,
                 DdPlayerSkills.STANDARD_DEVIATION,
                 DdPlayerSkills.MAX_VALUE
             )
-            player.endurance_n = GeneratePositiveIntegerGauss( 
+            player.endurance_n = GeneratePositiveGauss( 
                 DdPlayerSkills.MEAN_VALUE,
                 DdPlayerSkills.STANDARD_DEVIATION,
                 DdPlayerSkills.MAX_VALUE
@@ -295,14 +293,14 @@ class DdDaoPlayer( object ):
             player.age_n = randint( 17, 20 )
             player.user_pk = user.pk
             players.append( player )
-        db.session.add_all( players )
-        db.session.commit()
+        db.session.add_all( players ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable
 
     def CreatePlayersForUser( self, user ):
         first_names, last_names = DdPlayer.GetNames()
-        clubs = DdClub.query.all()
+        clubs = DdClub.query.all() # @UndefinedVariable
         players = []
-        for i in range( 4 ):
+        for i in range( 4 ): # @UnusedVariable
             for club in clubs:
                 player = DdPlayer()
                 player.first_name_c = choice( first_names )
@@ -313,16 +311,16 @@ class DdDaoPlayer( object ):
                 player.user_pk = user.pk
                 player.club_pk = club.club_id_n
                 players.append( player )
-        db.session.add_all( players )
-        db.session.commit()
+        db.session.add_all( players ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable
 
     def SavePlayer( self, player ):
-        db.session.add( player )
-        db.session.commit()
+        db.session.add( player ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable
 
     def SavePlayers( self, players=[] ):
-        db.session.add_all( players )
-        db.session.commit()
+        db.session.add_all( players ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable
 
     def SaveRosters( self, rosters={} ):
         players = []
@@ -332,5 +330,5 @@ class DdDaoPlayer( object ):
                 player.club_pk = club_pk
                 player.is_drafted = True
                 players.append( player )
-        db.session.add_all( players )
-        db.session.commit()
+        db.session.add_all( players ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable

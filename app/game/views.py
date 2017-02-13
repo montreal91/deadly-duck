@@ -9,25 +9,8 @@ from ..                         import db
 
 from config_game                import club_names, DdPlayerSkills
 
-from app.game.game_context      import DdGameContext
 from app.game.league            import DdLeague
 from app.game.match_processor   import DdMatchProcessor
-
-
-@game.route( "/start-new-career/" )
-@login_required
-def StartNewCareer():
-    if current_user.managed_club_pk is None:
-        divisions = []
-        for div in club_names:
-            res = game.service.GetAllClubsInDivision( div )
-            divisions.append( res )
-        DdLeague.CreateScheduleForUser( current_user )
-        game.service.CreateNewcomersForUser( current_user )
-        game.service.CreateStartingAccounts( current_user )
-        return render_template( "game/start_new_career.html", divisions=divisions )
-    else:
-        return redirect( url_for( "main.Index" ) )
 
 
 @game.route( "/start-new-career/<pk>/" )
@@ -35,11 +18,112 @@ def StartNewCareer():
 def ChooseManagedClub( pk ):
     if current_user.managed_club_pk is None:
         current_user.managed_club_pk = pk
-        db.session.add( current_user )
-        db.session.commit()
+        db.session.add( current_user ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable
         return redirect( url_for( "game.MainScreen" ) )
     else:
         return redirect( url_for( "main.Index" ) )
+
+
+@game.route( "/club/<int:club_pk>/" )
+@login_required
+def ClubDetails( club_pk ):
+    club = game.service.GetClub( club_pk )
+    account = game.service.GetFinancialAccount( user_pk=current_user.pk, club_pk=club_pk )
+    players = []
+    if current_user.pk in game.contexts:
+        players = game.contexts[current_user.pk].GetClubRoster( club_pk )
+    else:
+        players = game.service.GetClubPlayers( current_user.pk, club_pk )
+    return render_template( 
+        "game/club_details.html",
+        club=club,
+        players=players,
+        account=account,
+    )
+
+
+@game.route( "/day/<int:season>/<int:day>/" )
+@login_required
+def DayResults( season, day ):
+    today_matches = game.service.GetDayResults( current_user.pk, season, day )
+    if len( today_matches ) == 0:
+        return redirect( url_for( "game.MainScreen" ) )
+    else:
+        return render_template( 
+            "game/dayresults.html",
+            matches=today_matches,
+            season=season,
+            day=day
+        )
+
+
+@game.route( "/standings/<int:season>/div<int:division>/" )
+@login_required
+def DivisionStandings( season, division ):
+    if season > current_user.current_season_n or not 0 < division < 3:
+        abort( 404 )
+    table = game.service.GetDivisionStandings( user_pk=current_user.pk, season=season, division=division )
+    return render_template( 
+        "game/standings.html",
+        table=table,
+        season=season
+    )
+
+
+@game.route( "/draft/" )
+@login_required
+def Draft():
+    if not current_user.pk in game.contexts or not game.contexts[current_user.pk].is_draft:
+        abort( 403 )
+
+    ctx = game.contexts[current_user.pk]
+    while ctx.available_newcomers > 0:
+        club_pk = ctx.GetPickingClubPk()
+        if club_pk == current_user.managed_club_pk:
+            return redirect( url_for( "game.PickScreen" ) )
+        player = ctx.DoBestAiChoice()
+        ctx.AddPlayerToClubRoster( club_pk, player )
+        ctx.IncrementPickPointer()
+    game.service.SaveRosters( ctx.rosters )
+    ctx.EndDraft()
+    flash( "Season #{0:d} is started".format( current_user.current_season_n ) )
+    return redirect( url_for( "game.MainScreen" ) )
+
+
+
+@game.route( "/fire_player/<int:player_pk>/" )
+@login_required
+def FirePlayer( player_pk ):
+    player = game.service.GetPlayer( player_pk )
+    if player.club_pk != current_user.managed_club_pk:
+        abort( 403 )
+    if len( game.service.GetClubPlayers( user_pk=current_user.pk, club_pk=current_user.managed_club_pk ) ) <= 2:
+        flash( "You must have at least 2 players in your club." )
+        return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
+    player.club_pk = None
+    game.service.SavePlayer( player )
+    DdLeague.AddRostersToContext( current_user )
+    return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
+
+
+@game.route( "/free_agents/" )
+@login_required
+def FreeAgents():
+    agents = game.service.GetFreeAgents( current_user.pk )
+    return render_template( "game/free_agents.html", agents=agents )
+
+
+@game.route( "/hire_player/<int:player_pk>/" )
+@login_required
+def HirePlayer( player_pk ):
+    player = game.service.GetPlayer( player_pk )
+    if player.club_pk is not None:
+        abort( 403 )
+    player.club_pk = current_user.managed_club_pk
+    game.service.SavePlayer( player )
+    DdLeague.AddRostersToContext( current_user )
+    return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
 
 
 @game.route( "/main/" )
@@ -73,30 +157,6 @@ def MainScreen():
     else:
         return redirect( url_for( "main.Index" ) )
 
-@game.route( "/select_player/" )
-@login_required
-def SelectPlayerScreen():
-    if current_user.pk not in game.contexts:
-        DdLeague.AddRostersToContext( current_user )
-    players = game.contexts[current_user.pk].GetClubRoster( 
-        current_user.managed_club_pk
-    )
-    return render_template( "game/select_player.html", players=players )
-
-@game.route( "/select_player/<int:pk>/" )
-@login_required
-def SelectPlayer( pk ):
-    if current_user.pk not in game.contexts:
-        DdLeague.AddRostersToContext( current_user )
-    players = game.contexts[current_user.pk].GetClubRoster( 
-        current_user.managed_club_pk
-    )
-    # Hack!
-    player = [plr for plr in players if plr.pk == pk]
-    if len( player ) != 1:
-        abort( 403 )
-    game.contexts[current_user.pk].selected_player = player[0]
-    return redirect( url_for( "game.MainScreen" ) )
 
 @game.route( "/nextday/" )
 @login_required
@@ -122,8 +182,8 @@ def NextDay():
     game.service.UpdateAccountsDaily( current_user )
     game.service.SyncListOfPlayersSnapshots( ctx.TakePlayersToUpdate() )
     current_user.current_day_n += 1
-    db.session.add( current_user )
-    db.session.commit()
+    db.session.add( current_user ) # @UndefinedVariable
+    db.session.commit() # @UndefinedVariable
     ctx.selected_player = None
     return redirect( 
         url_for( 
@@ -133,90 +193,6 @@ def NextDay():
         )
     )
 
-
-@game.route( "/day/<int:season>/<int:day>/" )
-@login_required
-def DayResults( season, day ):
-    today_matches = game.service.GetDayResults( current_user.pk, season, day )
-    if len( today_matches ) == 0:
-        return redirect( url_for( "game.MainScreen" ) )
-    else:
-        return render_template( 
-            "game/dayresults.html",
-            matches=today_matches,
-            season=season,
-            day=day
-        )
-
-
-@game.route( "/standings/<int:season>/" )
-@login_required
-def Standings( season ):
-    if season > current_user.current_season_n:
-        abort( 404 )
-    table = game.service.GetLeagueStandings( user_pk=current_user.pk, season=season )
-    return render_template( 
-        "game/standings.html",
-        table=table,
-        season=season
-    )
-
-@game.route( "/standings/<int:season>/div<int:division>/" )
-@login_required
-def DivisionStandings( season, division ):
-    if season > current_user.current_season_n or not 0 < division < 3:
-        abort( 404 )
-    table = game.service.GetDivisionStandings( user_pk=current_user.pk, season=season, division=division )
-    return render_template( 
-        "game/standings.html",
-        table=table,
-        season=season
-    )
-
-@game.route( "/club/<int:club_pk>/" )
-@login_required
-def ClubDetails( club_pk ):
-    club = game.service.GetClub( club_pk )
-    account = game.service.GetFinancialAccount( user_pk=current_user.pk, club_pk=club_pk )
-    players = []
-    if current_user.pk in game.contexts:
-        players = game.contexts[current_user.pk].GetClubRoster( club_pk )
-    else:
-        players = game.service.GetClubPlayers( current_user.pk, club_pk )
-    return render_template( 
-        "game/club_details.html",
-        club=club,
-        players=players,
-        account=account,
-    )
-
-@game.route( "/draft/" )
-@login_required
-def Draft():
-    if not current_user.pk in game.contexts or not game.contexts[current_user.pk].is_draft:
-        abort( 403 )
-
-    ctx = game.contexts[current_user.pk]
-    while ctx.available_newcomers > 0:
-        club_pk = ctx.GetPickingClubPk()
-        if club_pk == current_user.managed_club_pk:
-            return redirect( url_for( "game.PickScreen" ) )
-        player = ctx.DoBestAiChoice()
-        ctx.AddPlayerToClubRoster( club_pk, player )
-        ctx.IncrementPickPointer()
-    game.service.SaveRosters( ctx.rosters )
-    ctx.EndDraft()
-    flash( "Season #{0:d} is started".format( current_user.current_season_n ) )
-    return redirect( url_for( "game.MainScreen" ) )
-
-
-@game.route( "/pick/" )
-@login_required
-def PickScreen():
-    if not current_user.pk in game.contexts or not game.contexts[current_user.pk].is_draft:
-        abort( 403 )
-    ctx = game.contexts[current_user.pk]
-    return render_template( "game/pick_screen.html", players=ctx.newcomers )
 
 @game.route( "/pick/<int:player_pk>/" )
 @login_required
@@ -228,6 +204,15 @@ def PickPlayer( player_pk ):
     ctx.AddPlayerToClubRoster( current_user.managed_club_pk, selected_player )
     ctx.IncrementPickPointer()
     return redirect( url_for( "game.Draft" ) )
+
+
+@game.route( "/pick/" )
+@login_required
+def PickScreen():
+    if not current_user.pk in game.contexts or not game.contexts[current_user.pk].is_draft:
+        abort( 403 )
+    ctx = game.contexts[current_user.pk]
+    return render_template( "game/pick_screen.html", players=ctx.newcomers )
 
 
 @game.route( "/player/<int:player_pk>/" )
@@ -246,36 +231,62 @@ def PlayerDetails( player_pk ):
         show=player.club_pk == current_user.managed_club_pk
     )
 
-@game.route( "/fire_player/<int:player_pk>/" )
-@login_required
-def FirePlayer( player_pk ):
-    player = game.service.GetPlayer( player_pk )
-    if player.club_pk != current_user.managed_club_pk:
-        abort( 403 )
-    if len( game.service.GetClubPlayers( user_pk=current_user.pk, club_pk=current_user.managed_club_pk ) ) <= 2:
-        flash( "You must have at least 2 players in your club." )
-        return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
-    player.club_pk = None
-    game.service.SavePlayer( player )
-    DdLeague.AddRostersToContext( current_user )
-    return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
 
-@game.route( "/hire_player/<int:player_pk>/" )
+@game.route( "/select_player/<int:pk>/" )
 @login_required
-def HirePlayer( player_pk ):
-    player = game.service.GetPlayer( player_pk )
-    if player.club_pk is not None:
+def SelectPlayer( pk ):
+    if current_user.pk not in game.contexts:
+        DdLeague.AddRostersToContext( current_user )
+    players = game.contexts[current_user.pk].GetClubRoster( 
+        current_user.managed_club_pk
+    )
+    # Hack!
+    player = [plr for plr in players if plr.pk == pk]
+    if len( player ) != 1:
         abort( 403 )
-    player.club_pk = current_user.managed_club_pk
-    game.service.SavePlayer( player )
-    DdLeague.AddRostersToContext( current_user )
-    return redirect( url_for( "game.PlayerDetails", player_pk=player_pk ) )
+    game.contexts[current_user.pk].selected_player = player[0]
+    return redirect( url_for( "game.MainScreen" ) )
 
-@game.route( "/free_agents/" )
+
+@game.route( "/select_player/" )
 @login_required
-def FreeAgents():
-    agents = game.service.GetFreeAgents( current_user.pk )
-    return render_template( "game/free_agents.html", agents=agents )
+def SelectPlayerScreen():
+    if current_user.pk not in game.contexts:
+        DdLeague.AddRostersToContext( current_user )
+    players = game.contexts[current_user.pk].GetClubRoster( 
+        current_user.managed_club_pk
+    )
+    return render_template( "game/select_player.html", players=players )
+
+
+@game.route( "/standings/<int:season>/" )
+@login_required
+def Standings( season ):
+    if season > current_user.current_season_n:
+        abort( 404 )
+    table = game.service.GetLeagueStandings( user_pk=current_user.pk, season=season )
+    return render_template( 
+        "game/standings.html",
+        table=table,
+        season=season
+    )
+
+
+@game.route( "/start-new-career/" )
+@login_required
+def StartNewCareer():
+    if current_user.managed_club_pk is None:
+        divisions = []
+        for div in club_names:
+            res = game.service.GetAllClubsInDivision( div )
+            divisions.append( res )
+        DdLeague.CreateScheduleForUser( current_user )
+        game.service.CreateNewcomersForUser( current_user )
+        game.service.CreateStartingAccounts( current_user )
+        return render_template( "game/start_new_career.html", divisions=divisions )
+    else:
+        return redirect( url_for( "main.Index" ) )
+
 
 # Those methods should be static in DdGameService class
 def PlayerSnapshotComparator( player_snapshot ):

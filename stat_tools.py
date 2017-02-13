@@ -23,11 +23,11 @@ def GetSigma( seq ):
         summary += i
     return math.sqrt( summary / n )
 
-def GeneratePositiveIntegerGauss( m, s, n ):
+def GeneratePositiveGauss( a=0, sigma=1, max_n=10, precision=2 ):
     val = -1
-    while not 1 <= val <= n:
-        val = round( gauss( m, s ) )
-    return int( val )
+    while not 0 < val <= max_n:
+        val = round( gauss( a, sigma ), precision )
+    return val
 
 def LoadedToss( probability ):
     return random() < probability
