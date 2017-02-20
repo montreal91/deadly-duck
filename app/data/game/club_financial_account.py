@@ -6,10 +6,10 @@ from app import db
 
 class DdClubFinancialAccount( db.Model ):
     __tablename__ = "financial_accounts"
-    pk_n = db.Column( db.Integer, primary_key=True )
-    user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ) )
-    club_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) )
-    money_nn = db.Column( db.Numeric( 10, 2 ), nullable=False, default=0.0 )
+    pk_n = db.Column( db.Integer, primary_key=True ) # @UndefinedVariable
+    user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ) ) # @UndefinedVariable
+    club_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) ) # @UndefinedVariable
+    money_nn = db.Column( db.Numeric( 10, 2 ), nullable=False, default=0.0 ) # @UndefinedVariable
 
     @property
     def money( self ):
@@ -24,8 +24,8 @@ class DdDaoClubFinancialAccount( object ):
 
 
     def GetFinancialAccount( self, user_pk=0, club_pk=0 ):
-        account = DdClubFinancialAccount.query.filter(
-            and_(
+        account = DdClubFinancialAccount.query.filter( 
+            and_( 
                 DdClubFinancialAccount.user_pk == int( user_pk ),
                 DdClubFinancialAccount.club_pk == int( club_pk )
             )
@@ -36,9 +36,9 @@ class DdDaoClubFinancialAccount( object ):
             abort( 404 )
 
     def SaveAccount( self, account ):
-        db.session.add( account )
-        db.session.commit()
+        db.session.add( account ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable
 
     def SaveAccounts( self, accounts=[] ):
-        db.session.add_all( accounts )
-        db.session.commit()
+        db.session.add_all( accounts ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable

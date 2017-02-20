@@ -31,16 +31,23 @@
         <h3>No matches for today</h3>
     {% endif %}
     <p>
-        <a href="{{ url_for('game.NextDay') }}">Next Day</a>
+        <a href="{{ url_for('game.NextDay') }}" class="btn btn-primary btn-block">Next Day</a>
+    </p>
+    {% if current_round %}
+        <p>
+            <a href="{{ url_for('game.Playoffs' ) }}" class="btn btn-default btn-block">
+                PlayOffs
+            </a>
+        </p>
+    {% endif %}
+    <p>
+        <a href="{{ url_for('game.Standings', season=current_user.current_season_n) }}" class="btn btn-default btn-block">Standings</a>
     </p>
     <p>
-        <a href="{{ url_for('game.SelectPlayerScreen') }}">Select Player</a>
+        <a href="{{ url_for('game.FreeAgents') }}" class="btn btn-default btn-block">Free Agents</a>
     </p>
     <p>
-        <a href="{{ url_for('game.Standings', season=current_user.current_season_n) }}">Standings</a>
-    </p>
-    <p>
-        <a href="{{ url_for('game.FreeAgents') }}">Free Agents</a>
+        <a href="{{ url_for('game.PlayRestOfSeason') }}" class="btn btn-warning btn-block">Play Rest of Season</a>
     </p>
     </div>
     <div class="col-md-6">

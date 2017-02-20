@@ -8,6 +8,11 @@ from app import db
 from app.custom_queries import CURRENT_MATCH_SQL, DAY_RESULTS_SQL
 from app.custom_queries import STANDINGS_SQL, STANDINGS_FOR_DIVISION_SQL
 
+class DdMatchStatuses:
+    planned = "planned"
+    finished = "finished"
+    aborted = "aborted"
+
 DdMatchSnapshot = namedtuple( 
     "DdMathcSnapshot",
     [
@@ -39,16 +44,27 @@ DdStandingsRowSnapshot = namedtuple(
 
 class DdMatch( db.Model ):
     __tablename__ = "matches"
-    match_pk_n = db.Column( db.Integer, primary_key=True ) # @UndefinedVariable
-    home_team_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) ) # @UndefinedVariable
-    away_team_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) ) # @UndefinedVariable
-    user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ) ) # @UndefinedVariable
-    home_player_pk = db.Column( db.Integer, db.ForeignKey( "players.pk_n" ), nullable=True ) # @UndefinedVariable
-    away_player_pk = db.Column( db.Integer, db.ForeignKey( "players.pk_n" ), nullable=True ) # @UndefinedVariable
-    season_n = db.Column( db.Integer, default=0 ) # @UndefinedVariable
-    day_n = db.Column( db.Integer, default=0 ) # @UndefinedVariable
+    match_pk_n = db.Column( db.Integer, primary_key=True, index=True ) # @UndefinedVariable
+    home_team_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ), index=True ) # @UndefinedVariable
+    away_team_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ), index=True ) # @UndefinedVariable
+    user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ), index=True ) # @UndefinedVariable
+    home_player_pk = db.Column( db.Integer, db.ForeignKey( "players.pk_n" ), nullable=True, index=True ) # @UndefinedVariable
+    away_player_pk = db.Column( db.Integer, db.ForeignKey( "players.pk_n" ), nullable=True, index=True ) # @UndefinedVariable
+    season_n = db.Column( db.Integer, default=0, index=True ) # @UndefinedVariable
+    day_n = db.Column( db.Integer, default=0, index=True ) # @UndefinedVariable
     context_json = db.Column( db.Text ) # @UndefinedVariable
-    is_played = db.Column( db.Boolean, default=False ) # @UndefinedVariable
+    status_en = db.Column( # @UndefinedVariable
+        db.Enum( # @UndefinedVariable
+            DdMatchStatuses.planned,
+            DdMatchStatuses.finished,
+            DdMatchStatuses.aborted
+        ),
+        nullable=False,
+        default=DdMatchStatuses.planned,
+        index=True
+    )
+
+    playoff_series_pk = db.Column( db.Integer, db.ForeignKey( "playoff_series.pk" ) ) # @UndefinedVariable
 
     home_sets_n = db.Column( db.Integer, default=0 ) # @UndefinedVariable
     away_sets_n = db.Column( db.Integer, default=0 ) # @UndefinedVariable
@@ -69,6 +85,15 @@ class DdMatch( db.Model ):
     def context( self, value ):
         self.context_json = str( json.dumps( value ) )
 
+    def SetAbortedStatus( self ):
+        self.status_en = DdMatchStatuses.aborted
+
+    def SetFinishedStatus( self ):
+        self.status_en = DdMatchStatuses.finished
+
+    def SetPlannedStatus( self ):
+        self.status_en = DdMatchStatuses.planned
+
     def __repr__( self ):
         return "<Match #{0:d} {1:d} vs {2:d}>".format( 
             self.match_pk_n,
@@ -77,7 +102,14 @@ class DdMatch( db.Model ):
         )
 
 class DdDaoMatch( object ):
-    def CreateNewMatch( self, user_pk=0, season=0, day=0, home_team_pk=0, away_team_pk=0 ):
+    def CreateNewMatch( 
+        self,
+        user_pk=0,
+        season=0,
+        day=0,
+        home_team_pk=0,
+        away_team_pk=0,
+    ):
         match = DdMatch()
         match.home_team_pk = home_team_pk
         match.away_team_pk = away_team_pk
@@ -92,6 +124,23 @@ class DdDaoMatch( object ):
         context["home_skill"] = None
         context["away_skill"] = None
         match.context = context
+        match.playoff_series_pk = None
+        match.SetPlannedStatus()
+        return match
+
+    def CreateNewMatchForSeries( self, series=None, day=0, top_home=True ):
+        match = DdMatch()
+        if top_home:
+            match.home_team_pk = series.top_seed_pk
+            match.away_team_pk = series.low_seed_pk
+        else:
+            match.home_team_pk = series.low_seed_pk
+            match.away_team_pk = series.top_seed_pk
+        match.user_pk = series.user_pk
+        match.season_n = series.season_n
+        match.day_n = day
+        match.playoff_series_pk = series.pk
+        match.SetPlannedStatus()
         return match
 
     def GetCurrentMatch( self, user ):
@@ -188,7 +237,8 @@ class DdDaoMatch( object ):
             and_( 
                 DdMatch.season_n == user.current_season_n,
                 DdMatch.day_n == user.current_day_n,
-                DdMatch.user_pk == user.pk
+                DdMatch.user_pk == user.pk,
+                DdMatch.status_en == DdMatchStatuses.planned
             )
         ).all()
 

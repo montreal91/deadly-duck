@@ -1,9 +1,11 @@
 
-MAX_DAY_IN_SEASON_SQL = """
-SELECT Max(day_n)
-FROM   matches
-WHERE  user_pk = {0:d}
-AND    season_n = {1:d}
+CLUB_PLAYERS_SQL = """
+SELECT pk_n, first_name_c, second_name_c, last_name_c, technique_n, age_n, club_pk, endurance_n, current_stamina_n
+FROM  players
+WHERE user_pk = {0:d}
+AND   club_pk = {1:d}
+AND   is_active = 1
+AND   is_drafted = 1
 """
 
 CURRENT_MATCH_SQL = """
@@ -21,82 +23,7 @@ WHERE season_n = {1:d}
 AND   day_n = {2:d}
 AND   (home_team_pk = {0:d} OR away_team_pk = {0:d})
 AND   user_pk = {3:d}
-"""
-
-STANDINGS_SQL = """
-SELECT club_id_n, club_name_c, (
-    SELECT Sum(
-        CASE WHEN home_team_pk = clubs.club_id_n
-        THEN home_sets_n
-        ELSE 0 END +
-        CASE WHEN away_team_pk = clubs.club_id_n
-        THEN away_sets_n
-        ELSE 0 END
-    )
-    FROM  matches
-    WHERE season_n = {0:d}
-    AND   user_pk = {1:d}
-    AND   is_played = 1
-) AS sets, (
-    SELECT Sum(
-        CASE WHEN home_team_pk = clubs.club_id_n
-        THEN home_games_n
-        ELSE 0 END +
-        CASE WHEN away_team_pk = clubs.club_id_n
-        THEN away_games_n
-        ELSE 0 END
-    )
-    FROM  matches
-    WHERE season_n = {0:d}
-    AND   user_pk = {1:d}
-    AND   is_played = 1
-) AS games, (
-    SELECT Count(*)
-    FROM matches
-    WHERE (home_team_pk = clubs.club_id_n OR away_team_pk = clubs.club_id_n)
-    AND is_played = 1
-    AND season_n = {0:d}
-    AND user_pk = {1:d}
-) AS played
-FROM clubs
-ORDER BY sets DESC, games DESC
-"""
-
-STANDINGS_FOR_DIVISION_SQL = STANDINGS_SQL[0:-31] + "WHERE division_n = {2:d}\n" + STANDINGS_SQL[-31:]
-
-RECENT_PLAYER_MATCHES_SQL = """
-SELECT   match_pk_n, (
-    SELECT club_name_c
-    FROM   clubs
-    WHERE  clubs.club_id_n = matches.home_team_pk
-), (
-    SELECT club_name_c
-    FROM   clubs
-    WHERE  clubs.club_id_n = matches.away_team_pk
-), (
-    SELECT players.first_name_c || ' ' || players.second_name_c || ' ' || players.last_name_c
-    FROM   players
-    WHERE  players.pk_n = matches.home_player_pk
-), (
-    SELECT players.first_name_c || ' ' || players.second_name_c || ' ' || players.last_name_c
-    FROM   players
-    WHERE  players.pk_n = matches.away_player_pk
-), full_score_c
-FROM     matches
-WHERE    (home_player_pk = {0:d} OR away_player_pk = {0:d})
-AND      season_n = {1:d}
-AND      is_played = 1
-ORDER BY day_n DESC
-LIMIT    {2:d}
-"""
-
-CLUB_PLAYERS_SQL = """
-SELECT pk_n, first_name_c, second_name_c, last_name_c, technique_n, age_n, club_pk, endurance_n, current_stamina_n
-FROM  players
-WHERE user_pk = {0:d}
-AND   club_pk = {1:d}
-AND   is_active = 1
-AND   is_drafted = 1
+AND   status_en = 'planned'
 """
 
 DAY_RESULTS_SQL = """
@@ -126,8 +53,106 @@ SELECT match_pk_n, (
     WHERE  players.pk_n = matches.away_player_pk
 ), full_score_c
 FROM matches
-WHERE user_pk = {0:d} 
+WHERE user_pk = {0:d}
 AND season_n = {1:d}
 AND day_n = {2:d}
-AND is_played = 1
+AND status_en = 'finished'
 """
+
+MAX_DAY_IN_SEASON_SQL = """
+SELECT Max(day_n)
+FROM   matches
+WHERE  user_pk = {0:d}
+AND    season_n = {1:d}
+"""
+
+MAX_PLAYOFF_ROUND_SQL = """
+SELECT Max(round_n) AS max_round
+FROM   playoff_series
+WHERE  user_pk = {user_pk}
+AND    season_n = {season}
+"""
+
+RECENT_PLAYER_MATCHES_SQL = """
+SELECT   match_pk_n, (
+    SELECT club_name_c
+    FROM   clubs
+    WHERE  clubs.club_id_n = matches.home_team_pk
+), (
+    SELECT club_name_c
+    FROM   clubs
+    WHERE  clubs.club_id_n = matches.away_team_pk
+), (
+    SELECT players.first_name_c || ' ' || players.second_name_c || ' ' || players.last_name_c
+    FROM   players
+    WHERE  players.pk_n = matches.home_player_pk
+), (
+    SELECT players.first_name_c || ' ' || players.second_name_c || ' ' || players.last_name_c
+    FROM   players
+    WHERE  players.pk_n = matches.away_player_pk
+), full_score_c
+FROM     matches
+WHERE    (home_player_pk = {0:d} OR away_player_pk = {0:d})
+AND      season_n = {1:d}
+AND      status_en = 'finished'
+ORDER BY day_n DESC
+LIMIT    {2:d}
+"""
+
+SERIES_IN_ONE_ROUND_IN_ONE_DIVISION_SQL = """
+SELECT *
+FROM playoff_series
+WHERE user_pk = :user
+AND season_n = :season
+AND round_n = :rnd
+AND top_seed_pk IN (
+    SELECT club_id_n
+    FROM clubs
+    WHERE division_n = :division
+)
+ORDER BY pk
+"""
+
+STANDINGS_SQL = """
+SELECT club_id_n, club_name_c, (
+    SELECT Sum(
+        CASE WHEN home_team_pk = clubs.club_id_n
+        THEN home_sets_n
+        ELSE 0 END +
+        CASE WHEN away_team_pk = clubs.club_id_n
+        THEN away_sets_n
+        ELSE 0 END
+    )
+    FROM  matches
+    WHERE season_n = {0:d}
+    AND   user_pk = {1:d}
+    AND   status_en = 'finished'
+    AND   playoff_series_pk IS NULL
+) AS sets, (
+    SELECT Sum(
+        CASE WHEN home_team_pk = clubs.club_id_n
+        THEN home_games_n
+        ELSE 0 END +
+        CASE WHEN away_team_pk = clubs.club_id_n
+        THEN away_games_n
+        ELSE 0 END
+    )
+    FROM  matches
+    WHERE season_n = {0:d}
+    AND   user_pk = {1:d}
+    AND   status_en = 'finished'
+    AND   playoff_series_pk IS NULL
+) AS games, (
+    SELECT Count(*)
+    FROM   matches
+    WHERE  (home_team_pk = clubs.club_id_n OR away_team_pk = clubs.club_id_n)
+    AND    status_en = 'finished'
+    AND    season_n = {0:d}
+    AND    user_pk = {1:d}
+    AND    playoff_series_pk IS NULL
+) AS played
+FROM clubs
+ORDER BY sets DESC, games DESC
+"""
+
+STANDINGS_FOR_DIVISION_SQL = STANDINGS_SQL[0:-31] + "WHERE division_n = {2:d}\n" + STANDINGS_SQL[-31:]

@@ -11,7 +11,7 @@ from app.custom_queries     import RECENT_PLAYER_MATCHES_SQL, CLUB_PLAYERS_SQL
 from app.data.game.match    import DdMatchSnapshot
 from app.data.game.club     import DdClub
 from config_game            import number_of_recent_matches, retirement_age
-from config_game            import DdPlayerSkills
+from config_game            import DdPlayerSkills, club_names
 from stat_tools             import GeneratePositiveGauss
 
 class DdPlayerSnapshot( object ):
@@ -225,7 +225,9 @@ class DdDaoPlayer( object ):
         res = DdPlayer.query.filter( 
             and_( 
                 DdPlayer.user_pk == user_pk,
-                DdPlayer.club_pk == None
+                DdPlayer.club_pk == None,
+                DdPlayer.is_active == True,
+                DdPlayer.is_drafted == True
             )
         )
         return [player.snapshot for player in res]
@@ -275,8 +277,10 @@ class DdDaoPlayer( object ):
 
     def CreateNewcomersForUser( self, user ):
         first_names, last_names = DdPlayer.GetNames()
+        clubs = len( club_names[1] + club_names[2] )
+        number_of_new_players = randint( clubs * 2, clubs * 4 )
         players = []
-        for i in range( 24 ): # @UnusedVariable
+        for i in range( number_of_new_players ): # @UnusedVariable
             player = DdPlayer()
             player.first_name_c = choice( first_names )
             player.second_name_c = choice( first_names )

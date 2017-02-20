@@ -152,13 +152,15 @@ def MainScreen():
             current_user.managed_club_pk
         )
         ctx.next_match = match is not None
+        current_round = game.service.GetMaxPlayoffRound( user=current_user )
         return render_template( 
             "game/main_screen.html",
             club=club,
             match=match,
             players=players,
             away_player=away_player,
-            account=account
+            account=account,
+            current_round=current_round
         )
     else:
         return redirect( url_for( "main.Index" ) )
@@ -168,15 +170,45 @@ def MainScreen():
 @login_required
 def NextDay():
     assert current_user.managed_club_pk is not None
+    if current_user.pk not in game.contexts:
+        DdLeague.AddRostersToContext( current_user )
     ctx = game.contexts[current_user.pk]
     if ctx.NeedToSelectPlayer():
         flash( "You have to select player to play next match." )
         return redirect( url_for( "game.MainScreen" ) )
     if current_user.current_day_n > current_user.season_last_day:
-        DdLeague.StartNextSeason( current_user )
-        DdLeague.StartDraft( current_user, ctx )
-        flash( "Welcome to the entry draft." )
-        return redirect( url_for( "game.Draft" ) )
+        remaining_d1, remaining_d2 = game.service.GetRemainingClubs( current_user )
+        poff_round = game.service.GetMaxPlayoffRound( user=current_user )
+        new_round_string = "PlayOff Round #{round:d} is started."
+        if poff_round is None:
+            # Start first round of play-off
+            game.service.CreateNewPlayoffRound( 
+                user=current_user,
+                div1_list=remaining_d1,
+                div2_list=remaining_d2,
+                current_round=1,
+                final=False
+            )
+            flash( new_round_string.format( round=1 ) )
+            return redirect( url_for( "game.MainScreen" ) )
+        elif len( remaining_d1 ) != 0 and len( remaining_d2 ) != 0:
+            # Start later round of play-off
+            game.service.CreateNewPlayoffRound( 
+                user=current_user,
+                div1_list=remaining_d1,
+                div2_list=remaining_d2,
+                current_round=poff_round + 1,
+                final=len( remaining_d1 ) == 1
+            )
+            flash( new_round_string.format( round=poff_round + 1 ) )
+            return redirect( url_for( "game.MainScreen" ) )
+        elif game.service.NewSeasonCondition( d1=remaining_d1, d2=remaining_d2 ) is True:
+            DdLeague.StartNextSeason( current_user )
+            DdLeague.StartDraft( current_user, ctx )
+            flash( "Welcome to the entry draft." )
+            return redirect( url_for( "game.Draft" ) )
+        else:
+            raise ValueError
 
     today_matches = game.service.GetTodayMatches( current_user )
     for match in today_matches:
@@ -238,6 +270,48 @@ def PlayerDetails( player_pk ):
     )
 
 
+@game.route( "/playoffs/" )
+@login_required
+def Playoffs():
+    current_round = game.service.GetMaxPlayoffRound( user=current_user )
+    if current_round is None:
+        return redirect( url_for( "game.MainScreen" ) )
+
+    series_dict = {}
+    for i in range( current_round ):
+        series = game.service.GetPlayoffSeriesByRoundAndDivision( 
+            user=current_user,
+            rnd=i + 1
+        )
+        series_dict[i] = series
+    return render_template( 
+        "game/playoffs.html",
+        series_dict=series_dict,
+        season=current_user.current_season_n
+    )
+
+
+@game.route( "/play_rest_of_season/" )
+@login_required
+def PlayRestOfSeason():
+    assert current_user.managed_club_pk is not None
+    ctx = game.contexts[current_user.pk]
+    played_matches = []
+    while current_user.current_day_n <= current_user.season_last_day:
+        day_matches = game.service.GetTodayMatches( current_user )
+        for match in day_matches:
+            ProcessMatch( current_user, match, autoplay=True )
+        played_matches += day_matches
+        ProcessDailyRecovery( current_user )
+        game.service.UpdateAccountsAfterMatch( matches=day_matches )
+        game.service.UpdateAccountsDaily( current_user )
+        current_user.current_day_n += 1
+    game.service.SaveMatches( matches=played_matches )
+    game.service.SyncListOfPlayersSnapshots( ctx.TakePlayersToUpdate() )
+    db.session.add( current_user ) # @UndefinedVariable
+    db.session.commit() # @UndefinedVariable
+    return redirect( url_for( "game.Standings", season=current_user.current_season_n ) )
+
 @game.route( "/select_player/<int:pk>/" )
 @login_required
 def SelectPlayer( pk ):
@@ -260,17 +334,6 @@ def SelectPlayer( pk ):
         )
     )
     return redirect( url_for( "game.MainScreen" ) )
-
-
-@game.route( "/select_player/" )
-@login_required
-def SelectPlayerScreen():
-    if current_user.pk not in game.contexts:
-        DdLeague.AddRostersToContext( current_user )
-    players = game.contexts[current_user.pk].GetClubRoster( 
-        current_user.managed_club_pk
-    )
-    return render_template( "game/select_player.html", players=players )
 
 
 @game.route( "/standings/<int:season>/" )
@@ -319,14 +382,14 @@ def ProcessDailyRecovery( user ):
                 ctx.AddPlayerToUpdate( player )
 
 
-def ProcessMatch( user, match ):
+def ProcessMatch( user, match, autoplay=False ):
     home_player, away_player = None, None
     ctx = game.contexts[user.pk]
-    if match.home_team_pk == user.managed_club_pk:
+    if match.home_team_pk == user.managed_club_pk and not autoplay:
         home_player = ctx.selected_player
         ai_players = ctx.GetClubRoster( match.away_team_pk )
         away_player = max( ai_players, key=PlayerSnapshotComparator )
-    elif match.away_team_pk == user.managed_club_pk:
+    elif match.away_team_pk == user.managed_club_pk and not autoplay:
         ai_players = ctx.GetClubRoster( match.home_team_pk )
         home_player = max( ai_players, key=PlayerSnapshotComparator )
         away_player = ctx.selected_player
@@ -345,6 +408,7 @@ def ProcessMatch( user, match ):
     match.away_player_pk = away_player.pk
     match.full_score_c = result.full_score
     match.is_played = True
+    match.SetFinishedStatus()
 
     home_player.RemoveStaminaLostInMatch( result.home_stamina_lost )
     away_player.RemoveStaminaLostInMatch( result.away_stamina_lost )

@@ -22,7 +22,7 @@ class DdLeague( object ):
         divisions = dict()
         current_season = user.current_season_n
         for div in club_names:
-            divisions[div] = DdClub.query.filter_by( division_n=div ).all()
+            divisions[div] = DdClub.query.filter_by( division_n=div ).all() # @UndefinedVariable
 
         indiv = DdLeague._CreateIntraDivMatches( 
             divisions,
@@ -89,8 +89,8 @@ class DdLeague( object ):
         user.current_season_n += 1
         user.current_day_n = 0
         game.service.AgeUpAllActivePlayers( user )
-        db.session.add( user )
-        db.session.commit()
+        db.session.add( user ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable
         DdLeague.CreateScheduleForUser( user )
         game.contexts[user.pk] = DdGameContext()
         DdLeague.AddRostersToContext( user )
@@ -143,7 +143,7 @@ class DdLeague( object ):
         res = []
         for team1 in div1:
             for team2 in div2:
-                res += [( team1.club_id_n, team2.club_id_n ) for k in range( same_matches )]
+                res += [( team1.club_id_n, team2.club_id_n ) for k in range( same_matches )] # @UnusedVariable
         return res
 
 
@@ -158,5 +158,5 @@ class DdLeague( object ):
         for team1 in division:
             for team2 in division:
                 if team1 != team2:
-                    res += [( team1.club_id_n, team2.club_id_n ) for k in range( same_matches )]
+                    res += [( team1.club_id_n, team2.club_id_n ) for k in range( same_matches )] # @UnusedVariable
         return res

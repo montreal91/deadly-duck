@@ -11,6 +11,7 @@ from werkzeug.security  import check_password_hash, generate_password_hash
 
 from app                import db, login_manager
 from app.custom_queries import MAX_DAY_IN_SEASON_SQL, RECENT_PLAYER_MATCHES_SQL
+from app.data.game.playoff_series import DdPlayoffSeries
 from config_game        import number_of_recent_matches, retirement_age
 
 

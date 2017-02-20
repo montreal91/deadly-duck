@@ -132,9 +132,11 @@ class DdMatchProcessor( object ):
 
             if set_result.set_status == DdSetStatuses.HOME_RETIRED:
                 self._res.away_sets = sets_to_win
+                self._res.home_sets = 0
                 break
             elif set_result.set_status == DdSetStatuses.AWAY_RETIRED:
                 self._res.home_sets = sets_to_win
+                self._res.away_sets = 0
                 break
 
         return self._res

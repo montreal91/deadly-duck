@@ -40,3 +40,11 @@ div.post-content {
     margin-left: 48px;
     min-height: 48px;
 }
+
+.series-score {
+    width: 50px;
+}
+
+.lol {
+    vertical-align: center;
+}

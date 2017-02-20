@@ -7,11 +7,12 @@ from app                import CreateApp, db
 from app.data.models    import DdPost
 from app.data.models    import DdUser, DdRole, DdPermission
 from app.data.game.club import DdClub
+from app.data.game.game_service import DdGameService
 from app.data.game.match import DdMatch
 from app.data.game.player import DdPlayer
-from app.data.game.game_service import DdGameService
-from flask.ext.migrate  import Migrate, MigrateCommand
-from flask.ext.script   import Manager, Shell
+from app.data.game.playoff_series import DdPlayoffSeries
+from flask_migrate  import Migrate, MigrateCommand
+from flask_script   import Manager, Shell
 
 
 app = CreateApp( os.getenv( "FLASK_CONFIG" ) or "default" )
@@ -21,9 +22,9 @@ migrate = Migrate( app, db )
 def ConfirmUser( username=None, email=None ):
     u = None
     if username:
-        u = DdUser.query.filter_by( username=username ).first()
+        u = DdUser.query.filter_by( username=username ).first() # @UndefinedVariable
     elif email:
-        u = DdUser.query.filter_by( email=email ).first()
+        u = DdUser.query.filter_by( email=email ).first() # @UndefinedVariable
     else:
         print( "You should specify username or email" )
         return
@@ -33,8 +34,8 @@ def ConfirmUser( username=None, email=None ):
         return
 
     u.confirmed = True
-    db.session.add( u )
-    db.session.commit()
+    db.session.add( u ) # @UndefinedVariable
+    db.session.commit() # @UndefinedVariable
 
 
 def MakeShellContext():
@@ -45,6 +46,7 @@ def MakeShellContext():
         DdMatch=DdMatch,
         DdPermission=DdPermission,
         DdPlayer=DdPlayer,
+        DdPlayoffSeries=DdPlayoffSeries,
         DdPost=DdPost,
         DdRole=DdRole,
         DdUser=DdUser,

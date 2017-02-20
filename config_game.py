@@ -1,20 +1,24 @@
+
 from decimal import Decimal
 
 club_names = {
     1: [
+        "Brisbane Rangers",
         "Canberra Masters",
-        "Melbourne Slams",
-        "Melbourne Rockets",
-        # "Sydney Cangaroos",
-        # "Brisbane Rangers",
         "Dandenong Pianists",
+        "Melbourne Rockets",
+        "Melbourne Slams",
+        "Sydney Cangaroos",
+        "Tasmanian Devils",
     ],
     2: [
-        "Darwin Ducks",
-        "Perth Penguins",
         "Adelaide Thrashers",
         "Broome Witchers",
-        # "Mandurah Turtles",
+        "Darwin Ducks",
+        "Mandurah Turtles",
+        "Perth Penguins",
+        "Rockingham Rocks",
+        "Western Fury",
         # "Bunbury Pandas",
     ]
 }
@@ -27,8 +31,13 @@ retirement_age = 22
 
 # This values should be even
 class DdLeagueConfig:
-    INDIV_MATCHES = 2
     EXDIV_MATCHES = 2
+    INDIV_MATCHES = 2
+    DIV_CLUBS_IN_PLAYOFFS = 4 # This number should be power of two
+    SETS_TO_WIN = 2
+    MATCHES_TO_WIN = 4
+    GAP_DAYS = 2
+    SERIES_TOP_HOME_PATTERN = (True, True, False, False, True, False, True)
 
 class DdPlayerSkills:
     MEAN_VALUE = 5
