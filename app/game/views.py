@@ -1,4 +1,6 @@
 
+import logging
+
 from flask                      import flash, redirect
 from flask                      import render_template, url_for
 from flask                      import abort
@@ -129,6 +131,7 @@ def HirePlayer( player_pk ):
 @game.route( "/main/" )
 @login_required
 def MainScreen():
+    logging.debug("User {pk:d} is on main screen".format(pk=current_user.pk))
     if current_user.managed_club_pk is not None:
         club = game.service.GetClub( current_user.managed_club_pk )
         if current_user.pk not in game.contexts:
@@ -169,6 +172,13 @@ def MainScreen():
 @game.route( "/nextday/" )
 @login_required
 def NextDay():
+    logging.debug(
+        "User {pk:d} plays next day. Season #{season:d}. Day #{day:d}".format(
+            pk=current_user.pk,
+            season=current_user.current_season_n,
+            day=current_user.current_day_n
+        )
+    )
     assert current_user.managed_club_pk is not None
     if current_user.pk not in game.contexts:
         DdLeague.AddRostersToContext( current_user )
@@ -357,8 +367,11 @@ def StartNewCareer():
         for div in club_names:
             res = game.service.GetAllClubsInDivision( div )
             divisions.append( res )
+        logging.debug("Creating Schedule for user {pk:d}".format(pk=current_user.pk))
         DdLeague.CreateScheduleForUser( current_user )
+        logging.debug("Creating new players for user {pk:d}".format(pk=current_user.pk))
         game.service.CreateNewcomersForUser( current_user )
+        logging.debug("Create financial accounts for user {pk:d}".format(pk=current_user.pk))
         game.service.CreateStartingAccounts( current_user )
         return render_template( "game/start_new_career.html", divisions=divisions )
     else:
