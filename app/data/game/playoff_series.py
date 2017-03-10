@@ -38,9 +38,9 @@ class DdPlayoffSeries( db.Model ):
         top = self.GetTopSeedMatchesWon( sets_to_win=sets_to_win )
         low = self.GetLowSeedMatchesWon( sets_to_win=sets_to_win )
 
-        if top == matches_to_win:
+        if top >= matches_to_win:
             return self.low_seed_pk
-        elif low == matches_to_win:
+        elif low >= matches_to_win:
             return self.top_seed_pk
         else:
             return None

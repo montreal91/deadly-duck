@@ -3,7 +3,7 @@ import logging
 
 from flask                      import flash, redirect
 from flask                      import render_template, url_for
-from flask                      import abort
+from flask                      import abort, current_app
 from flask_login                import current_user, login_required
 
 from .                          import game
@@ -49,6 +49,11 @@ def ClubDetails( club_pk ):
 @login_required
 def DayResults( season, day ):
     today_matches = game.service.GetDayResults( current_user.pk, season, day )
+    logging.debug(
+        "Debugging is {debug:s}".format(
+            debug=str(current_app.config["DEBUG"])
+        )
+    )
     if len( today_matches ) == 0:
         return redirect( url_for( "game.MainScreen" ) )
     else:
@@ -56,7 +61,8 @@ def DayResults( season, day ):
             "game/dayresults.html",
             matches=today_matches,
             season=season,
-            day=day
+            day=day,
+            debug=current_app.config["DEBUG"]
         )
 
 

@@ -58,7 +58,7 @@ class DdGameService( object ):
         length = len( div1_list )
         if final:
             top, low = 0, 0
-            recent_standings = self._dao_match.GetRecentStandings( user )
+            recent_standings = self._dao_match.GetRecentStandings( user, for_draft=False )
             if recent_standings.index( div1_list[0] ) > recent_standings.index( div2_list[0] ):
                 top = div1_list[0]
                 low = div2_list[0]
@@ -184,8 +184,8 @@ class DdGameService( object ):
             season
         )
 
-    def GetRecentStandings( self, user ):
-        return self._dao_match.GetRecentStandings( user )
+    def GetRecentStandings( self, user, for_draft=False ):
+        return self._dao_match.GetRecentStandings( user, for_draft=for_draft )
 
     def GetRemainingClubs( self, user ):
         div1standings, div2standings = self._GetClubsQualifiedToPlayoffs( user=user )

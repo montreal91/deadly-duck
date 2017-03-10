@@ -80,7 +80,7 @@ class DdLeague( object ):
         newcomers = game.service.GetNewcomersSnapshotsForUser( user )
         context.newcomers = newcomers
         context.DropPickPointer()
-        standings = game.service.GetRecentStandings( user )
+        standings = game.service.GetRecentStandings( user, for_draft=True )
         context.SetStandings( standings )
         game.contexts[user.pk] = context
 

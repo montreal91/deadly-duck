@@ -32,7 +32,7 @@ retirement_age = 22
 # This values should be even
 class DdLeagueConfig:
     EXDIV_MATCHES = 2
-    INDIV_MATCHES = 2
+    INDIV_MATCHES = 4
     DIV_CLUBS_IN_PLAYOFFS = 4 # This number should be power of two
     SETS_TO_WIN = 2
     MATCHES_TO_WIN = 4

@@ -6,3 +6,4 @@
 *.sql
 .project
 .pydevproject
+*.log

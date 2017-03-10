@@ -15,7 +15,13 @@
             <td>{{ loop.index }}</td>
             <td>{{ match.home_team }} : {{ match.away_team }}</td>
             <td>
-                {{ match.home_player }} [{{ match.home_skill }}] : {{ match.away_player }} [{{ match.away_skill }}]
+                {{ match.home_player }} {% if debug %}
+                [{{ match.home_skill }}]
+                {% endif %}
+                : {{ match.away_player }} 
+                {% if debug %}
+                [{{ match.away_skill }}]
+                {% endif %}
             </td>
             <td><strong>{{ match.full_score }}</strong></td>
         </tr>
