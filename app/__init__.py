@@ -1,6 +1,8 @@
 
 # Application package constructor
 
+import logging
+
 from config import config
 from flask import Flask, g
 from flask_bootstrap import Bootstrap
@@ -21,6 +23,12 @@ login_manager.login_view = "auth.Login"
 
 
 def CreateApp( config_name ):
+    logging.basicConfig(
+        filename="dduck.log",
+        level=logging.DEBUG,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%d.%m.%Y %H:%M:%S"
+    )
     app = Flask( __name__ )
     app.config.from_object( config[ config_name ] )
     config[ config_name ].InitApp( app )

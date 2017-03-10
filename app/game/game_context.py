@@ -6,6 +6,7 @@ class DdGameContext( object ):
         self._rosters = {}
         self._newcomers = []
         self._standings = []
+        self._players_to_update = set() # In database
         self._pick_pointer = 0
         self._is_draft = False
         self._next_match = True
@@ -22,6 +23,14 @@ class DdGameContext( object ):
     @is_draft.setter
     def is_draft( self, val ):
         self._is_draft = val
+
+    @property
+    def newcomers( self ):
+        return self._newcomers
+
+    @newcomers.setter
+    def newcomers( self, val ):
+        self._newcomers = list( val )
 
     @property
     def next_match( self ):
@@ -43,17 +52,14 @@ class DdGameContext( object ):
     def selected_player( self, val ):
         self._selected_player = val
 
+    def AddPlayerToUpdate( self, player_snapshot ):
+        self._players_to_update.add( player_snapshot )
+
     def SetClubRoster( self, club_pk=0, players_list=[] ):
         self._rosters[club_pk] = players_list
 
     def GetClubRoster( self, club_pk ):
         return self._rosters[club_pk]
-
-    def SetNewcomers( self, newcomers=[] ):
-        self._newcomers = newcomers
-
-    def GetNewcomers( self ):
-        return self._newcomers
 
     def SetStandings( self, standings=[] ):
         self._standings = standings
@@ -85,3 +91,8 @@ class DdGameContext( object ):
 
     def NeedToSelectPlayer( self ):
         return self._next_match and not self._selected_player
+
+    def TakePlayersToUpdate( self ):
+        res = list( self._players_to_update )
+        self._players_to_update = set()
+        return res

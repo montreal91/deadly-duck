@@ -1,21 +1,28 @@
 
-from random             import shuffle, choice
+from random                 import shuffle
 
-from . import game
-from ..                 import db
-from app.data.models    import DdUser
-from app.data.game.club import DdClub
-from app.data.game.match import DdMatch
-from config_game        import DdLeagueConfig, club_names
+from .                      import game
+from ..                     import db
+from app.data.game.club     import DdClub
+from app.game.game_context  import DdGameContext
+from config_game            import DdLeagueConfig, club_names
 
 
 class DdLeague( object ):
+    @staticmethod
+    def AddRostersToContext( user, ctx=DdGameContext() ):
+        clubs = game.service.GetAllClubs()
+        for club in clubs:
+            players = game.service.GetClubPlayers( user_pk=user.pk, club_pk=club.club_id_n )
+            ctx.SetClubRoster( club_pk=club.club_id_n, players_list=players )
+        game.contexts[user.pk] = ctx
+
     @staticmethod
     def CreateScheduleForUser( user ):
         divisions = dict()
         current_season = user.current_season_n
         for div in club_names:
-            divisions[div] = DdClub.query.filter_by( division_n=div ).all()
+            divisions[div] = DdClub.query.filter_by( division_n=div ).all() # @UndefinedVariable
 
         indiv = DdLeague._CreateIntraDivMatches( 
             divisions,
@@ -64,36 +71,30 @@ class DdLeague( object ):
                     day += 1
         game.service.SaveMatches( matches=db_matches )
 
+    @staticmethod
+    def StartDraft( user, context, need_to_create_newcomers=True ):
+        context.is_draft = True
+        if need_to_create_newcomers:
+            game.service.CreateNewcomersForUser( user )
+
+        newcomers = game.service.GetNewcomersSnapshotsForUser( user )
+        context.newcomers = newcomers
+        context.DropPickPointer()
+        standings = game.service.GetRecentStandings( user, for_draft=True )
+        context.SetStandings( standings )
+        game.contexts[user.pk] = context
 
     @staticmethod
-    def _CreateIntraDivMatches( divisions, indiv_matches ):
-        """
-        Generates list of matches inside all divisions.
-        :rtype: list
-        """
-        matches_l = []
-        same_matches = int( indiv_matches / 2 )
-        for division in divisions:
-            matches_l += DdLeague._MakeMatchesInsideDivision( 
-                divisions[division],
-                same_matches
-            )
-        return matches_l
+    def StartNextSeason( user ):
+        user.current_season_n += 1
+        user.current_day_n = 0
+        game.service.AgeUpAllActivePlayers( user )
+        db.session.add( user ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable
+        DdLeague.CreateScheduleForUser( user )
+        game.contexts[user.pk] = DdGameContext()
+        DdLeague.AddRostersToContext( user )
 
-
-    @staticmethod
-    def _MakeMatchesInsideDivision( division, same_matches ):
-        """
-        Creates list of games played by clubs in the same divisions.
-        :type division: list
-        :type same_matches: int
-        """
-        res = []
-        for team1 in division:
-            for team2 in division:
-                if team1 != team2:
-                    res += [( team1.club_id_n, team2.club_id_n ) for k in range( same_matches )]
-        return res
 
     @staticmethod
     def _CreateExtraDivMatches( divisions, exdiv_matches ):
@@ -113,6 +114,23 @@ class DdLeague( object ):
                     )
         return matches_l
 
+
+    @staticmethod
+    def _CreateIntraDivMatches( divisions, indiv_matches ):
+        """
+        Generates list of matches inside all divisions.
+        :rtype: list
+        """
+        matches_l = []
+        same_matches = int( indiv_matches / 2 )
+        for division in divisions:
+            matches_l += DdLeague._MakeMatchesInsideDivision( 
+                divisions[division],
+                same_matches
+            )
+        return matches_l
+
+
     @staticmethod
     def _MakeMatchesBetweenDivisions( div1, div2, same_matches ):
         """
@@ -125,5 +143,20 @@ class DdLeague( object ):
         res = []
         for team1 in div1:
             for team2 in div2:
-                res += [( team1.club_id_n, team2.club_id_n ) for k in range( same_matches )]
+                res += [( team1.club_id_n, team2.club_id_n ) for k in range( same_matches )] # @UnusedVariable
+        return res
+
+
+    @staticmethod
+    def _MakeMatchesInsideDivision( division, same_matches ):
+        """
+        Creates list of games played by clubs in the same divisions.
+        :type division: list
+        :type same_matches: int
+        """
+        res = []
+        for team1 in division:
+            for team2 in division:
+                if team1 != team2:
+                    res += [( team1.club_id_n, team2.club_id_n ) for k in range( same_matches )] # @UnusedVariable
         return res

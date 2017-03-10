@@ -10,7 +10,8 @@ Draft
 <tr>
     <th>#</th>
     <th>Name</th>
-    <th>Skill</th>
+    <th>Technique</th>
+    <th>Endurance</th>
     <th>Age</th>
 </tr>
 {% for plr in players %}
@@ -24,7 +25,10 @@ Draft
     </a>
     </td>
     <td>
-        {{ plr.skill }}
+        {{ plr.technique }}
+    </td>
+    <td>
+        {{ plr.endurance }}
     </td>
     <td>
         {{ plr.age }}

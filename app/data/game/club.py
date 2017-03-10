@@ -4,9 +4,9 @@ from config_game import club_names
 
 class DdClub( db.Model ):
     __tablename__ = "clubs"
-    club_id_n = db.Column( db.Integer, primary_key=True )
-    club_name_c = db.Column( db.String( 64 ) )
-    division_n = db.Column( db.Integer )
+    club_id_n = db.Column( db.Integer, primary_key=True ) # @UndefinedVariable
+    club_name_c = db.Column( db.String( 64 ) ) # @UndefinedVariable
+    division_n = db.Column( db.Integer ) # @UndefinedVariable
 
     def __repr__( self ):
         return "<Club %r>" % self.club_name_c
@@ -21,8 +21,8 @@ class DdDaoClub( object ):
                 club.club_name_c = name
                 club.division_n = div
                 new_clubs.append( club )
-        db.session.add_all( new_clubs )
-        db.session.commit()
+        db.session.add_all( new_clubs ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable
 
     def GetAllClubs( self ):
         return DdClub.query.all()

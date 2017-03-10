@@ -11,6 +11,7 @@ from werkzeug.security  import check_password_hash, generate_password_hash
 
 from app                import db, login_manager
 from app.custom_queries import MAX_DAY_IN_SEASON_SQL, RECENT_PLAYER_MATCHES_SQL
+from app.data.game.playoff_series import DdPlayoffSeries
 from config_game        import number_of_recent_matches, retirement_age
 
 
@@ -217,13 +218,20 @@ class DdUser( UserMixin, db.Model ):
 
 
     @staticmethod
-    def GenerateTestingUser():
+    def GenerateTestingUsers():
         user = DdUser()
         user.username = "turtle"
         user.email = "foo@bar.com"
         user.password = "ninja"
         user.confirmed = True
-        db.session.add( user )
+
+        user1 = DdUser()
+        user1.username = "montreal"
+        user1.email = "foo1@bar.com"
+        user1.password = "qazzaq"
+        user1.confirmed = True
+
+        db.session.add_all( [user, user1] )
         db.session.commit()
 
 
