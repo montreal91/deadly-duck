@@ -7,6 +7,7 @@ from app                import CreateApp, db
 from app.data.models    import DdPost
 from app.data.models    import DdUser, DdRole, DdPermission
 from app.data.game.club import DdClub
+from app.data.game.club_record import DdClubRecord
 from app.data.game.game_service import DdGameService
 from app.data.game.match import DdMatch
 from app.data.game.player import DdPlayer
@@ -43,6 +44,7 @@ def MakeShellContext():
         app=app,
         db=db,
         DdClub=DdClub,
+        DdClubRecord=DdClubRecord,
         DdMatch=DdMatch,
         DdPermission=DdPermission,
         DdPlayer=DdPlayer,

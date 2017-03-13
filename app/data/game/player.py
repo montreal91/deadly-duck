@@ -144,6 +144,10 @@ class DdPlayer( db.Model ):
         return round( res, 2 )
 
     @property
+    def full_name( self ):
+        return self.first_name_c + " " + self.second_name_c + " " + self.last_name_c
+
+    @property
     def snapshot( self ):
         return DdPlayerSnapshot( 
             pk=self.pk_n,

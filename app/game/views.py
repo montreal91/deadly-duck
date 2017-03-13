@@ -11,6 +11,7 @@ from ..                         import db
 
 from config_game                import club_names, DdPlayerSkills
 
+from app.data.models            import DdUser
 from app.game.league            import DdLeague
 from app.game.match_processor   import DdMatchProcessor
 
@@ -37,11 +38,13 @@ def ClubDetails( club_pk ):
         players = game.contexts[current_user.pk].GetClubRoster( club_pk )
     else:
         players = game.service.GetClubPlayers( current_user.pk, club_pk )
+    records = game.service.GetClubRecordsForUser( club_pk=club_pk, user=current_user )
     return render_template( 
         "game/club_details.html",
         club=club,
         players=players,
         account=account,
+        records=records,
     )
 
 
@@ -49,9 +52,9 @@ def ClubDetails( club_pk ):
 @login_required
 def DayResults( season, day ):
     today_matches = game.service.GetDayResults( current_user.pk, season, day )
-    logging.debug(
-        "Debugging is {debug:s}".format(
-            debug=str(current_app.config["DEBUG"])
+    logging.debug( 
+        "Debugging is {debug:s}".format( 
+            debug=str( current_app.config["DEBUG"] )
         )
     )
     if len( today_matches ) == 0:
@@ -137,7 +140,10 @@ def HirePlayer( player_pk ):
 @game.route( "/main/" )
 @login_required
 def MainScreen():
-    logging.debug("User {pk:d} is on main screen".format(pk=current_user.pk))
+    logging.debug( "User {pk:d} is on main screen".format( pk=current_user.pk ) )
+#     game.service._MakeClubRecord( club_pk=1, user=current_user )
+#     game.service._MakeClubRecord( club_pk=2, user=current_user )
+#     game.service._MakeClubRecord( club_pk=3, user=current_user )
     if current_user.managed_club_pk is not None:
         club = game.service.GetClub( current_user.managed_club_pk )
         if current_user.pk not in game.contexts:
@@ -178,8 +184,8 @@ def MainScreen():
 @game.route( "/nextday/" )
 @login_required
 def NextDay():
-    logging.debug(
-        "User {pk:d} plays next day. Season #{season:d}. Day #{day:d}".format(
+    logging.debug( 
+        "User {pk:d} plays next day. Season #{season:d}. Day #{day:d}".format( 
             pk=current_user.pk,
             season=current_user.current_season_n,
             day=current_user.current_day_n
@@ -219,6 +225,7 @@ def NextDay():
             flash( new_round_string.format( round=poff_round + 1 ) )
             return redirect( url_for( "game.MainScreen" ) )
         elif game.service.NewSeasonCondition( d1=remaining_d1, d2=remaining_d2 ) is True:
+            game.service.SaveClubRecords( user=current_user )
             DdLeague.StartNextSeason( current_user )
             DdLeague.StartDraft( current_user, ctx )
             flash( "Welcome to the entry draft." )
@@ -306,6 +313,15 @@ def Playoffs():
         season=current_user.current_season_n
     )
 
+@game.route( "/user/<username>/playoff_series_details/<int:series_pk>/" )
+@login_required
+def PlayoffSeriesDetails( username, series_pk ):
+    series = game.service.GetPlayoffSeries( series_pk=series_pk )
+    user = DdUser.query.filter_by( username=username ).first() # @UndefinedVariable
+    if user is None:
+        abort( 404 )
+    return render_template( "game/playoff_series_details.html", series=series )
+
 
 @game.route( "/play_rest_of_season/" )
 @login_required
@@ -373,11 +389,11 @@ def StartNewCareer():
         for div in club_names:
             res = game.service.GetAllClubsInDivision( div )
             divisions.append( res )
-        logging.debug("Creating Schedule for user {pk:d}".format(pk=current_user.pk))
+        logging.debug( "Creating Schedule for user {pk:d}".format( pk=current_user.pk ) )
         DdLeague.CreateScheduleForUser( current_user )
-        logging.debug("Creating new players for user {pk:d}".format(pk=current_user.pk))
+        logging.debug( "Creating new players for user {pk:d}".format( pk=current_user.pk ) )
         game.service.CreateNewcomersForUser( current_user )
-        logging.debug("Create financial accounts for user {pk:d}".format(pk=current_user.pk))
+        logging.debug( "Create financial accounts for user {pk:d}".format( pk=current_user.pk ) )
         game.service.CreateStartingAccounts( current_user )
         return render_template( "game/start_new_career.html", divisions=divisions )
     else:

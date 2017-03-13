@@ -1,11 +1,67 @@
 
+table.dd-table {
+    width: 100%;
+}
+
+table.dd-table td {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+table.dd-table .dd-center {
+    text-align: center;
+}
+
+table.dd-table .dd-left {
+    text-align: right;
+}
+
+table.dd-table .dd-right {
+    text-align: left;
+}
+
+table.dd-table .dd-clubs-row {
+    font-size: 190%;
+    font-weight: bold;
+}
+
+table.dd-table .dd-series-score-row {
+    font-size: 400%;
+    font-weight: bold;
+}
+
+table.dd-table .dd-score-cell {
+    font-size: 150%;
+}
+
+table.dd-table .dd-match-winner {
+    font-style: italic;
+    font-weight: bold;
+}
+
+table.dd-table .dd-match-row {
+    border-color: #000000;
+    border-style: solid none solid none;
+    border-width: 1px;
+    font-size: 120%;
+}
+
+table.dd-table .dd-club-name {
+    font-size: 130%;
+}
+
+table.dd-table .dd-player-name {
+    font-size: 90%;
+}
+
 .profile-thumbnail {
+    margin-left: 30px;
     position: absolute;
 }
 
 .profile-header {
     min-height: 260px;
-    margin-left: 280px;
+    margin-left: 310px;
 }
 
 ul.posts {

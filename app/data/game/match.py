@@ -208,7 +208,7 @@ class DdDaoMatch( object ):
     def GetRecentStandings( self, user, for_draft=False ):
         table = db.engine.execute( # @UndefinedVariable
             STANDINGS_SQL.format( 
-                user.current_season_n - int(for_draft),
+                user.current_season_n - int( for_draft ),
                 user.pk
             )
         ).fetchall() # @UndefinedVariable
@@ -226,8 +226,8 @@ class DdDaoMatch( object ):
                 home_skill=round( row[5], 2 ),
                 away_skill=round( row[6], 2 ),
                 full_score=row[7],
-                home_team_pk=None,
-                away_team_pk=None
+                home_team_pk=row["home_team_pk"],
+                away_team_pk=row["away_team_pk"]
             )
             for row in query_res
         ]

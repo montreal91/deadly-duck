@@ -11,7 +11,7 @@
         <th>#</th><th>Match</th><th>Players</th><th>score</th>
     </tr>
     {% for match in matches %}
-        <tr>
+        <tr {% if match.home_team_pk == current_user.managed_club_pk or match.away_team_pk == current_user.managed_club_pk %}class="info"{% endif %}>
             <td>{{ loop.index }}</td>
             <td>{{ match.home_team }} : {{ match.away_team }}</td>
             <td>

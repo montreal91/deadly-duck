@@ -3,6 +3,7 @@ from sqlalchemy import and_, text
 
 from app import db
 from config_game import DdLeagueConfig
+from app.custom_queries import FINAL_PLAYOFF_SERIES_FOR_CLUB_SQL
 from app.custom_queries import MAX_PLAYOFF_ROUND_SQL
 from app.custom_queries import SERIES_IN_ONE_ROUND_IN_ONE_DIVISION_SQL
 
@@ -104,7 +105,6 @@ class DdDaoPlayoffSeries( object ):
         series.top_seed_pk = top_seed_pk
         series.low_seed_pk = low_seed_pk
         series.round_n = round_n
-        # self.SavePlayoffSeries(series)
         return series
 
     def GetAllPlayoffSeries( self, user=None ):
@@ -114,6 +114,28 @@ class DdDaoPlayoffSeries( object ):
                 DdPlayoffSeries.user_pk == user.pk
             )
         ).all()
+
+    def GetFinalPlayoffSeriesForClubInSeason( self, club_pk=0, user=None ):
+        return DdPlayoffSeries.query.from_statement( 
+            text( FINAL_PLAYOFF_SERIES_FOR_CLUB_SQL ).params( 
+                userpk=user.pk,
+                season=user.current_season_n,
+                club_pk=club_pk,
+            )
+        ).first()
+
+
+    def GetMaxPlayoffRound( self, user=None ):
+        res = db.engine.execute( # @UndefinedVariable
+            MAX_PLAYOFF_ROUND_SQL.format( 
+                user_pk=user.pk,
+                season=user.current_season_n
+            )
+        ).first() # @UndefinedVariable
+        return res["max_round"]
+
+    def GetPlayoffSeries( self, series_pk=0 ):
+        return DdPlayoffSeries.query.get_or_404( series_pk )
 
     def GetPlayoffSeriesByRoundAndDivision( self, user=None, rnd=0 ):
         div1 = DdPlayoffSeries.query.from_statement( 
@@ -133,15 +155,6 @@ class DdDaoPlayoffSeries( object ):
             )
         ).all()
         return div1, div2
-
-    def GetMaxPlayoffRound( self, user=None ):
-        res = db.engine.execute( # @UndefinedVariable
-            MAX_PLAYOFF_ROUND_SQL.format( 
-                user_pk=user.pk,
-                season=user.current_season_n
-            )
-        ).first() # @UndefinedVariable
-        return res["max_round"]
 
     def SavePlayoffSeries( self, pos=None ):
         pos.is_finished = pos.IsFinished( 

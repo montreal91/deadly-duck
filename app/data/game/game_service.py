@@ -1,9 +1,13 @@
 
+import logging
+
 from decimal import Decimal
 
 from app.data.game.club import DdDaoClub
 from app.data.game.club_financial_account import DdClubFinancialAccount
 from app.data.game.club_financial_account import DdDaoClubFinancialAccount
+from app.data.game.club_record import DdDaoClubRecord
+from app.data.game.club_record import PlayoffRecordComparator, RegularRecordComparator
 from app.data.game.match import DdDaoMatch, DdMatchStatuses
 from app.data.game.player import DdDaoPlayer
 from app.data.game.playoff_series import DdPlayoffSeries, DdDaoPlayoffSeries
@@ -14,6 +18,7 @@ class DdGameService( object ):
     def __init__( self ):
         self._dao_club = DdDaoClub()
         self._dao_club_financial_account = DdDaoClubFinancialAccount()
+        self._dao_club_record = DdDaoClubRecord()
         self._dao_match = DdDaoMatch()
         self._dao_player = DdDaoPlayer()
         self._dao_playoff_series = DdDaoPlayoffSeries()
@@ -129,11 +134,25 @@ class DdGameService( object ):
     def GetAllClubsInDivision( self, division ):
         return self._dao_club.GetAllClubsInDivision( division )
 
+    def GetAllPlayoffSeries( self, user=None ):
+        return self._dao_playoff_series.GetAllPlayoffSeries( user=user )
+
+    def GetBestClubRecord( self, user=None, club_pk=0 ):
+        playoff_records = self._dao_club_record.GetPlayoffRecords( club_pk=club_pk, user=user )
+        if len( playoff_records ) != 0:
+            return max( playoff_records, key=PlayoffRecordComparator )
+
+        regular_records = self._dao_club_record.GetRegularRecords( club_pk=club_pk, user=user )
+        if len( regular_records ) != 0:
+            return max( regular_records, key=RegularRecordComparator )
+        else:
+            return None
+
     def GetClubPlayers( self, user_pk=0, club_pk=0 ):
         return self._dao_player.GetClubPlayers( user_pk, club_pk )
 
-    def GetAllPlayoffSeries( self, user=None ):
-        return self._dao_playoff_series.GetAllPlayoffSeries( user=user )
+    def GetClubRecordsForUser( self, club_pk=0, user=None ):
+        return self._dao_club_record.GetClubRecordsForUser( club_pk=club_pk, user=user )
 
     def GetCurrentMatch( self, user ):
         return self._dao_match.GetCurrentMatch( user )
@@ -171,6 +190,9 @@ class DdGameService( object ):
 
     def GetPlayer( self, player_pk ):
         return self._dao_player.GetPlayer( player_pk )
+
+    def GetPlayoffSeries( self, series_pk=0 ):
+        return self._dao_playoff_series.GetPlayoffSeries( series_pk=series_pk )
 
     def GetPlayoffSeriesByRoundAndDivision( self, user=None, rnd=0 ):
         return self._dao_playoff_series.GetPlayoffSeriesByRoundAndDivision( 
@@ -228,6 +250,14 @@ class DdGameService( object ):
 
     def SaveAccount( self, account ):
         self._dao_club_financial_account.SaveAccount( account )
+
+    def SaveClubRecords( self, user=None ):
+        clubs = self._dao_club.GetAllClubs()
+        records = []
+        for club in clubs:
+            rec = self._MakeClubRecord( club_pk=club.club_id_n, user=user )
+            records.append( rec )
+        self._dao_club_record.SaveClubRecords( club_records=records )
 
     def SaveMatch( self, match=None ):
         self._dao_match.SaveMatch( match=match )
@@ -353,6 +383,37 @@ class DdGameService( object ):
         div2standings = div2standings[:DdLeagueConfig.DIV_CLUBS_IN_PLAYOFFS]
         return div1standings, div2standings
 
+    def _MakeClubRecord( self, club_pk=0, user=None ):
+        logging.debug( 
+            "Making club record for club {club_pk:d} of user {user_pk:d}".format( 
+                club_pk=club_pk,
+                user_pk=user.pk
+            )
+        )
+        standings = self._dao_match.GetLeagueStandings( 
+            user_pk=user.pk,
+            season=user.current_season_n
+        )
+
+        club_record = [rec for rec in standings if rec.club_pk == club_pk]
+        if len( club_record ) != 1:
+            raise ValueError( "Standings data is incorrect" )
+
+        club_record = club_record[0]
+        club_position = standings.index( club_record ) + 1
+        club_points = club_record.sets_won
+        final_playoff_series = self._dao_playoff_series.GetFinalPlayoffSeriesForClubInSeason( 
+            club_pk=club_pk,
+            user=user
+        )
+        return self._dao_club_record.CreateClubRecord( 
+            club_pk=club_pk,
+            position=club_position,
+            points=club_points,
+            user=user,
+            playoff_series=final_playoff_series
+        )
+
     def _MatchIncome( self, sets=0 ):
         """
         Placeholder function
@@ -365,3 +426,4 @@ class DdGameService( object ):
             return 450
         else:
             raise ValueError( "Incorrect number of sets." )
+

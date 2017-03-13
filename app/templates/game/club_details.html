@@ -16,12 +16,47 @@
 <p>
     <label>Account</label>: {{ account.money }}
 </p>
-<p>
-{% for player in players %}
+<div class="container">
+  <div class="col-md-6">
+  <h3>Players</h3>
+  {% for player in players %}
     <a href="{{ url_for('game.PlayerDetails', player_pk=player.pk) }}">    
     {{ player.first_name }} {{ player.second_name }} {{ player.last_name }}<br>
     </a>
-{% endfor %}
-</p>
+  {% endfor %}
+  </div>
+
+  <div class="col-md-6">
+    <h3>Records</h3>
+    {% if records %}
+    <table class="table">
+      <tr>
+        <th>Season</th>
+        <th>Position</th>
+        <th>Points</th>
+        <th>Last Series</th>
+      </tr>
+    {% for record in records %}
+      <tr>
+        <td>{{ record.season_n }}</td>
+        <td>{{ record.regular_season_position_n }}</td>
+        <td>{{ record.regular_season_points_n }}</td>
+        <td>
+          {% if record.last_playoff_series_pk %}
+            <a href="{{ url_for('game.PlayoffSeriesDetails', username=current_user.username, series_pk=record.last_playoff_series_pk)}}">
+              Last Playoff Series
+            </a>
+          {% else %}
+            No playoffs 
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </table>
+    {% else %}
+    No records yet
+    {% endif %}
+  </div>
+</div>
 {% include "includes/current_match_or_standings.html" %}
 {% endblock %}

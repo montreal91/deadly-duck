@@ -13,6 +13,7 @@
   {% for block in series_dict[r] %}
     <div class="lol">
     {% for series in block %}
+      <a href="{{url_for('game.PlayoffSeriesDetails',username=current_user.username, series_pk=series.pk)}}">
       <table class="table table-bordered">
         <tr>
           <td>{{ series.top_seed.club_name_c }}</td>
@@ -25,10 +26,11 @@
           <td class="series-score">{{ series.low_seed_victories_n }}</td>
         </tr>
       </table>
+      </a>
     {% endfor %}
   </div>
   {% endfor %}
 </div>
 {% endfor %}
-    
+
 {% endblock %}

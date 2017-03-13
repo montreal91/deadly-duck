@@ -6,19 +6,21 @@
 {% block page_content %}
 
 <div class="page-header">
-    <img src="{{ user.Gravatar(size=256) }}" class="img-rounded profile-thumbnail">
-    <div class="profile-header">
-        <h1>{{ user.username }}</h1>
-        {% if user.name or user.location %}
-        <p>
-            {% if user.name %}{{ user.name }}{% endif %}
-            {% if user.location %}
-                From <a href="http://maps.google.com/?q={{ user.location }}">
-                {{ user.location }}</a>
-            {% endif %}
-        </p>
+  <img src="{{ user.Gravatar(size=256) }}" class="img-rounded profile-thumbnail">
+  <div class="profile-header">
+    <h1>{{ user.username }}</h1>
+    {% if user.name or user.location %}
+      <p>
+        {% if user.name %}{{ user.name }}{% endif %}
+        {% if user.location %}
+          From <a href="http://maps.google.com/?q={{ user.location }}">
+          {{ user.location }}</a>
         {% endif %}
-    </div>
+      </p>
+    {% endif %}
+  </div>
+  <div class="container">
+    <div class="col-md-6">
     {% if current_user.is_administer() %}
     <p><a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
     {% endif %}
@@ -36,6 +38,37 @@
         <a href="{{ url_for('.EditProfileAdmin', pk=user.pk) }}" class="btn btn-danger">Edit Profile [Admin]</a>
         {% endif %}
     </p>
+    </div>
+    <div class="col-md-6">
+      {% if best_user_record %}
+        <h4>Best Record</h4>
+        <table class="table">
+          <tr>
+            <th>Season</th>
+            <th>Position</th>
+            <th>Points</th>
+            <th>Last Series</th>
+          </tr>
+          <tr>
+            <td>{{ best_user_record.season_n }}</td>
+            <td>{{ best_user_record.regular_season_position_n }}</td>
+            <td>{{ best_user_record.regular_season_points_n }}</td>
+            <td>
+              {% if best_user_record.last_playoff_series %}
+                <a href="{{ url_for('game.PlayoffSeriesDetails', username=user.username, series_pk= best_user_record.last_playoff_series_pk)}}">
+                  Last playoff series
+                </a>
+              {% else %}
+                No playoffs
+              {% endif %}
+            </td>
+          </tr>
+        </table>
+      {% else %}
+        This user has no records yet.
+      {% endif %}
+    </div>
+  </div>
 </div>
 <h3>Posts by {{ user.username }}</h3>
 {% include '_posts.html' %}

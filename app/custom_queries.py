@@ -1,4 +1,38 @@
 
+BEST_PLAYOFF_RECORD_SQL = """
+SELECT  *
+FROM    club_records
+WHERE   club_pk = :clubpk
+AND     user_pk = :userpk
+AND     last_playoff_series_pk IN (
+    SELECT  pk
+    FROM    playoff_series
+    WHERE   user_pk = :userpk
+    AND     (top_seed_pk = :clubpk OR low_seed_pk = :clubpk)
+    AND     round_n = (
+        SELECT  Max(round_n)
+        FROM    playoff_series
+        WHERE   user_pk = :userpk
+        AND     (top_seed_pk = :clubpk OR low_seed_pk = :clubpk)
+    )
+)
+ORDER BY season_n
+"""
+
+BEST_REGULAR_RECORD_SQL = """
+SELECT  *
+FROM    club_records
+WHERE   user_pk = :userpk
+AND     club_pk = :clubpk
+AND     regular_season_position_n = (
+    SELECT  Min(regular_season_position_n)
+    FROM    club_records
+    WHERE   user_pk = :userpk
+    AND     club_pk = :clubpk
+)
+ORDER BY season_n
+"""
+
 CLUB_PLAYERS_SQL = """
 SELECT pk_n, first_name_c, second_name_c, last_name_c, technique_n, age_n, club_pk, endurance_n, current_stamina_n
 FROM  players
@@ -6,6 +40,14 @@ WHERE user_pk = {0:d}
 AND   club_pk = {1:d}
 AND   is_active = 1
 AND   is_drafted = 1
+"""
+
+CLUB_RECORDS_SQL = """
+SELECT  *
+FROM    club_records
+WHERE   user_pk = :userpk
+AND     club_pk = :clubpk
+ORDER BY season_n DESC
 """
 
 CURRENT_MATCH_SQL = """
@@ -51,12 +93,31 @@ SELECT match_pk_n, (
     SELECT (technique_n + endurance_n) / 2
     FROM   players
     WHERE  players.pk_n = matches.away_player_pk
-), full_score_c
+), full_score_c, home_team_pk, away_team_pk
 FROM matches
 WHERE user_pk = {0:d}
 AND season_n = {1:d}
 AND day_n = {2:d}
 AND status_en = 'finished'
+"""
+
+FINAL_PLAYOFF_SERIES_FOR_CLUB_SQL = """
+SELECT *
+FROM    playoff_series
+WHERE   user_pk = :userpk
+AND     season_n = :season
+AND     (
+    top_seed_pk = :club_pk OR low_seed_pk = :club_pk
+)
+AND     round_n = (
+    SELECT  Max(round_n)
+    FROM    playoff_series
+    WHERE   user_pk = :userpk
+    AND     season_n = :season
+    AND     (
+        top_seed_pk = :club_pk OR low_seed_pk = :club_pk
+    )
+)
 """
 
 MAX_DAY_IN_SEASON_SQL = """
