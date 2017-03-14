@@ -29,8 +29,8 @@ sets_to_win = 2
 # This number is for testing purposes, real should be much bigger
 retirement_age = 22
 
-# This values should be even
 class DdLeagueConfig:
+    # This values should be even
     EXDIV_MATCHES = 2
     INDIV_MATCHES = 4
     DIV_CLUBS_IN_PLAYOFFS = 4 # This number should be power of two
@@ -48,3 +48,10 @@ class DdPlayerSkills:
     MAX_STAMINA_LOST = 3
     DAILY_RECOVERY_FACTOR = Decimal( 0.25 )
     SKILL_PRECISION = 2
+
+class DdRatingsParamerers:
+    GROUND_LEVEL = 1
+    MATCHES_COEFFICIENT = 2
+    PRECISION = 2
+    REGULAR_POINTS_FACTOR = 2.5
+    ROUND_COEFFICIENT = 25

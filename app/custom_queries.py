@@ -120,6 +120,43 @@ AND     round_n = (
 )
 """
 
+GLOBAL_USER_RATING_SQL = """
+SELECT users_outer.pk, users_outer.username, Round(
+(
+    SELECT Avg(last_round * 25 * (matches_won * 2 + 1))
+    FROM (
+        SELECT Sum(
+            CASE
+            WHEN matches.home_team_pk = users_outer.managed_club_pk AND matches.home_sets_n > matches.away_sets_n
+            THEN 1
+            WHEN matches.away_team_pk = users_outer.managed_club_pk AND matches.away_sets_n > matches.home_sets_n
+            THEN 1
+            ELSE 0
+            END
+        ) AS matches_won, club_records.season_n, (
+            SELECT round_n
+            FROM playoff_series
+            WHERE playoff_series.pk = club_records.last_playoff_series_pk
+        ) AS last_round
+        FROM club_records, matches
+        WHERE club_records.user_pk = users_outer.pk
+        AND club_records.club_pk = users_outer.managed_club_pk
+        AND matches.playoff_series_pk = club_records.last_playoff_series_pk
+        AND matches.status_en = 'finished'
+        GROUP BY club_records.last_playoff_series_pk
+    )
+) + (
+    SELECT Avg(club_records.regular_season_points_n)
+    FROM club_records
+    WHERE club_records.user_pk = users_outer.pk
+    AND club_records.club_pk = users_outer.managed_club_pk
+) * :regular_points_factor, :precision
+) AS rating_points
+FROM users AS users_outer
+WHERE rating_points NOT NULL
+ORDER BY rating_points DESC
+"""
+
 MAX_DAY_IN_SEASON_SQL = """
 SELECT Max(day_n)
 FROM   matches

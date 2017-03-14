@@ -3,8 +3,11 @@
 
 from flask      import Blueprint
 
+from app.data.game.game_service import DdGameService
+
 
 main = Blueprint( "main", __name__ )
+main.game_service = DdGameService()
 
 from .                  import views, errors
 from app.data.models    import DdPermission

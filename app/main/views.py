@@ -25,7 +25,8 @@ def Index():
 
     #     return redirect( url_for( ".Index" ) )
     # posts = DdPost.query.order_by( DdPost.timestamp.desc() ).all()
-    return render_template( "index.html" ) # , form=form, posts=posts, Permission=DdPermission )
+    ratings = main.game_service.GetGlobalRatings()
+    return render_template( "index.html", ratings=ratings ) # , form=form, posts=posts, Permission=DdPermission )
 
 
 @main.route( "/user/<username>/" )
@@ -35,8 +36,7 @@ def User( username ):
     if user is None:
         return abort( 404 )
     posts = user.posts.order_by( DdPost.timestamp.desc() ).all() # @UndefinedVariable
-    game_service = DdGameService()
-    best_user_record = game_service.GetBestClubRecord( user=user, club_pk=user.managed_club_pk )
+    best_user_record = main.game_service.GetBestClubRecord( user=user, club_pk=user.managed_club_pk )
     return render_template( 
         "user.html",
         user=user,

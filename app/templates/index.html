@@ -18,6 +18,30 @@
     {% if current_user.is_authenticated %}
     <div class="col-md-8">
         Welcome to the Deadly Duck, the browser-based tennis club manager.
+        <hr>
+        <h2>Best Managers</h2>
+        {% if ratings %}
+          <table class="table">
+            <tr>
+              <th>#</th>
+              <th>Username</th>
+              <th>Rating</th>
+            </tr>
+            {% for row in ratings %}
+            <tr {% if current_user.username == row["username"] %}class="info"{% endif %}>
+              <td>{{ loop.index }}</td>
+              <td>
+                <a href="{{ url_for('main.User', username=row['username']) }}">
+                  {{ row["username"] }}
+                </a>
+              </td>
+              <td>{{ row["rating_points"] }}</td>
+            </tr>
+            {% endfor %}
+          </table>
+        {% else %}
+          There is no rated users yet.
+        {% endif %}
     </div>
     <div class="col-md-4">
         {% if current_user.managed_club_pk %}

@@ -3,6 +3,10 @@ import logging
 
 from decimal import Decimal
 
+from sqlalchemy import text
+
+from app import db
+from app.custom_queries import GLOBAL_USER_RATING_SQL
 from app.data.game.club import DdDaoClub
 from app.data.game.club_financial_account import DdClubFinancialAccount
 from app.data.game.club_financial_account import DdDaoClubFinancialAccount
@@ -12,7 +16,8 @@ from app.data.game.match import DdDaoMatch, DdMatchStatuses
 from app.data.game.player import DdDaoPlayer
 from app.data.game.playoff_series import DdPlayoffSeries, DdDaoPlayoffSeries
 
-from config_game import DdLeagueConfig
+from config_game import DdLeagueConfig, DdRatingsParamerers
+
 
 class DdGameService( object ):
     def __init__( self ):
@@ -178,6 +183,17 @@ class DdGameService( object ):
             user_pk=user_pk,
             season=season
         )
+
+    def GetGlobalRatings( self ):
+        return db.engine.execute( # @UndefinedVariable
+            text( GLOBAL_USER_RATING_SQL ).params( 
+                precision=DdRatingsParamerers.PRECISION,
+                matches_coefficient=DdRatingsParamerers.MATCHES_COEFFICIENT,
+                round_coefficient=DdRatingsParamerers.ROUND_COEFFICIENT,
+                ground_level=DdRatingsParamerers.GROUND_LEVEL,
+                regular_points_factor=DdRatingsParamerers.REGULAR_POINTS_FACTOR
+            )
+        ).fetchall() # @UndefinedVariable
 
     def GetMaxPlayoffRound( self, user=None ):
         return self._dao_playoff_series.GetMaxPlayoffRound( user=user )
