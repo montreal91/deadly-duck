@@ -201,6 +201,15 @@ class DdGameService( object ):
     def GetNewcomersSnapshotsForUser( self, user ):
         return self._dao_player.GetNewcomersSnapshotsForUser( user )
 
+    def GetNumberOfActivePlayers( self ):
+        return self._dao_player.GetNumberOfActivePlayers()
+
+    def GetNumberOfFinishedMatches( self ):
+        return self._dao_match.GetNumberOfFinishedMatches()
+
+    def GetNumberOfFinishedSeries( self ):
+        return self._dao_playoff_series.GetNumberOfFinishedSeries()
+
     def GetNumberOfUndraftedPlayers( self, user ):
         return self._dao_player.GetNumberOfUndraftedPlayers( user )
 

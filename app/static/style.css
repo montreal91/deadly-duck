@@ -104,3 +104,19 @@ div.post-content {
 .lol {
     vertical-align: center;
 }
+
+.dd-tab-content {
+    -webkit-animation: dd_fade_effect 1s;
+    animation: dd_fade_effect 1s;
+    display: none;
+}
+
+@-webkit-keyframes dd_fade_effect {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+
+@keyframes dd_fade_effect {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}

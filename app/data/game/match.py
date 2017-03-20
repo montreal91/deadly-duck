@@ -232,6 +232,9 @@ class DdDaoMatch( object ):
             for row in query_res
         ]
 
+    def GetNumberOfFinishedMatches( self ):
+        return DdMatch.query.filter_by( status_en=DdMatchStatuses.finished ).count()
+
     def GetTodayMatches( self, user ):
         return DdMatch.query.filter( 
             and_( 

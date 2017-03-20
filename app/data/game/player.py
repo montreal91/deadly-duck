@@ -245,6 +245,9 @@ class DdDaoPlayer( object ):
         ).order_by( DdPlayer.technique_n ).all()
         return [plr.snapshot for plr in players]
 
+    def GetNumberOfActivePlayers( self ):
+        return DdPlayer.query.filter_by( is_active=True ).count()
+
     def GetNumberOfUndraftedPlayers( self, user ):
         return DdPlayer.query.filter( 
             and_( 

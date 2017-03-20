@@ -134,6 +134,9 @@ class DdDaoPlayoffSeries( object ):
         ).first() # @UndefinedVariable
         return res["max_round"]
 
+    def GetNumberOfFinishedSeries( self ):
+        return DdPlayoffSeries.query.filter_by( is_finished=True ).count()
+
     def GetPlayoffSeries( self, series_pk=0 ):
         return DdPlayoffSeries.query.get_or_404( series_pk )
 

@@ -120,6 +120,42 @@ AND     round_n = (
 )
 """
 
+EXISTING_FRIENDSHIP_SQL = """
+SELECT  Count(*) AS number_of_existing_friendships
+FROM    friendship
+WHERE (
+    (friend_one_pk = :u1_pk AND friend_two_pk = :u2_pk) OR 
+    (friend_one_pk = :u2_pk AND friend_two_pk = :u1_pk)
+)
+AND     is_active = 1
+"""
+
+FRIENDS_SQL = """
+SELECT *
+FROM users
+WHERE pk IN (
+    SELECT  friend_two_pk
+    FROM    friendship
+    WHERE   friend_one_pk = :user_pk
+    AND     is_active = 1
+    UNION
+    SELECT  friend_one_pk
+    FROM    friendship
+    WHERE   friend_two_pk = :user_pk
+    AND     is_active = 1
+)
+"""
+
+FRIENDSHIP_SQL = """
+SELECT  *
+FROM    friendship
+WHERE   (
+    (friend_one_pk = :u1_pk AND friend_two_pk = :u2_pk) OR 
+    (friend_one_pk = :u2_pk AND friend_two_pk = :u1_pk)
+)
+AND     is_active = 1
+"""
+
 GLOBAL_USER_RATING_SQL = """
 SELECT users_outer.pk, users_outer.username, Round(
 (
@@ -157,6 +193,19 @@ WHERE rating_points NOT NULL
 ORDER BY rating_points DESC
 """
 
+INCOMING_FRIEND_REQUESTS_SQL = """
+SELECT incoming_requests.from_pk, users.username, incoming_requests.message_txt, incoming_requests.timestamp_dt, incoming_requests.pk
+FROM users, (
+    SELECT *
+    FROM friend_requests
+    WHERE to_pk = :user_pk
+    AND is_accepted = 0
+    AND is_rejected = 0
+) AS incoming_requests
+WHERE users.pk = incoming_requests.from_pk
+ORDER BY incoming_requests.timestamp_dt DESC
+"""
+
 MAX_DAY_IN_SEASON_SQL = """
 SELECT Max(day_n)
 FROM   matches
@@ -169,6 +218,60 @@ SELECT Max(round_n) AS max_round
 FROM   playoff_series
 WHERE  user_pk = {user_pk}
 AND    season_n = {season}
+"""
+
+NUMBER_OF_ACTIVE_FRIEND_REQUESTS_SQL = """
+SELECT  Count(*) as number_of_active_friend_requests
+FROM    friend_requests
+WHERE   ((from_pk = :user_one_pk AND to_pk = :user_two_pk) OR 
+        (from_pk = :user_two_pk AND to_pk = :user_one_pk))
+AND     is_accepted = 0
+AND     is_rejected = 0
+"""
+
+NUMBER_OF_FRIENDS_SQL = """
+SELECT Count(*) AS number_of_friends
+FROM users
+WHERE pk IN (
+    SELECT  friend_two_pk
+    FROM    friendship
+    WHERE   friend_one_pk = :user_pk
+    AND     is_active = 1
+    UNION
+    SELECT  friend_one_pk
+    FROM    friendship
+    WHERE   friend_two_pk = :user_pk
+    AND     is_active = 1
+)
+"""
+
+NUMBER_OF_INCOMING_FRIEND_REQUESTS_SQL = """
+SELECT  Count(*) AS incoming_friend_requests
+FROM    friend_requests
+WHERE   to_pk = :user_pk
+AND     is_accepted = 0
+AND     is_rejected = 0
+"""
+
+NUMBER_OF_OUTCOMING_FRIEND_REQUESTS_SQL = """
+SELECT  Count(*) AS outcoming_friend_requests
+FROM    friend_requests
+WHERE   from_pk = :user_pk
+AND     is_accepted = 0
+AND     is_rejected = 0
+"""
+
+OUTCOMING_FRIEND_REQUESTS_SQL = """
+SELECT outcoming_requests.from_pk, users.username, outcoming_requests.message_txt, outcoming_requests.timestamp_dt, outcoming_requests.pk
+FROM users, (
+    SELECT *
+    FROM friend_requests
+    WHERE from_pk = :user_pk
+    AND is_accepted = 0
+    AND is_rejected = 0
+) AS outcoming_requests
+WHERE users.pk = outcoming_requests.to_pk
+ORDER BY outcoming_requests.timestamp_dt DESC
 """
 
 RECENT_PLAYER_MATCHES_SQL = """

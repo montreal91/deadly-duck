@@ -5,13 +5,14 @@ import os
 
 from app                import CreateApp, db
 from app.data.models    import DdPost
-from app.data.models    import DdUser, DdRole, DdPermission
 from app.data.game.club import DdClub
 from app.data.game.club_record import DdClubRecord
 from app.data.game.game_service import DdGameService
 from app.data.game.match import DdMatch
 from app.data.game.player import DdPlayer
 from app.data.game.playoff_series import DdPlayoffSeries
+from app.data.main.role import DdRole, DdPermission
+from app.data.main.user import DdUser
 from flask_migrate  import Migrate, MigrateCommand
 from flask_script   import Manager, Shell
 

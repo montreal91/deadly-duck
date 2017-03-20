@@ -15,9 +15,24 @@
             {% endif %}
         </h1>
     </div>
-    {% if current_user.is_authenticated %}
     <div class="col-md-8">
+      <p>
         Welcome to the Deadly Duck, the browser-based tennis club manager.
+      </p>
+      <p>
+        <strong>{{ number_of_users }}</strong> users. <br>
+        Who manage <strong>{{ number_of_active_players }}</strong> active tennis players. <br>
+        Who played <strong>{{ number_of_finished_matches }}</strong> matches. <br>
+        And <strong>{{ number_of_finished_series }}</strong> playoff series.
+      </p>
+    {% if current_user.is_authenticated %}
+      <p>
+        {% if current_user.is_authenticated %}
+          We hope, you have something to fight for.
+        {% else %}
+          We hope, you are ready to join.
+        {% endif %}
+      </p>
         <hr>
         <h2>Best Managers</h2>
         {% if ratings %}
@@ -52,12 +67,8 @@
     </div>
     {% else %}
     <p>
-        Deadly Duck is the browser-based tennis club manager.
-    </p>
-    <p>
         To play this game and to look at results of other players you need to
         <a href="{{ url_for('auth.Login') }}">login</a>.
     </p>
     {% endif %}
-
 {% endblock %}

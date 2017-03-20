@@ -1,12 +1,14 @@
 
-from flask.ext.wtf          import Form
+from flask_wtf          import Form
 
 from wtforms                import StringField, SubmitField, TextAreaField
 from wtforms                import BooleanField, SelectField, ValidationError
 from wtforms.validators     import Required, Length, Email
 from wtforms.validators     import Regexp
 
-from app.data.models        import DdRole, DdUser
+# from app.data.models        import DdRole, DdUser
+from app.data.main.role import DdRole
+from app.data.main.user import DdUser
 
 
 class DdEditProfileForm( Form ):
@@ -38,7 +40,7 @@ class DdEditProfileAdminForm( Form ):
     submit = SubmitField( "Submit" )
 
     def __init__( self, user, *args, **kwargs ):
-        super( XEditProfileAdminForm, self ).__init__( *args, **kwargs )
+        super( DdEditProfileAdminForm, self ).__init__( *args, **kwargs )
 
         self.role.choices = [
             ( role.pk, role.name ) for role in DdRole.query.order_by( DdRole.name ).all()
@@ -54,6 +56,11 @@ class DdEditProfileAdminForm( Form ):
     def validate_username( self, field ):
         if field.data != self.user.username and DdUser.query.filter_by( username=field.data ).first():
             raise ValidationError( "Username is already in use." )
+
+
+class DdMakeFriendRequestForm( Form ):
+    message = TextAreaField( "Message" )
+    submit = SubmitField( "Submit" )
 
 
 class DdPostForm( Form ):
