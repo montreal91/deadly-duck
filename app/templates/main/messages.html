@@ -1,0 +1,56 @@
+
+{% extends "base.html" %}
+
+{% block subtitle %}
+  Messages
+{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+  <h1>Messages</h1>
+</div>
+<div class="container">
+  <div class="col-md-9">
+    <div class="dd-tab-content" id="dd-incoming-messages">
+      <h3>Inbox</h3>
+      {% for message in incoming_messages %}
+        {% include "includes/message.html" %}
+        <hr>
+      {% else %}
+        You have no incoming messages yet.
+      {% endfor %}
+    </div>
+    <div class="dd-tab-content" id="dd-outcoming-messages">
+      <h3>Outbox</h3>
+      {% for message in outcoming_messages %}
+        {% include "includes/message.html" %}
+        <hr>
+      {% else %}
+        You have no outcoming messages yet.
+      {% endfor %}
+    </div>
+  </div>
+  <div class="col-md-3">
+    <ul class="nav nav-pills nav-stacked" id="dd-friends-nav">
+      <li role="presentation" class="active">
+        <a onclick="dd_select_tab(event, 'dd-incoming-messages')" id="dd-messages-default">
+          Incoming Messages
+        </a>
+      </li>
+      <li role="presentation">
+        <a onclick="dd_select_tab(event, 'dd-outcoming-messages')">
+          Outcoming Messages
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script type="text/javascript" src="{{url_for('static', filename='magic.js')}}"></script>
+  <script type="text/javascript">
+    document.getElementById("dd-messages-default").click();
+  </script>
+{% endblock %}

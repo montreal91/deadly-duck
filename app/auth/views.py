@@ -7,7 +7,6 @@ from flask.ext.login    import current_user
 
 from .                  import auth
 from ..                 import db
-from ..email            import SendEmail
 from app.data.models    import DdUser
 from .forms             import DdLoginForm, DdRegistrationForm, DdChangePasswordForm
 from .forms             import DdPasswordResetRequestForm, DdPasswordResetForm

@@ -40,6 +40,16 @@
                     </strong>
                   </a>
                 </li>
+                <li>
+                  <a href="{{ url_for('main.Messages') }}">
+                    Messages
+                    {% if GetTotalNumberOfIncomingNewMessages(current_user.pk) %}
+                      <strong>
+                        {{ GetTotalNumberOfIncomingNewMessages(current_user.pk) }}
+                      </strong>
+                    {% endif %}
+                  </a>
+                </li>
                 {% endif %}
             </ul>
             <ul class="nav navbar-nav navbar-right">

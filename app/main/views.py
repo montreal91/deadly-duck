@@ -6,6 +6,7 @@ from flask_login        import login_required, current_user
 from .                  import main
 from .forms             import DdEditProfileForm, DdEditProfileAdminForm
 from app.main.forms     import DdMakeFriendRequestForm
+from app.main.forms     import DdWriteMessageForm
 from ..                 import db
 from ..decorators       import AdminRequired
 from app.data.main.role import DdRole
@@ -140,6 +141,27 @@ def Index():
         number_of_users=number_of_users
     )
 
+@main.route( "/messages/" )
+@login_required
+def Messages():
+    incoming_messages = main.service.GetAllIncomingMessages( user_pk=current_user.pk )
+    outcoming_messages = main.service.GetAllOutcomingMessages( user_pk=current_user.pk )
+    return render_template( 
+        "main/messages.html",
+        incoming_messages=incoming_messages,
+        outcoming_messages=outcoming_messages
+    )
+
+@main.route( "/message/<int:pk>/" )
+@login_required
+def ReadMessage( pk ):
+    message = main.service.GetMessageByPk( pk )
+    if message.from_pk != current_user.pk and message.to_pk != current_user.pk:
+        abort( 403 )
+    if not message.is_read and message.to_pk == current_user.pk:
+        message.is_read = True
+        main.service.SaveMessage( message=message )
+    return render_template( "main/full_message.html", message=message )
 
 @main.route( "/reject_friend_request/<int:pk>/" )
 @login_required
@@ -175,10 +197,33 @@ def User( username ):
         user_one_pk=current_user.pk,
         user_two_pk=user.pk
     )
+    is_messaging_possible = main.service.IsMessagingPossible( 
+        user1_pk=current_user.pk,
+        user2_pk=user.pk
+    )
     return render_template( 
         "user.html",
         user=user,
         posts=posts,
         best_user_record=best_user_record,
-        is_friendship_possible=is_friendship_possible
+        is_friendship_possible=is_friendship_possible,
+        is_messaging_possible=is_messaging_possible
     )
+
+@main.route( "/write_message/<username>/", methods=["GET", "POST"] )
+@login_required
+def WriteMessageToUser( username ):
+    user = main.service.GetUserByUsername( username=username )
+    if user is None:
+        return abort( 404 )
+    form = DdWriteMessageForm()
+    if form.validate_on_submit():
+        message = main.service.CreateMessage( 
+            from_pk=current_user.pk,
+            to_pk=user.pk,
+            subject=form.subject.data,
+            text=form.message.data
+        )
+        main.service.SaveMessage( message=message )
+        return redirect( url_for( "main.Messages" ) )
+    return render_template( "main/write_message.html", user=user, form=form )

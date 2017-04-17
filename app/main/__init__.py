@@ -28,12 +28,15 @@ def NumericFriendFunctions():
     def GetNumberOfOutcomingFriendRequests( user_pk=0 ):
         return main.service.GetNumberOfOutcomingFriendRequests( user_pk=user_pk )
 
-
     def GetNumberOfFriends( user_pk=0 ):
         return main.service.GetNumberOfFriends( user_pk=user_pk )
+
+    def GetTotalNumberOfIncomingNewMessages( user_pk=0 ):
+        return main.service.GetTotalNumberOfIncomingNewMessages( user_pk=user_pk )
 
     return dict( 
         GetNumberOfIncomingFriendRequests=GetNumberOfIncomingFriendRequests,
         GetNumberOfOutcomingFriendRequests=GetNumberOfOutcomingFriendRequests,
-        GetNumberOfFriends=GetNumberOfFriends
+        GetNumberOfFriends=GetNumberOfFriends,
+        GetTotalNumberOfIncomingNewMessages=GetTotalNumberOfIncomingNewMessages
     )

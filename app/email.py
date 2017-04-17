@@ -3,7 +3,7 @@ import os
 import smtplib
 
 from threading      import Thread
-from email.message  import EmailMessage
+from email.message  import Message
 
 from flask          import current_app, render_template
 

@@ -1,8 +1,6 @@
 
-from sqlalchemy import text
-
-from app import db
 from app.data.main.friendship import DdDaoFriendship
+from app.data.main.message import DdDaoMessage
 from app.data.main.user import DdDaoUser
 
 class Placeholder:
@@ -14,6 +12,7 @@ class DdMainService( object ):
         super( DdMainService, self ).__init__()
 
         self._dao_friendship = DdDaoFriendship()
+        self._dao_message = DdDaoMessage()
         self._dao_user = DdDaoUser()
 
 
@@ -28,13 +27,22 @@ class DdMainService( object ):
         else:
             return False
 
+    def CreateMessage( self, from_pk=0, to_pk=0, subject="", text="" ):
+        return self._dao_message.CreateMessage( 
+            from_pk=from_pk,
+            to_pk=to_pk,
+            subject=subject,
+            text=text
+        )
+
     def GetAllFriendsForUser( self, user_pk ):
-#         f1 = Placeholder()
-#         f1.username = "leonardo"
-#         f2 = Placeholder()
-#         f2.username = "raphael"
-#         return [f1, f2]
         return self._dao_user.GetAllFriendsForUser( user_pk=user_pk )
+
+    def GetAllIncomingMessages( self, user_pk=0 ):
+        return self._dao_message.GetAllIncomingMessages( user_pk=user_pk )
+
+    def GetAllOutcomingMessages( self, user_pk=0 ):
+        return self._dao_message.GetAllOutcomingMessages( user_pk=user_pk )
 
     def GetFriendRequestByPk( self, request_pk=0 ):
         return self._dao_friendship.GetFriendRequestByPk( request_pk=request_pk )
@@ -44,6 +52,9 @@ class DdMainService( object ):
 
     def GetIncomingFriendRequests( self, user_pk=0 ):
         return self._dao_friendship.GetIncomingFriendRequests( user_pk=user_pk )
+
+    def GetMessageByPk( self, pk ):
+        return self._dao_message.GetMessageByPk( pk )
 
     def GetNumberOfActiveFriendRequests( self, user_one_pk=0, user_two_pk=0 ):
         return self._dao_friendship.GetNumberOfActiveFriendRequests( 
@@ -66,6 +77,9 @@ class DdMainService( object ):
     def GetOutcomingFriendRequests( self, user_pk=0 ):
         return self._dao_friendship.GetOutcomingFriendRequests( user_pk=user_pk )
 
+    def GetTotalNumberOfIncomingNewMessages( self, user_pk=0 ):
+        return self._dao_message.GetTotalNumberOfIncomingNewMessages( user_pk=user_pk )
+
     def GetUserByUsername( self, username="" ):
         return self._dao_user.GetUserByUsername( username=username )
 
@@ -77,6 +91,9 @@ class DdMainService( object ):
         if self._dao_friendship.IsFriendshipExists( u1_pk=user_one_pk, u2_pk=user_two_pk ):
             return False
         return True
+
+    def IsMessagingPossible( self, user1_pk=0, user2_pk=0 ):
+        return self._dao_friendship.IsFriendshipExists( u1_pk=user1_pk, u2_pk=user2_pk )
 
     def MakeFriendRequest( self, from_pk=0, to_pk=0, message="" ):
         if self.GetNumberOfActiveFriendRequests( user_one_pk=from_pk, user_two_pk=to_pk ) > 0:
@@ -95,3 +112,6 @@ class DdMainService( object ):
 
     def SaveFriendship( self, friendship_object=None ):
         self._dao_friendship.SaveFriendship( friendship=friendship_object )
+
+    def SaveMessage( self, message=None ):
+        self._dao_message.SaveMessage( message=message )

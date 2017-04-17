@@ -206,6 +206,13 @@ WHERE users.pk = incoming_requests.from_pk
 ORDER BY incoming_requests.timestamp_dt DESC
 """
 
+INCOMING_MESSAGES_SQL = """
+SELECT *
+FROM    messages
+WHERE to_pk = :user_pk
+ORDER BY timestamp_dt DESC
+"""
+
 MAX_DAY_IN_SEASON_SQL = """
 SELECT Max(day_n)
 FROM   matches
@@ -253,12 +260,27 @@ AND     is_accepted = 0
 AND     is_rejected = 0
 """
 
+NUMBER_OF_INCOMING_NEW_MESSAGES_FROM_USER = """
+SELECT Count(*) AS number_of_incoming_messages
+FROM messages
+WHERE to_pk = :user_pk
+AND from_pk = :sender_pk
+AND is_read = 0
+"""
+
 NUMBER_OF_OUTCOMING_FRIEND_REQUESTS_SQL = """
 SELECT  Count(*) AS outcoming_friend_requests
 FROM    friend_requests
 WHERE   from_pk = :user_pk
 AND     is_accepted = 0
 AND     is_rejected = 0
+"""
+
+NUMBER_OF_TOTAL_INCOMING_NEW_MESSAGES = """
+SELECT Count(*) AS number_of_incoming_messages
+FROM messages
+WHERE to_pk = :user_pk
+AND is_read = 0
 """
 
 OUTCOMING_FRIEND_REQUESTS_SQL = """

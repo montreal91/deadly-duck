@@ -25,6 +25,13 @@
         </a>
       </p>
     {% endif %}
+    {% if is_messaging_possible %}
+      <p>
+        <a href="{{ url_for('main.WriteMessageToUser', username=user.username) }}" class="btn btn-primary">
+          Write a message
+        </a>
+      </p>      
+    {% endif %}
   </div>
   <div class="container">
     <div class="col-md-6">

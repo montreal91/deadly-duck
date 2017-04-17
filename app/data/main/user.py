@@ -210,7 +210,7 @@ class DdDaoUser( object ):
         ).all()
 
     def GetNumberOfFriends( self, user_pk=0 ):
-        query_res = db.engine.execute( 
+        query_res = db.engine.execute( # @UndefinedVariable
             text( NUMBER_OF_FRIENDS_SQL ).params( 
                 user_pk=user_pk
             )

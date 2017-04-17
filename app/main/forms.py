@@ -66,3 +66,8 @@ class DdMakeFriendRequestForm( Form ):
 class DdPostForm( Form ):
     body = TextAreaField( "What's on your mind?", validators=[Required()] )
     submit = SubmitField( "Submit" )
+
+class DdWriteMessageForm( Form ):
+    subject = StringField( "Subject" )
+    message = TextAreaField( "Message", validators=[Required()] )
+    submit = SubmitField( "Submit" )
