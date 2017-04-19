@@ -6,7 +6,6 @@ from wtforms                import BooleanField, SelectField, ValidationError
 from wtforms.validators     import Required, Length, Email
 from wtforms.validators     import Regexp
 
-# from app.data.models        import DdRole, DdUser
 from app.data.main.role import DdRole
 from app.data.main.user import DdUser
 
@@ -43,18 +42,18 @@ class DdEditProfileAdminForm( Form ):
         super( DdEditProfileAdminForm, self ).__init__( *args, **kwargs )
 
         self.role.choices = [
-            ( role.pk, role.name ) for role in DdRole.query.order_by( DdRole.name ).all()
+            ( role.pk, role.name ) for role in DdRole.query.order_by( DdRole.name ).all() # @UndefinedVariable
         ]
         self.user = user
 
 
     def validate_email( self, field ):
-        if field.data != self.user.email and DdUser.query.filter_by( email=field.data ).first():
+        if field.data != self.user.email and DdUser.query.filter_by( email=field.data ).first(): # @UndefinedVariable
             raise ValidationError( "Email is already registered." )
 
 
     def validate_username( self, field ):
-        if field.data != self.user.username and DdUser.query.filter_by( username=field.data ).first():
+        if field.data != self.user.username and DdUser.query.filter_by( username=field.data ).first(): # @UndefinedVariable
             raise ValidationError( "Username is already in use." )
 
 
@@ -66,6 +65,11 @@ class DdMakeFriendRequestForm( Form ):
 class DdPostForm( Form ):
     body = TextAreaField( "What's on your mind?", validators=[Required()] )
     submit = SubmitField( "Submit" )
+
+class DdUserSearchForm( Form ):
+    username = StringField( "Any part of username", validators=[Required()] )
+    submit = SubmitField( "Submit" )
+
 
 class DdWriteMessageForm( Form ):
     subject = StringField( "Subject" )

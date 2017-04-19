@@ -202,6 +202,11 @@ class DdDaoUser( object ):
     """
     Data Access Object for DdUser model.
     """
+
+    def FindUserByPartOfUsername( self, search_token="" ):
+        st = "%" + search_token + "%"
+        return DdUser.query.filter( DdUser.username.like( st ) ).all()
+
     def GetAllFriendsForUser( self, user_pk=0 ):
         return DdUser.query.from_statement( 
             text( FRIENDS_SQL ).params( 

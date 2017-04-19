@@ -43,8 +43,8 @@ class DdRole( db.Model ):
                 role = DdRole( name=r )
             role.permissions = roles[ r ][ 0 ]
             role.default = roles[ r ][ 1 ]
-            db.session.add( role )
-        db.session.commit()
+            db.session.add( role ) # @UndefinedVariable
+        db.session.commit() # @UndefinedVariable
 
     def __repr__( self ):
         return "<Role %r>" % self.name

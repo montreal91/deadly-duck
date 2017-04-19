@@ -2,99 +2,104 @@
 {% extends "bootstrap/base.html" %}
 
 {% block title %}
-    {% block subtitle %}{% endblock %} | DDuck
+  {% block subtitle %}{% endblock %} | DDuck
 {% endblock %}
 
 {% block head %}
-    {{ super() }}
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}">
+  {{ super() }}
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}">
 {% endblock %}
 
 {% block navbar %}
 <div class="navbar navbar-default" role="navigation">
-    <div class="container">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="{{ url_for('main.Index') }}">DDuck</a>
-        </div>
-        <div class="navbar-collapse collapse">
-            <ul class="nav navbar-nav">
-                <li><a href="{{ url_for('main.Index') }}">Home</a></li>
-                {% if current_user.is_authenticated %}
-                <li><a href="{{ url_for('main.User', username=current_user.username) }}">Profile</a></li>
-                <li>
-                  <a href="{{ url_for('main.Friends') }}">
-                    Friends
-                    <strong>
-                      {{ GetNumberOfFriends(current_user.pk) }}
-                      {% if GetNumberOfIncomingFriendRequests(current_user.pk) %}
-                        [{{ GetNumberOfIncomingFriendRequests(current_user.pk) }}]
-                      {% endif %}
-                    </strong>
-                  </a>
-                </li>
-                <li>
-                  <a href="{{ url_for('main.Messages') }}">
-                    Messages
-                    {% if GetTotalNumberOfIncomingNewMessages(current_user.pk) %}
-                      <strong>
-                        {{ GetTotalNumberOfIncomingNewMessages(current_user.pk) }}
-                      </strong>
-                    {% endif %}
-                  </a>
-                </li>
-                {% endif %}
-            </ul>
-            <ul class="nav navbar-nav navbar-right">
-            {% if current_user.is_authenticated %}
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                        <img src="{{ current_user.Gravatar(size=18)}}">
-                        Account <b class ="caret"></b>
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a href="{{ url_for('auth.ChangePassword') }}">
-                            Change Password
-                        </a></li>
-                        <li><a href="{{ url_for('auth.ChangeEmailRequest') }}">
-                            Change Email
-                        </a></li>
-                        <li><a href="{{ url_for('auth.Logout') }}">
-                            Log Out
-                        </a></li>
-                    </ul>
-                </li>
-            {% else %}
-                <li><a href="{{ url_for( 'auth.Login' ) }}">Sign In</a></li>
-            {% endif %}
-            </ul>
-        </div>
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="{{ url_for('main.Index') }}">DDuck</a>
     </div>
+    <div class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li><a href="{{ url_for('main.Index') }}">Home</a></li>
+        {% if current_user.is_authenticated %}
+        <li><a href="{{ url_for('main.User', username=current_user.username) }}">Profile</a></li>
+        <li>
+          <a href="{{ url_for('main.Friends') }}">
+            Friends
+            <strong>
+              {{ GetNumberOfFriends(current_user.pk) }}
+              {% if GetNumberOfIncomingFriendRequests(current_user.pk) %}
+                [{{ GetNumberOfIncomingFriendRequests(current_user.pk) }}]
+              {% endif %}
+            </strong>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('main.Messages') }}">
+            Messages
+            {% if GetTotalNumberOfIncomingNewMessages(current_user.pk) %}
+              <strong>
+                {{ GetTotalNumberOfIncomingNewMessages(current_user.pk) }}
+              </strong>
+            {% endif %}
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        {% if current_user.is_authenticated %}
+          <li>
+            <a href="{{ url_for('main.UserSearch') }}">
+              User Search
+            </a>
+          </li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <img src="{{ current_user.Gravatar(size=18)}}">
+              Account <b class ="caret"></b>
+            </a>
+            <ul class="dropdown-menu">
+              <li><a href="{{ url_for('auth.ChangePassword') }}">
+                Change Password
+              </a></li>
+              <li><a href="{{ url_for('auth.ChangeEmailRequest') }}">
+                Change Email
+              </a></li>
+              <li><a href="{{ url_for('auth.Logout') }}">
+                Log Out
+              </a></li>
+            </ul>
+          </li>
+        {% else %}
+          <li><a href="{{ url_for( 'auth.Login' ) }}">Sign In</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    {% for message in get_flashed_messages() %}
-        <div class="alert alert-warning">
-            <button type="button" class="close" data-dismiss="alert">&times;</button>
-            {{ message }}
-        </div>
-    {% endfor %}
+  {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning">
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+      {{ message }}
+    </div>
+  {% endfor %}
 
 
-    {% block page_content %}{% endblock %}
+  <div id="dd-result"></div>
+  {% block page_content %}{% endblock %}
 </div>
 {% endblock %}
 
 {% block scripts %}
-  {{ super() }}
-  {{ moment.include_moment() }}
+<script src="{{url_for('static', filename='magic.js')}}"></script>
 {% endblock %}

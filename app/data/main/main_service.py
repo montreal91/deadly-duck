@@ -35,6 +35,9 @@ class DdMainService( object ):
             text=text
         )
 
+    def FindUserByPartOfUsername( self, search_token="" ):
+        return self._dao_user.FindUserByPartOfUsername( search_token=search_token )
+
     def GetAllFriendsForUser( self, user_pk ):
         return self._dao_user.GetAllFriendsForUser( user_pk=user_pk )
 

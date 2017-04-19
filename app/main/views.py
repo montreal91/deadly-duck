@@ -7,6 +7,7 @@ from .                  import main
 from .forms             import DdEditProfileForm, DdEditProfileAdminForm
 from app.main.forms     import DdMakeFriendRequestForm
 from app.main.forms     import DdWriteMessageForm
+from app.main.forms     import DdUserSearchForm
 from ..                 import db
 from ..decorators       import AdminRequired
 from app.data.main.role import DdRole
@@ -208,6 +209,20 @@ def User( username ):
         best_user_record=best_user_record,
         is_friendship_possible=is_friendship_possible,
         is_messaging_possible=is_messaging_possible
+    )
+
+@main.route( "/user_search/", methods=["GET", "POST"] )
+@login_required
+def UserSearch():
+    form = DdUserSearchForm()
+    search_results = []
+    if form.validate_on_submit():
+        search_token = form.username.data
+        search_results = main.service.FindUserByPartOfUsername( search_token=search_token )
+    return render_template( 
+        "main/user_search.html",
+        form=form,
+        search_results=search_results
     )
 
 @main.route( "/write_message/<username>/", methods=["GET", "POST"] )
