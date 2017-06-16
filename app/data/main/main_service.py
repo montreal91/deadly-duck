@@ -1,4 +1,5 @@
 
+from app.data.main.education import DdDaoFaculty, DdDaoUniversity
 from app.data.main.friendship import DdDaoFriendship
 from app.data.main.message import DdDaoMessage
 from app.data.main.user import DdDaoUser
@@ -11,8 +12,10 @@ class DdMainService( object ):
     def __init__( self ):
         super( DdMainService, self ).__init__()
 
+        self._dao_faculty = DdDaoFaculty()
         self._dao_friendship = DdDaoFriendship()
         self._dao_message = DdDaoMessage()
+        self._dao_university = DdDaoUniversity()
         self._dao_user = DdDaoUser()
 
 
@@ -26,6 +29,17 @@ class DdMainService( object ):
             return True
         else:
             return False
+
+    def AddNewEducation( self, user=None, university_pk=0, faculty_pk=0 ):
+        university = self._dao_university.GetUniversityByPk( pk=university_pk )
+        faculty = self._dao_faculty.GetFacultyByPk( pk=faculty_pk )
+        if user not in university.students.all():
+            university.students.append( user )
+        if user not in faculty.students.all():
+            faculty.students.append( user )
+        self._dao_faculty.SaveFaculty( faculty )
+        self._dao_university.SaveUniversity( university )
+
 
     def CreateMessage( self, from_pk=0, to_pk=0, subject="", text="" ):
         return self._dao_message.CreateMessage( 
@@ -46,6 +60,16 @@ class DdMainService( object ):
 
     def GetAllOutcomingMessages( self, user_pk=0 ):
         return self._dao_message.GetAllOutcomingMessages( user_pk=user_pk )
+
+    def GetAllUniversities( self ):
+        return self._dao_university.GetAllUniversities()
+
+    def GetClassmatesForUser( self, user=None ):
+        res = []
+        for faculty in user.faculties.all():
+            res += faculty.students.all()
+
+        return [student for student in res if student != user]
 
     def GetFriendRequestByPk( self, request_pk=0 ):
         return self._dao_friendship.GetFriendRequestByPk( request_pk=request_pk )
@@ -83,6 +107,10 @@ class DdMainService( object ):
     def GetTotalNumberOfIncomingNewMessages( self, user_pk=0 ):
         return self._dao_message.GetTotalNumberOfIncomingNewMessages( user_pk=user_pk )
 
+    def GetUniversityFaculties( self, university_pk=0 ):
+        university = self._dao_university.GetUniversityByPk( pk=university_pk )
+        return university.faculties
+
     def GetUserByUsername( self, username="" ):
         return self._dao_user.GetUserByUsername( username=username )
 
@@ -109,6 +137,11 @@ class DdMainService( object ):
             )
             self._dao_friendship.SaveFriendRequest( friend_request=request )
             return True
+
+    def RemoveEducationFromUser( self, user=None, faculty_pk=0 ):
+        faculty = self._dao_faculty.GetFacultyByPk( pk=faculty_pk )
+        self._dao_faculty.RemoveUserFromFaculty( faculty=faculty, user=user )
+        self._dao_university.RemoveUserFromUniversity( university=faculty.university, user=user )
 
     def SaveFriendRequest( self, friend_request=None ):
         self._dao_friendship.SaveFriendRequest( friend_request=friend_request )

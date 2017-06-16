@@ -84,7 +84,34 @@
     </div>
   </div>
 </div>
-<h3>Posts by {{ user.username }}</h3>
-{% include '_posts.html' %}
 
+<div class="container">
+  
+<div class="col-md-6">
+<h3>Posts by {{ user.username }}</h3>
+{% include '_posts.html' %}  
+</div>
+<div class="col-md-6">
+  {% if user.faculties.count() > 0 %}
+    <h3>Studied at</h3>
+      {% for faculty in user.faculties.all() %}
+        {{ faculty.name_c }} faculty in {{ faculty.university.name_c }}
+        {% if user == current_user %}
+          (<a href="{{ url_for('main.RemoveEducation', faculty_pk=faculty.pk) }}">Remove</a>)
+        {% endif %}
+        <br>
+      {% endfor %}
+  {% endif %}
+  {% if user == current_user %}
+    <a href="{{ url_for('main.AddEducation') }}">Add New Education</a>
+  {% endif %}
+</div>
+</div>
+<hr>
+<h3>Classmates</h3>
+{% for classmate in classmates %}
+  <a href="{{ url_for('main.User', username=classmate.username) }}">{{ classmate.username}} </a></br>
+{% else %}
+  This user has no classmates yet.
+{% endfor %}
 {% endblock %}

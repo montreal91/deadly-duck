@@ -93,13 +93,11 @@
       {{ message }}
     </div>
   {% endfor %}
-
-
-  <div id="dd-result"></div>
   {% block page_content %}{% endblock %}
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{url_for('static', filename='magic.js')}}"></script>
+  {{ super() }}
+  {{ moment.include_moment() }}
 {% endblock %}

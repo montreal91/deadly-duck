@@ -3,6 +3,7 @@ from datetime           import datetime
 
 from app                import db, login_manager
 from app.custom_queries import MAX_DAY_IN_SEASON_SQL
+from app.data.main.education import DdFaculty, DdUniversity # @UnusedImport
 from app.data.main.friendship import DdFriendRequest, DdFriendship # @UnusedImport
 from app.data.main.message import DdMessage # @UnusedImport
 from app.data.main.user import DdUser, DdAnonymousUser

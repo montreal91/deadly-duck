@@ -1,6 +1,8 @@
 
-from flask              import render_template, redirect, url_for
-from flask              import abort, flash
+from json import loads
+
+from flask              import render_template, redirect, url_for, jsonify
+from flask              import abort, flash, request
 from flask_login        import login_required, current_user
 
 from .                  import main
@@ -31,6 +33,16 @@ def AcceptFriendRequest( pk ):
     return redirect( url_for( "main.Friends" ) )
 
 
+@main.route( "/add_education/" )
+@login_required
+def AddEducation():
+    universities = main.service.GetAllUniversities()
+    return render_template( 
+        "main/add_education.html",
+        universities=universities
+    )
+
+
 @main.route( "/add_to_fiends/<username>/", methods=["GET", "POST"] )
 @login_required
 def AddToFriends( username ):
@@ -58,6 +70,16 @@ def CancelFriendRequest( pk ):
     request.is_rejected = True
     main.service.SaveFriendRequest( friend_request=request )
     return redirect( url_for( "main.Friends" ) )
+
+
+@main.route( "/edit_education/" )
+@login_required
+def EditEducation():
+    universities = main.service.GetAllUniversities()
+    return render_template( 
+        "main/edit_education.html",
+        universities=universities
+    )
 
 
 @main.route( "/edit-profile/", methods=["GET", "POST"] )
@@ -175,6 +197,12 @@ def RejectFriendRequest( pk ):
     main.service.SaveFriendRequest( friend_request=request )
     return redirect( url_for( "main.Friends" ) )
 
+@main.route( "/remove_education/<int:faculty_pk>/" )
+@login_required
+def RemoveEducation( faculty_pk ):
+    main.service.RemoveEducationFromUser( user=current_user, faculty_pk=faculty_pk )
+    return redirect( url_for( "main.User", username=current_user.username ) )
+
 @main.route( "/remove_from_friends/<int:pk>/" )
 @login_required
 def RemoveFromFriends( pk ):
@@ -182,6 +210,28 @@ def RemoveFromFriends( pk ):
     friendshp_object.is_active = False
     main.service.SaveFriendship( friendship_object=friendshp_object )
     return redirect( url_for( "main.Friends" ) )
+
+
+@main.route( "/_submit_add_education/", methods=["POST"] )
+@login_required
+def SubmitAddEducation():
+    data = loads( request.form["values"] )
+    main.service.AddNewEducation( 
+        user=current_user,
+        university_pk=int( data["university_pk"] ),
+        faculty_pk=int( data["faculty_pk"] )
+    )
+    return jsonify( res="New education is successfully added. Now you can add new education." )
+
+
+@main.route( "/_university_faculties/", methods=["POST"] )
+@login_required
+def UniversityFaculties():
+    university_pk = request.form["university_pk"]
+    faculties = main.service.GetUniversityFaculties( university_pk )
+    response = render_template( "includes/faculties.html", faculties=faculties )
+    return jsonify( res=response )
+
 
 @main.route( "/user/<username>/" )
 @login_required
@@ -202,13 +252,15 @@ def User( username ):
         user1_pk=current_user.pk,
         user2_pk=user.pk
     )
+    classmates = main.service.GetClassmatesForUser( user=user )
     return render_template( 
         "user.html",
         user=user,
         posts=posts,
         best_user_record=best_user_record,
         is_friendship_possible=is_friendship_possible,
-        is_messaging_possible=is_messaging_possible
+        is_messaging_possible=is_messaging_possible,
+        classmates=classmates
     )
 
 @main.route( "/user_search/", methods=["GET", "POST"] )
