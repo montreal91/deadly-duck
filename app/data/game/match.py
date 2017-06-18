@@ -2,7 +2,7 @@
 import json
 from collections import namedtuple
 
-from sqlalchemy import and_
+from sqlalchemy import and_, text
 
 from app import db
 from app.custom_queries import CURRENT_MATCH_SQL, DAY_RESULTS_SQL
@@ -215,17 +215,23 @@ class DdDaoMatch( object ):
         return [row[0] for row in reversed( table )]
 
     def GetDayResults( self, user_pk, season, day ):
-        query_res = db.engine.execute( DAY_RESULTS_SQL.format( user_pk, season, day ) ).fetchall() # @UndefinedVariable
+        query_res = db.engine.execute( # @UndefinedVariable
+            text( DAY_RESULTS_SQL ).params( 
+                userpk=user_pk,
+                season=season,
+                day=day
+            )
+        ).fetchall()
         return [
             DdMatchSnapshot( 
-                pk=row[0],
-                home_team=row[1],
-                away_team=row[2],
-                home_player=row[3],
-                away_player=row[4],
-                home_skill=round( row[5], 2 ),
-                away_skill=round( row[6], 2 ),
-                full_score=row[7],
+                pk=row["match_pk_n"],
+                home_team=row["home_club"],
+                away_team=row["away_club"],
+                home_player=row["home_player"],
+                away_player=row["away_player"],
+                home_skill="",
+                away_skill="",
+                full_score=row["full_score_c"],
                 home_team_pk=row["home_team_pk"],
                 away_team_pk=row["away_team_pk"]
             )

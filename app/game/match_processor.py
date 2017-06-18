@@ -1,6 +1,7 @@
 
 from collections import namedtuple
 from decimal import Decimal
+from enum import Enum
 from random import randint
 
 from config_game import DdPlayerSkills, sets_to_win
@@ -16,7 +17,7 @@ DdSetResult = namedtuple(
  )
 
 
-class DdSetStatuses:
+class DdSetStatuses( Enum ):
     REGULAR = 1
     HOME_RETIRED = 2
     AWAY_RETIRED = 3

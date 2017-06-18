@@ -16,8 +16,14 @@
 {# TODO: change True to show #}
 {% if True %}
 <p><label>Technique</label>: {{ player.actual_technique }} | {{ player.technique }}</p>
-<p><label>Endurance</label>: {{ player.endurance }}</p>
-<p><label>Stamina</label>: {{ player.current_stamina }}</p>
+<p>
+  <label>Endurance</label>: {{ player.endurance }} | {{ endurance.absolute_maximum_n }}<br>
+  <label>Talent</label>: {{ endurance.talent_n }}<br>
+  <label>Experience</label>: {{ endurance.experience_n }}
+</p>
+<p>
+  <label>Stamina</label>: {{ player.current_stamina }}
+</p>
 <p><label>Age</label>: {{ player.age }}</p>
 {% endif %}
 <p><label>Salary per match</label>: {{ player.match_salary }}</p>

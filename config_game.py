@@ -37,17 +37,19 @@ class DdLeagueConfig:
     SETS_TO_WIN = 2
     MATCHES_TO_WIN = 4
     GAP_DAYS = 2
-    SERIES_TOP_HOME_PATTERN = (True, True, False, False, True, False, True)
+    SERIES_TOP_HOME_PATTERN = ( True, True, False, False, True, False, True )
 
 class DdPlayerSkills:
     MEAN_VALUE = 5
     MAX_VALUE = 10
     STANDARD_DEVIATION = 2.5
-    ENDURANCE_FACTOR = 10
+    ENDURANCE_FACTOR = 1
     MIN_STAMINA_LOST = 1
     MAX_STAMINA_LOST = 3
-    DAILY_RECOVERY_FACTOR = Decimal( 0.25 )
+    DAILY_RECOVERY_FACTOR = 0.2
+    POSSIBLE_TALENTS = ( 1, 2, 4 )
     SKILL_PRECISION = 2
+
 
 class DdRatingsParamerers:
     GROUND_LEVEL = 1

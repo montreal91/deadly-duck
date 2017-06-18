@@ -109,14 +109,11 @@ class DdDaoFriendship( object ):
                 user_pk=user_pk,
             )
         ).first()
-        return query_res["incoming_friend_requests"]
+        return query_res["incoming_friend_requests"] # @UndefinedVariable
 
     def GetNumberOfOutcomingFriendRequests( self, user_pk=0 ):
         query_res = db.engine.execute( # @UndefinedVariable
-            text( NUMBER_OF_OUTCOMING_FRIEND_REQUESTS_SQL ).params( 
-                user_pk=user_pk
-            )
-        ).first()
+            text( NUMBER_OF_OUTCOMING_FRIEND_REQUESTS_SQL ).params( user_pk=user_pk ) ).first() # @UndefinedVariable
         return query_res["outcoming_friend_requests"] # @UndefinedVariable
 
     def GetOutcomingFriendRequests( self, user_pk=0 ):
@@ -127,12 +124,13 @@ class DdDaoFriendship( object ):
         ).fetchall() # @UndefinedVariable
 
     def IsFriendshipExists( self, u1_pk=0, u2_pk=0 ):
-        query_res = db.engine.execute( 
+        query_res = db.engine.execute( # @UndefinedVariable
             text( EXISTING_FRIENDSHIP_SQL ).params( 
                 u1_pk=u1_pk,
                 u2_pk=u2_pk
             )
         ).first()
+
         return query_res["number_of_existing_friendships"] > 0
 
     def SaveFriendRequest( self, friend_request=None ):

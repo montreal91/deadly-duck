@@ -8,6 +8,7 @@ from app.game.game_context  import DdGameContext
 from config_game            import DdLeagueConfig, club_names
 
 
+# TODO: move methods of this class to DdGameService
 class DdLeague( object ):
     @staticmethod
     def AddRostersToContext( user, ctx=DdGameContext() ):

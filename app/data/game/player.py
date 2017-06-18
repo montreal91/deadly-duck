@@ -4,12 +4,13 @@ import math
 from decimal                import Decimal
 from random                 import choice, randint
 
-from sqlalchemy             import and_
+from sqlalchemy             import and_, text
 
 from app                    import db
 from app.custom_queries     import RECENT_PLAYER_MATCHES_SQL, CLUB_PLAYERS_SQL
+# from app.data.game          import DdConstants
 from app.data.game.match    import DdMatchSnapshot
-from app.data.game.club     import DdClub
+# from app.data.game.club     import DdClub
 from config_game            import number_of_recent_matches, retirement_age
 from config_game            import DdPlayerSkills, club_names
 from stat_tools             import GeneratePositiveGauss
@@ -32,8 +33,8 @@ class DdPlayerSnapshot( object ):
         super( DdPlayerSnapshot, self ).__init__()
         self._pk = pk
         self._technique = Decimal( technique )
-        self._current_stamina = Decimal( current_stamina )
-        self._endurance = Decimal( endurance )
+        self._current_stamina = int( current_stamina )
+        self._endurance = endurance
         self._first_name = first_name
         self._last_name = last_name
         self._second_name = second_name
@@ -41,6 +42,8 @@ class DdPlayerSnapshot( object ):
         self._club_pk = club_pk
         self._match_salary = match_salary
         self._passive_salary = passive_salary
+
+        self._new_endurance_experience = 0
 
     @property
     def pk( self ):
@@ -92,8 +95,18 @@ class DdPlayerSnapshot( object ):
         return self._match_salary
 
     @property
+    def new_endurance_experience( self ):
+        return self._new_endurance_experience
+
+    @property
     def passive_salary( self ):
         return self._passive_salary
+
+    def AddEnduranceExperience( self, experience ):
+        self._new_endurance_experience += int( round( 0.8 * experience ** 2 ) )
+
+    def DropNewEnduranceExperience( self ):
+        self._new_endurance_experience = 0
 
     def RecoverStamina( self, recovered_stamina=0 ):
         self._current_stamina += recovered_stamina
@@ -101,7 +114,7 @@ class DdPlayerSnapshot( object ):
             self._current_stamina = self.max_stamina
 
     def RemoveStaminaLostInMatch( self, lost_stamina=0 ):
-        self._current_stamina -= Decimal( lost_stamina )
+        self._current_stamina -= lost_stamina
         if self._current_stamina < 0:
             self._current_stamina = 0
 
@@ -122,7 +135,6 @@ class DdPlayer( db.Model ):
     last_name_c = db.Column( db.String( 64 ), nullable=False ) # @UndefinedVariable
 
     technique_n = db.Column( db.Numeric( 5, 2 ), nullable=False, default=5.0 ) # @UndefinedVariable
-    endurance_n = db.Column( db.Numeric( 5, 2 ), default=5.0 ) # @UndefinedVariable
     current_stamina_n = db.Column( db.Numeric( 5, 2 ), default=100.0 ) # @UndefinedVariable
     age_n = db.Column( db.Integer, default=20 ) # @UndefinedVariable
     is_active = db.Column( db.Boolean, default=True ) # @UndefinedVariable
@@ -131,8 +143,15 @@ class DdPlayer( db.Model ):
     user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ) ) # @UndefinedVariable
     club_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) ) # @UndefinedVariable
 
+    endurance_pk = db.Column( db.Integer, db.ForeignKey( "skills.pk" ) ) # @UndefinedVariable
+
     user = db.relationship( "DdUser", foreign_keys=[user_pk] ) # @UndefinedVariable
     club = db.relationship( "DdClub", foreign_keys=[club_pk] ) # @UndefinedVariable
+    endurance = db.relationship( # @UndefinedVariable
+        "DdSkillModel",
+        foreign_keys=[endurance_pk],
+        backref="player"
+    )
 
     @property
     def match_salary( self ):
@@ -153,7 +172,7 @@ class DdPlayer( db.Model ):
             pk=self.pk_n,
             technique=self.technique_n,
             current_stamina=self.current_stamina_n,
-            endurance=self.endurance_n,
+            endurance=self.endurance.current_maximum_n,
             first_name=self.first_name_c,
             second_name=self.second_name_c,
             last_name=self.last_name_c,
@@ -175,6 +194,8 @@ class DdPlayer( db.Model ):
         """
         assert self.pk_n == snapshot.pk
         self.current_stamina_n = snapshot.current_stamina
+        self.endurance.AddExperience( snapshot.new_endurance_experience )
+        snapshot.DropNewEnduranceExperience()
 
     @staticmethod
     def GetNames():
@@ -199,6 +220,22 @@ class DdDaoPlayer( object ):
     """
     Data Access Object for DdPlayer class
     """
+    def CreatePlayer( self, first_name="", second_name="", last_name="", user_pk=0, endurance=None ):
+        player = DdPlayer()
+        player.first_name_c = first_name
+        player.second_name_c = second_name
+        player.last_name_c = last_name
+        player.technique_n = GeneratePositiveGauss( 
+            DdPlayerSkills.MEAN_VALUE,
+            DdPlayerSkills.STANDARD_DEVIATION,
+            DdPlayerSkills.MAX_VALUE
+        )
+        player.user_pk = user_pk
+        player.endurance = endurance
+        player.current_stamina_n = endurance.current_maximum_n
+        player.age_n = randint( 17, 20 )
+        return player
+
     def GetAllActivePlayers( self, user_pk ):
         return DdPlayer.query.filter( 
             and_( 
@@ -208,22 +245,13 @@ class DdDaoPlayer( object ):
         ).all()
 
     def GetClubPlayers( self, user_pk=0, club_pk=0 ):
-        query_res = db.engine.execute( CLUB_PLAYERS_SQL.format( user_pk, club_pk ) ) # @UndefinedVariable
-        return [
-            DdPlayerSnapshot( 
-                pk=row[0],
-                first_name=row[1],
-                second_name=row[2],
-                last_name=row[3],
-                technique=row[4],
-                current_stamina=row[8],
-                endurance=row[7],
-                age=row[5],
-                club_pk=club_pk,
-                match_salary=DdPlayer.CalculateSalary( skill=row[4], age=row[5] ),
-                passive_salary=round( DdPlayer.CalculateSalary( skill=row[4], age=row[5] ) / 2, 2 )
-            ) for row in query_res
-        ]
+        query_res = DdPlayer.query.from_statement( 
+            text( CLUB_PLAYERS_SQL ).params( 
+                userpk=user_pk,
+                clubpk=club_pk
+            )
+        ).all()
+        return [player.snapshot for player in query_res]
 
     def GetFreeAgents( self, user_pk ):
         res = DdPlayer.query.filter( 
@@ -282,50 +310,50 @@ class DdDaoPlayer( object ):
             ) for res in query_res
         ]
 
-    def CreateNewcomersForUser( self, user ):
-        first_names, last_names = DdPlayer.GetNames()
-        clubs = len( club_names[1] + club_names[2] )
-        number_of_new_players = randint( clubs * 2, clubs * 4 )
-        players = []
-        for i in range( number_of_new_players ): # @UnusedVariable
-            player = DdPlayer()
-            player.first_name_c = choice( first_names )
-            player.second_name_c = choice( first_names )
-            player.last_name_c = choice( last_names )
-            player.technique_n = GeneratePositiveGauss( 
-                DdPlayerSkills.MEAN_VALUE,
-                DdPlayerSkills.STANDARD_DEVIATION,
-                DdPlayerSkills.MAX_VALUE
-            )
-            player.endurance_n = GeneratePositiveGauss( 
-                DdPlayerSkills.MEAN_VALUE,
-                DdPlayerSkills.STANDARD_DEVIATION,
-                DdPlayerSkills.MAX_VALUE
-            )
-            player.current_stamina_n = player.endurance_n * DdPlayerSkills.ENDURANCE_FACTOR
-            player.age_n = randint( 17, 20 )
-            player.user_pk = user.pk
-            players.append( player )
-        db.session.add_all( players ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+#     def CreateNewcomersForUser( self, user ):
+#         first_names, last_names = DdPlayer.GetNames()
+#         clubs = len( club_names[1] + club_names[2] )
+#         number_of_new_players = randint( clubs * 2, clubs * 4 )
+#         players = []
+#         for i in range( number_of_new_players ): # @UnusedVariable
+#             player = DdPlayer()
+#             player.first_name_c = choice( first_names )
+#             player.second_name_c = choice( first_names )
+#             player.last_name_c = choice( last_names )
+#             player.technique_n = GeneratePositiveGauss(
+#                 DdPlayerSkills.MEAN_VALUE,
+#                 DdPlayerSkills.STANDARD_DEVIATION,
+#                 DdPlayerSkills.MAX_VALUE
+#             )
+#             player.endurance_n = GeneratePositiveGauss(
+#                 DdPlayerSkills.MEAN_VALUE,
+#                 DdPlayerSkills.STANDARD_DEVIATION,
+#                 DdPlayerSkills.MAX_VALUE
+#             )
+#             player.current_stamina_n = player.endurance_n * DdPlayerSkills.ENDURANCE_FACTOR
+#             player.age_n = randint( 17, 20 )
+#             player.user_pk = user.pk
+#             players.append( player )
+#         db.session.add_all( players ) # @UndefinedVariable
+#         db.session.commit() # @UndefinedVariable
 
-    def CreatePlayersForUser( self, user ):
-        first_names, last_names = DdPlayer.GetNames()
-        clubs = DdClub.query.all() # @UndefinedVariable
-        players = []
-        for i in range( 4 ): # @UnusedVariable
-            for club in clubs:
-                player = DdPlayer()
-                player.first_name_c = choice( first_names )
-                player.second_name_c = choice( first_names )
-                player.last_name_c = choice( last_names )
-                player.technique_n = randint( 1, 10 )
-                player.age_n = randint( 18, 22 )
-                player.user_pk = user.pk
-                player.club_pk = club.club_id_n
-                players.append( player )
-        db.session.add_all( players ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+#     def CreatePlayersForUser( self, user ):
+#         first_names, last_names = DdPlayer.GetNames()
+#         clubs = DdClub.query.all() # @UndefinedVariable
+#         players = []
+#         for i in range( 4 ): # @UnusedVariable
+#             for club in clubs:
+#                 player = DdPlayer()
+#                 player.first_name_c = choice( first_names )
+#                 player.second_name_c = choice( first_names )
+#                 player.last_name_c = choice( last_names )
+#                 player.technique_n = randint( 1, 10 )
+#                 player.age_n = randint( 18, 22 )
+#                 player.user_pk = user.pk
+#                 player.club_pk = club.club_id_n
+#                 players.append( player )
+#         db.session.add_all( players ) # @UndefinedVariable
+#         db.session.commit() # @UndefinedVariable
 
     def SavePlayer( self, player ):
         db.session.add( player ) # @UndefinedVariable

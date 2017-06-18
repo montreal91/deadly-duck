@@ -1,35 +1,30 @@
 {% extends "base.html" %}
 
 {% block subtitle %}
-    Season: {{ current_user.current_season_n }} Day: {{ current_user.current_day_n - 1 }}
+  Season: {{ current_user.current_season_n }} Day: {{ current_user.current_day_n - 1 }}
 {% endblock %}
 
 {% block page_content %}
-    <h2>Season {{ season }}, day {{ day }} results</h2>
-    <table class="table">
-    <tr>
-        <th>#</th><th>Match</th><th>Players</th><th>score</th>
+  <h2>Season {{ season }}, day {{ day }} results</h2>
+  <table class="table">
+  <tr>
+    <th>#</th><th>Match</th><th>Players</th><th>score</th>
+  </tr>
+  {% for match in matches %}
+    <tr {% if match.home_team_pk == current_user.managed_club_pk or match.away_team_pk == current_user.managed_club_pk %}class="info"{% endif %}>
+      <td>{{ loop.index }}</td>
+      <td>{{ match.home_team }} : {{ match.away_team }}</td>
+      <td>
+        {{ match.home_player }}
+        : {{ match.away_player }} 
+      </td>
+      <td><strong>{{ match.full_score }}</strong></td>
     </tr>
-    {% for match in matches %}
-        <tr {% if match.home_team_pk == current_user.managed_club_pk or match.away_team_pk == current_user.managed_club_pk %}class="info"{% endif %}>
-            <td>{{ loop.index }}</td>
-            <td>{{ match.home_team }} : {{ match.away_team }}</td>
-            <td>
-                {{ match.home_player }} {% if debug %}
-                [{{ match.home_skill }}]
-                {% endif %}
-                : {{ match.away_player }} 
-                {% if debug %}
-                [{{ match.away_skill }}]
-                {% endif %}
-            </td>
-            <td><strong>{{ match.full_score }}</strong></td>
-        </tr>
-    {% else %}
-        <p>
-            No Matches available.
-        </p>
-    {% endfor %}
-    </table>
+  {% else %}
+    <p>
+      No Matches available.
+    </p>
+  {% endfor %}
+  </table>
 {% include "includes/current_match_or_standings.html" %}
 {% endblock %}

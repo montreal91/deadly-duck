@@ -2,6 +2,7 @@
 import logging
 
 from decimal import Decimal
+from random import choice, randint
 
 from sqlalchemy import text
 
@@ -13,10 +14,13 @@ from app.data.game.club_financial_account import DdDaoClubFinancialAccount
 from app.data.game.club_record import DdDaoClubRecord
 from app.data.game.club_record import PlayoffRecordComparator, RegularRecordComparator
 from app.data.game.match import DdDaoMatch, DdMatchStatuses
-from app.data.game.player import DdDaoPlayer
+from app.data.game.player import DdPlayer, DdDaoPlayer
 from app.data.game.playoff_series import DdPlayoffSeries, DdDaoPlayoffSeries
+from app.data.game.skill import DdDaoSkill
 
 from config_game import DdLeagueConfig, DdRatingsParamerers
+from config_game import club_names
+# from stat_tools import GeneratePositiveGauss
 
 
 class DdGameService( object ):
@@ -27,6 +31,7 @@ class DdGameService( object ):
         self._dao_match = DdDaoMatch()
         self._dao_player = DdDaoPlayer()
         self._dao_playoff_series = DdDaoPlayoffSeries()
+        self._dao_skill = DdDaoSkill()
 
     def AddFunds( self, user_pk=0, club_pk=0, funds=0.0 ):
         self._dao_club_financial_account.AddFunds( user_pk, club_pk, funds )
@@ -38,7 +43,23 @@ class DdGameService( object ):
         self._dao_player.SavePlayers( players )
 
     def CreateNewcomersForUser( self, user ):
-        self._dao_player.CreateNewcomersForUser( user )
+        first_names, last_names = DdPlayer.GetNames()
+        clubs = len( club_names[1] + club_names[2] )
+        number_of_new_players = randint( clubs * 2, clubs * 4 )
+        players, skills = [], []
+        for i in range( number_of_new_players ): # @UnusedVariable
+            endurance = self._dao_skill.GenerateNewSkill()
+            player = self._dao_player.CreatePlayer(
+                first_name=choice( first_names ),
+                second_name=choice( first_names ),
+                last_name=choice( last_names ),
+                user_pk=user.pk,
+                endurance=endurance
+            )
+            players.append( player )
+            skills.append( endurance )
+        self._dao_skill.SaveSkills( skills )
+        self._dao_player.SavePlayers( players )
 
     def CreateNewMatch( 
         self,

@@ -34,10 +34,10 @@ ORDER BY season_n
 """
 
 CLUB_PLAYERS_SQL = """
-SELECT pk_n, first_name_c, second_name_c, last_name_c, technique_n, age_n, club_pk, endurance_n, current_stamina_n
+SELECT *
 FROM  players
-WHERE user_pk = {0:d}
-AND   club_pk = {1:d}
+WHERE user_pk = :userpk
+AND   club_pk = :clubpk
 AND   is_active = 1
 AND   is_drafted = 1
 """
@@ -73,31 +73,24 @@ SELECT match_pk_n, (
     SELECT club_name_c
     FROM   clubs
     WHERE  clubs.club_id_n = matches.home_team_pk
-), (
+) AS home_club, (
     SELECT club_name_c
     FROM   clubs
     WHERE  clubs.club_id_n = matches.away_team_pk
-), (
+) AS away_club, (
     SELECT first_name_c || ' ' || last_name_c
     FROM   players
     WHERE  players.pk_n = matches.home_player_pk
-), (
+) AS home_player, (
     SELECT first_name_c || ' ' || last_name_c
     FROM   players
     WHERE  players.pk_n = matches.away_player_pk
-), (
-    SELECT (technique_n + endurance_n) / 2
-    FROM   players
-    WHERE  players.pk_n = matches.home_player_pk
-), (
-    SELECT (technique_n + endurance_n) / 2
-    FROM   players
-    WHERE  players.pk_n = matches.away_player_pk
-), full_score_c, home_team_pk, away_team_pk
+) AS away_player,
+full_score_c, home_team_pk, away_team_pk
 FROM matches
-WHERE user_pk = {0:d}
-AND season_n = {1:d}
-AND day_n = {2:d}
+WHERE user_pk = :userpk
+AND season_n = :season
+AND day_n = :day
 AND status_en = 'finished'
 """
 
@@ -124,7 +117,7 @@ EXISTING_FRIENDSHIP_SQL = """
 SELECT  Count(*) AS number_of_existing_friendships
 FROM    friendship
 WHERE (
-    (friend_one_pk = :u1_pk AND friend_two_pk = :u2_pk) OR 
+    (friend_one_pk = :u1_pk AND friend_two_pk = :u2_pk) OR
     (friend_one_pk = :u2_pk AND friend_two_pk = :u1_pk)
 )
 AND     is_active = 1
@@ -230,7 +223,7 @@ AND    season_n = {season}
 NUMBER_OF_ACTIVE_FRIEND_REQUESTS_SQL = """
 SELECT  Count(*) as number_of_active_friend_requests
 FROM    friend_requests
-WHERE   ((from_pk = :user_one_pk AND to_pk = :user_two_pk) OR 
+WHERE   ((from_pk = :user_one_pk AND to_pk = :user_two_pk) OR
         (from_pk = :user_two_pk AND to_pk = :user_one_pk))
 AND     is_accepted = 0
 AND     is_rejected = 0

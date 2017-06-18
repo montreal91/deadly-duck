@@ -14,6 +14,7 @@ from config_game                import club_names, DdPlayerSkills
 from app.data.models            import DdUser
 from app.game.league            import DdLeague
 from app.game.match_processor   import DdMatchProcessor
+from random import randint
 
 
 @game.route( "/start-new-career/<pk>/" )
@@ -141,9 +142,6 @@ def HirePlayer( player_pk ):
 @login_required
 def MainScreen():
     logging.debug( "User {pk:d} is on main screen".format( pk=current_user.pk ) )
-#     game.service._MakeClubRecord( club_pk=1, user=current_user )
-#     game.service._MakeClubRecord( club_pk=2, user=current_user )
-#     game.service._MakeClubRecord( club_pk=3, user=current_user )
     if current_user.managed_club_pk is not None:
         club = game.service.GetClub( current_user.managed_club_pk )
         if current_user.pk not in game.contexts:
@@ -287,6 +285,7 @@ def PlayerDetails( player_pk ):
     return render_template( 
         "game/player_details.html",
         player=player.snapshot,
+        endurance=player.endurance,
         club=player.club,
         matches=matches,
         show=player.club_pk == current_user.managed_club_pk
@@ -411,9 +410,11 @@ def ProcessDailyRecovery( user ):
     for club in rosters:
         for player in rosters[club]:
             if player.current_stamina < player.max_stamina:
-                player.RecoverStamina( 
-                    player.max_stamina * DdPlayerSkills.DAILY_RECOVERY_FACTOR
+                recovered_stamina = randint( 
+                    player.max_stamina // 8,
+                    player.max_stamina // 4
                 )
+                player.RecoverStamina( recovered_stamina )
                 ctx.AddPlayerToUpdate( player )
 
 
@@ -447,5 +448,7 @@ def ProcessMatch( user, match, autoplay=False ):
 
     home_player.RemoveStaminaLostInMatch( result.home_stamina_lost )
     away_player.RemoveStaminaLostInMatch( result.away_stamina_lost )
+    home_player.AddEnduranceExperience( result.home_stamina_lost )
+    away_player.AddEnduranceExperience( result.away_stamina_lost )
     ctx.AddPlayerToUpdate( home_player )
     ctx.AddPlayerToUpdate( away_player )
