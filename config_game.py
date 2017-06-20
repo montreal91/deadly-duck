@@ -1,6 +1,4 @@
 
-from decimal import Decimal
-
 club_names = {
     1: [
         "Brisbane Rangers",
@@ -43,12 +41,15 @@ class DdPlayerSkills:
     MEAN_VALUE = 5
     MAX_VALUE = 10
     STANDARD_DEVIATION = 2.5
-    ENDURANCE_FACTOR = 1
+
+    ENDURANCE_FACTOR = 2
     MIN_STAMINA_LOST = 1
     MAX_STAMINA_LOST = 3
     DAILY_RECOVERY_FACTOR = 0.2
     POSSIBLE_TALENTS = ( 1, 2, 4 )
     SKILL_PRECISION = 2
+
+    SET_EXPERIENCE_FACTOR = 50
 
 
 class DdRatingsParamerers:

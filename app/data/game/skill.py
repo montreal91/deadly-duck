@@ -16,7 +16,7 @@ class DdSkillModel( db.Model ):
 
     def AddExperience( self, value ):
         self.experience_n += value
-        if self.experience_n >= self._ExperienceForSkillUp():
+        if self.experience_n >= self.ExperienceForSkillUp():
             self.current_maximum_n += 1
             self.experience_n = 0
 
@@ -24,9 +24,9 @@ class DdSkillModel( db.Model ):
         if self.current_maximum_n > self.absolute_maximum_n:
             self.current_maximum_n = self.absolute_maximum_n
 
-    def _ExperienceForSkillUp( self ):
+    def ExperienceForSkillUp( self ):
         percent = round( self.current_maximum_n / self.absolute_maximum_n * 100 ) + 1
-        return percent ** 2 / self.talent_n
+        return int( percent ** 2 / self.talent_n )
 
 
 class DdDaoSkill( object ):

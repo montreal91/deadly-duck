@@ -15,11 +15,22 @@
 
 {# TODO: change True to show #}
 {% if True %}
-<p><label>Technique</label>: {{ player.actual_technique }} | {{ player.technique }}</p>
 <p>
-  <label>Endurance</label>: {{ player.endurance }} | {{ endurance.absolute_maximum_n }}<br>
-  <label>Talent</label>: {{ endurance.talent_n }}<br>
-  <label>Experience</label>: {{ endurance.experience_n }}
+  <label>Technique</label>: {{ player.actual_technique }} | {{ player.technique }}
+  <ul>
+    <li><label>Maximum</label>: {{ technique.absolute_maximum_n }}</li>
+    <li><label>Talent</label>: {{ technique.talent_n }}</li>
+    <li><label>Experience</label>: {{ technique.experience_n }} / {{ technique.ExperienceForSkillUp() }}</li>
+  </ul>
+
+</p>
+<p>
+  <label>Endurance</label>: {{ player.endurance }}<br>
+  <ul>
+    <li><label>Maximum</label>: {{ endurance.absolute_maximum_n }}</li>
+    <li><label>Talent</label>: {{ endurance.talent_n }}</li>
+    <li><label>Experience</label>: {{ endurance.experience_n }} / {{ endurance.ExperienceForSkillUp() }}</li>
+  </ul>
 </p>
 <p>
   <label>Stamina</label>: {{ player.current_stamina }}
@@ -31,21 +42,21 @@
 
 {% if matches %}    
 <p>
-    <label>Recent matches</label>
-    <table class="table">    
-    {% for match in matches %}
-        <tr>
-        <td>    
-        {{ match.home_player }} vs. {{ match.away_player }}<td>
-        <td>
-        <mark>{{ match.full_score }}</mark>
-        </td>
-        <td>
-        {{ match.home_team }} vs. {{ match.away_team }}
-        </td>
-        </tr>
-    {% endfor %}
-    </table>
+  <label>Recent matches</label>
+  <table class="table">
+  {% for match in matches %}
+    <tr>
+    <td>
+      {{ match.home_player }} vs. {{ match.away_player }}<td>
+    <td>
+    <mark>{{ match.full_score }}</mark>
+    </td>
+    <td>
+      {{ match.home_team }} vs. {{ match.away_team }}
+    </td>
+    </tr>
+  {% endfor %}
+  </table>
 </p>
 {% else %}
     <strong>This player has not played any matches in current season yet.</strong>
@@ -53,7 +64,8 @@
 
 {% if show %}
 <p>
-    <a href="{{ url_for('game.FirePlayer', player_pk=player.pk) }}">Fire Player</a></p>
+  <a href="{{ url_for('game.FirePlayer', player_pk=player.pk) }}">Fire Player</a>
+</p>
 {% endif %}
 
 {% include "includes/current_match_or_standings.html" %}

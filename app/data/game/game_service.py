@@ -49,15 +49,18 @@ class DdGameService( object ):
         players, skills = [], []
         for i in range( number_of_new_players ): # @UnusedVariable
             endurance = self._dao_skill.GenerateNewSkill()
-            player = self._dao_player.CreatePlayer(
+            technique = self._dao_skill.GenerateNewSkill()
+            player = self._dao_player.CreatePlayer( 
                 first_name=choice( first_names ),
                 second_name=choice( first_names ),
                 last_name=choice( last_names ),
                 user_pk=user.pk,
-                endurance=endurance
+                endurance=endurance,
+                technique=technique
             )
             players.append( player )
             skills.append( endurance )
+            skills.append( technique )
         self._dao_skill.SaveSkills( skills )
         self._dao_player.SavePlayers( players )
 

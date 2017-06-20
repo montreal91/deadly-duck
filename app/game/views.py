@@ -15,6 +15,7 @@ from app.data.models            import DdUser
 from app.game.league            import DdLeague
 from app.game.match_processor   import DdMatchProcessor
 from random import randint
+from app.data.game.player import DdPlayerSnapshot
 
 
 @game.route( "/start-new-career/<pk>/" )
@@ -144,8 +145,7 @@ def MainScreen():
     logging.debug( "User {pk:d} is on main screen".format( pk=current_user.pk ) )
     if current_user.managed_club_pk is not None:
         club = game.service.GetClub( current_user.managed_club_pk )
-        if current_user.pk not in game.contexts:
-            DdLeague.AddRostersToContext( current_user )
+        DdLeague.AddRostersToContext( current_user )
         ctx = game.contexts[current_user.pk]
         if game.service.GetNumberOfUndraftedPlayers( current_user ) > 0:
             DdLeague.AddRostersToContext( current_user, ctx=ctx )
@@ -286,6 +286,7 @@ def PlayerDetails( player_pk ):
         "game/player_details.html",
         player=player.snapshot,
         endurance=player.endurance,
+        technique=player.technique,
         club=player.club,
         matches=matches,
         show=player.club_pk == current_user.managed_club_pk
@@ -450,5 +451,21 @@ def ProcessMatch( user, match, autoplay=False ):
     away_player.RemoveStaminaLostInMatch( result.away_stamina_lost )
     home_player.AddEnduranceExperience( result.home_stamina_lost )
     away_player.AddEnduranceExperience( result.away_stamina_lost )
+
+    home_experience = DdPlayerSnapshot.CalculateMatchTechniqueExperience( 
+        games_lost=result.away_games,
+        games_won=result.home_games,
+        sets_lost=result.away_sets,
+        sets_won=result.home_sets
+    )
+    away_experience = DdPlayerSnapshot.CalculateMatchTechniqueExperience( 
+        games_lost=result.home_games,
+        games_won=result.away_games,
+        sets_lost=result.home_sets,
+        sets_won=result.away_sets
+    )
+    home_player.AddTechniqueExperience( home_experience )
+    away_player.AddTechniqueExperience( away_experience )
+
     ctx.AddPlayerToUpdate( home_player )
     ctx.AddPlayerToUpdate( away_player )
