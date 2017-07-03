@@ -20,18 +20,18 @@ Draft
     {{ loop.index }}
   </td>
   <td>
-  <a href="{{ url_for('game.PickPlayer', player_pk=plr.pk) }}">
-    {{ plr.first_name }} {{ plr.last_name }}
+  <a href="{{ url_for('game.PickPlayer', player_pk=plr.pk_n) }}">
+    {{ plr.first_name_c }} {{ plr.last_name_c }}
   </a>
   </td>
   <td>
-    {{ plr.technique }}
+    {{ plr.technique.absolute_maximum_n }}
   </td>
   <td>
-    {{ plr.endurance }}
+    {{ plr.endurance.absolute_maximum_n }}
   </td>
   <td>
-    {{ plr.age }}
+    {{ plr.age_n }}
   </td>
 </tr>
 {% endfor %}

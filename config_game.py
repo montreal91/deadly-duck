@@ -25,7 +25,7 @@ number_of_recent_matches = 5
 sets_to_win = 2
 
 # This number is for testing purposes, real should be much bigger
-retirement_age = 22
+retirement_age = 31
 
 class DdLeagueConfig:
     # This values should be even

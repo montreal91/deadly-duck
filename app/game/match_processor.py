@@ -4,7 +4,7 @@ from decimal import Decimal
 from enum import Enum
 from random import randint
 
-from config_game import DdPlayerSkills, sets_to_win
+from config_game import sets_to_win
 from stat_tools import LoadedToss
 
 DdSetResult = namedtuple( 
@@ -143,12 +143,12 @@ class DdMatchProcessor( object ):
         return self._res
 
     def _CalculateActualSkill( self, player, actual_stamina=0 ):
-        max_stamina = player.endurance * DdPlayerSkills.ENDURANCE_FACTOR
+        max_stamina = player.max_stamina
         stamina_factor = actual_stamina / Decimal( max_stamina )
-        return Decimal( player.technique ) * stamina_factor
+        return Decimal( player.technique.current_maximum_n ) * stamina_factor
 
     def _CalculateActualStamina( self, player, lost_stamina=0 ):
-        actual_stamina = Decimal( player.current_stamina ) - Decimal( lost_stamina )
+        actual_stamina = Decimal( player.current_stamina_n ) - Decimal( lost_stamina )
         if actual_stamina < 0:
             return 0
         else:

@@ -1,5 +1,8 @@
 
+from sqlalchemy import text
+
 from app import db
+from app.custom_queries import CLUB_PKS_SQL
 from config_game import club_names
 
 class DdClub( db.Model ):
@@ -13,6 +16,19 @@ class DdClub( db.Model ):
 
 
 class DdDaoClub( object ):
+    def GetAllClubs( self ):
+        return DdClub.query.all()
+
+    def GetAllClubsInDivision( self, division ):
+        return DdClub.query.filter_by( division_n=division ).all()
+
+    def GetClub( self, club_pk ):
+        return DdClub.query.get_or_404( club_pk )
+
+    def GetListOfClubPrimaryKeys( self ):
+        qres = db.engine.execute( text( CLUB_PKS_SQL ) ).fetchall()
+        return [row["club_id_n"] for row in qres]
+
     def InsertClubs( self ):
         new_clubs = []
         for div in  club_names:
@@ -23,12 +39,3 @@ class DdDaoClub( object ):
                 new_clubs.append( club )
         db.session.add_all( new_clubs ) # @UndefinedVariable
         db.session.commit() # @UndefinedVariable
-
-    def GetAllClubs( self ):
-        return DdClub.query.all()
-
-    def GetClub( self, club_pk ):
-        return DdClub.query.get_or_404( club_pk )
-
-    def GetAllClubsInDivision( self, division ):
-        return DdClub.query.filter_by( division_n=division ).all()

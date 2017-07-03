@@ -2,25 +2,32 @@
 import logging
 
 from decimal import Decimal
-from random import choice, randint
+from random import choice
+from random import randint
 
 from sqlalchemy import text
 
 from app import db
+from app import cache
 from app.custom_queries import GLOBAL_USER_RATING_SQL
+from app.data.game.cache_keys import DdGameCacheKeys
 from app.data.game.club import DdDaoClub
 from app.data.game.club_financial_account import DdClubFinancialAccount
 from app.data.game.club_financial_account import DdDaoClubFinancialAccount
 from app.data.game.club_record import DdDaoClubRecord
-from app.data.game.club_record import PlayoffRecordComparator, RegularRecordComparator
-from app.data.game.match import DdDaoMatch, DdMatchStatuses
-from app.data.game.player import DdPlayer, DdDaoPlayer
-from app.data.game.playoff_series import DdPlayoffSeries, DdDaoPlayoffSeries
+from app.data.game.club_record import PlayoffRecordComparator
+from app.data.game.club_record import RegularRecordComparator
+from app.data.game.drafter import DdDrafter
+from app.data.game.match import DdDaoMatch
+from app.data.game.match import DdMatchStatuses
+from app.data.game.player import DdDaoPlayer
+from app.data.game.player import DdPlayer
+from app.data.game.playoff_series import DdDaoPlayoffSeries
+from app.data.game.playoff_series import DdPlayoffSeries
 from app.data.game.skill import DdDaoSkill
 
 from config_game import DdLeagueConfig, DdRatingsParamerers
 from config_game import club_names
-# from stat_tools import GeneratePositiveGauss
 
 
 class DdGameService( object ):
@@ -42,7 +49,7 @@ class DdGameService( object ):
             player.AgeUp()
         self._dao_player.SavePlayers( players )
 
-    def CreateNewcomersForUser( self, user ):
+    def CreateNewcomersForUser( self, user_pk: int ) -> None:
         first_names, last_names = DdPlayer.GetNames()
         clubs = len( club_names[1] + club_names[2] )
         number_of_new_players = randint( clubs * 2, clubs * 4 )
@@ -54,7 +61,7 @@ class DdGameService( object ):
                 first_name=choice( first_names ),
                 second_name=choice( first_names ),
                 last_name=choice( last_names ),
-                user_pk=user.pk,
+                user_pk=user_pk,
                 endurance=endurance,
                 technique=technique
             )
@@ -62,7 +69,7 @@ class DdGameService( object ):
             skills.append( endurance )
             skills.append( technique )
         self._dao_skill.SaveSkills( skills )
-        self._dao_player.SavePlayers( players )
+        self.SavePlayers( players )
 
     def CreateNewMatch( 
         self,
@@ -150,6 +157,17 @@ class DdGameService( object ):
             accounts.append( acc )
         self._dao_club_financial_account.SaveAccounts( accounts=accounts )
 
+    def DoesUserNeedToSelectPlayer( self, user ):
+        selected_player = self.GetSelectedPlayerForNextMatch( user.pk )
+        current_match = self.GetCurrentMatch( user )
+        return current_match and not selected_player
+
+    def EndDraft( self, user_pk ):
+        key = DdGameCacheKeys.DRAFTER.value.format( user_pk=user_pk ) # @UndefinedVariable
+        drafter = cache.Get( key ) # Tricky point, but should be OKay
+        self.SavePlayers( drafter.drafted_newcomers )
+        cache.DeleteKey( key )
+
 
     def GetClub( self, club_pk ):
         return self._dao_club.GetClub( club_pk )
@@ -178,7 +196,10 @@ class DdGameService( object ):
             return None
 
     def GetClubPlayers( self, user_pk=0, club_pk=0 ):
-        return self._dao_player.GetClubPlayers( user_pk, club_pk )
+        return self._dao_player.GetClubPlayers( user_pk=user_pk, club_pk=club_pk )
+
+    def GetClubPlayersPks( self, user_pk=0, club_pk=0 ):
+        return self._dao_player.GetClubPlayersPks( user_pk, club_pk )
 
     def GetClubRecordsForUser( self, club_pk=0, user=None ):
         return self._dao_club_record.GetClubRecordsForUser( club_pk=club_pk, user=user )
@@ -196,6 +217,21 @@ class DdGameService( object ):
             division=division
         )
 
+    def GetDrafter( self, user ) -> DdDrafter:
+        key = DdGameCacheKeys.DRAFTER.value.format( user_pk=user.pk ) # @UndefinedVariable
+        drafter = cache.Get( key )
+        if drafter is None:
+            newcomers = self.GetNewcomersSnapshotsForUser( user_pk=user.pk )
+            standings = self.GetRecentStandings( user=user, for_draft=True )
+            drafter = DdDrafter( 
+                user_pk=user.pk,
+                user_club_pk=user.managed_club_pk,
+                remaining_newcomers=newcomers,
+                standings=standings
+            )
+            cache.SetKey( key=key, value=drafter )
+        return drafter
+
     def GetFinancialAccount( self, user_pk=0, club_pk=0 ):
         return self._dao_club_financial_account.GetFinancialAccount( user_pk, club_pk )
 
@@ -208,6 +244,10 @@ class DdGameService( object ):
             season=season
         )
 
+    def GetListOfClubPrimaryKeys( self ):
+        return self._dao_club.GetListOfClubPrimaryKeys()
+
+    # TODO: move it to some DAO. Service should not have direct access to database.
     def GetGlobalRatings( self ):
         return db.engine.execute( # @UndefinedVariable
             text( GLOBAL_USER_RATING_SQL ).params( 
@@ -222,8 +262,8 @@ class DdGameService( object ):
     def GetMaxPlayoffRound( self, user=None ):
         return self._dao_playoff_series.GetMaxPlayoffRound( user=user )
 
-    def GetNewcomersSnapshotsForUser( self, user ):
-        return self._dao_player.GetNewcomersSnapshotsForUser( user )
+    def GetNewcomersSnapshotsForUser( self, user_pk: int ) -> list:
+        return self._dao_player.GetNewcomersSnapshotsForUser( user_pk )
 
     def GetNumberOfActivePlayers( self ):
         return self._dao_player.GetNumberOfActivePlayers()
@@ -234,8 +274,8 @@ class DdGameService( object ):
     def GetNumberOfFinishedSeries( self ):
         return self._dao_playoff_series.GetNumberOfFinishedSeries()
 
-    def GetNumberOfUndraftedPlayers( self, user ):
-        return self._dao_player.GetNumberOfUndraftedPlayers( user )
+    def GetNumberOfUndraftedPlayers( self, user_pk: int ) -> int:
+        return self._dao_player.GetNumberOfUndraftedPlayers( user_pk=user_pk )
 
     def GetPlayer( self, player_pk ):
         return self._dao_player.GetPlayer( player_pk )
@@ -285,6 +325,12 @@ class DdGameService( object ):
                 )
         return div1standings, div2standings
 
+    def GetSelectedPlayerForNextMatch( self, user_pk ):
+        key = DdGameCacheKeys.SELECTED_PLAYER.value.format( # @UndefinedVariable
+            user_pk=user_pk
+        )
+        return cache.Get( key )
+
 
     def GetTodayMatches( self, user ):
         return self._dao_match.GetTodayMatches( user )
@@ -296,6 +342,30 @@ class DdGameService( object ):
         condition1 = len( d1 ) == 1 and len( d2 ) == 0
         condition2 = len( d2 ) == 1 and len( d1 ) == 0
         return condition1 or condition2
+
+    def ProcessDailyRecovery( self, user_pk=0, played_players=[] ):
+        """
+        Restores stamina for active players of given user 'at the end of the day'.
+        Important: saves changes to database. 
+        :param user_pk: primary key of user, whose players need to be recovered.
+        :param played_players: list of players who was playing matches this day.
+        """
+        played_players_pks = [plr.pk_n for plr in played_players]
+        players_to_update = []
+        club_pks = self.GetListOfClubPrimaryKeys()
+        for cpk in club_pks:
+            club_players = self.GetClubPlayers( user_pk=user_pk, club_pk=cpk )
+            for plr in club_players:
+                if plr.current_stamina_n < plr.max_stamina and plr.pk_n not in played_players_pks:
+                    players_to_update.append( plr )
+        players_to_update += played_players
+        for plr in players_to_update:
+            recovered_stamina = randint( 
+                plr.max_stamina // 8,
+                plr.max_stamina // 4
+            )
+            plr.RecoverStamina( recovered_stamina )
+        self.SavePlayers( players_to_update )
 
     def SaveAccount( self, account ):
         self._dao_club_financial_account.SaveAccount( account )
@@ -365,6 +435,29 @@ class DdGameService( object ):
     def SaveRosters( self, rosters={} ):
         self._dao_player.SaveRosters( rosters )
 
+
+    def StartDraftForUser( self, user ) -> None:
+        if self.GetNumberOfUndraftedPlayers( user_pk=user.pk ) == 0:
+            self.CreateNewcomersForUser( user.pk )
+        newcomers = self.GetNewcomersSnapshotsForUser( user_pk=user.pk )
+        drafter = DdDrafter( 
+            user_pk=user.pk,
+            user_club_pk=user.managed_club_pk,
+            remaining_newcomers=newcomers,
+            standings=self.GetRecentStandings( user=user, for_draft=True )
+        )
+        key = DdGameCacheKeys.DRAFTER.value.format( # @UndefinedVariable
+            user_pk=user.pk
+        )
+        cache.SetKey( key=key, value=drafter )
+
+    def SetPlayerForNextMatch( self, user_pk=0, player_pk=0 ):
+        key = DdGameCacheKeys.SELECTED_PLAYER.value.format( # @UndefinedVariable
+            user_pk=user_pk,
+        )
+        cache.SetKey( key=key, value=player_pk )
+
+
     def SyncListOfPlayersSnapshots( self, player_snapshots_list=[] ):
         player_models_list = []
         for plr_snapshot in player_snapshots_list:
@@ -372,6 +465,12 @@ class DdGameService( object ):
             plr_model.UpdateBySnapshot( snapshot=plr_snapshot )
             player_models_list.append( plr_model )
         self._dao_player.SavePlayers( players=player_models_list )
+
+    def UnsetPlayerForNextMatch( self, user_pk=0 ):
+        key = DdGameCacheKeys.SELECTED_PLAYER.value.format( # @UndefinedVariable
+            user_pk=user_pk
+        )
+        cache.DeleteKey( key )
 
     def UpdateAccountsAfterMatch( self, matches=[] ):
         accounts = []
@@ -409,6 +508,10 @@ class DdGameService( object ):
             account.money_nn -= Decimal( pay )
             accounts.append( account )
         self._dao_club_financial_account.SaveAccounts( accounts=accounts )
+
+    def UpdateDrafter( self, user_pk: int, drafter: DdDrafter ) -> None:
+        key = DdGameCacheKeys.DRAFTER.value.format( user_pk=user_pk ) # @UndefinedVariable
+        cache.SetKey( key=key, value=drafter )
 
 
     def _CreateMatchesForSeriesList( self, series_list=[], first_day=0 ):

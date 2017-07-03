@@ -11,26 +11,26 @@ Free Agents Market
 
 {% if agents %}
 <table class="table">
-    <tr>
-        <th>Name</th>
-        <th>Technique</th>
-        <th>Endurance</th>
-        <th>Salary per match</th>
-        <th>Hire</th>
-    </tr>
-    {% for player in agents %}
-    <tr>
-        <td>
-            <a href="{{ url_for('game.PlayerDetails', player_pk=player.pk) }}">
-            {{ player.first_name }} {{ player.second_name }} {{ player.last_name }}
-            </a>
-        </td>
-        <td>{{ player.technique }}</td>
-        <td>{{ player.endurance }}</td>
-        <td>{{ player.match_salary }}</td>
-        <td><a href="{{ url_for('game.HirePlayer', player_pk=player.pk) }}">Hire</a></td>
-    </tr>
-    {% endfor %}
+  <tr>
+    <th>Name</th>
+    <th>Technique</th>
+    <th>Endurance</th>
+    <th>Salary per match</th>
+    <th>Hire</th>
+  </tr>
+  {% for player in agents %}
+  <tr>
+      <td>
+        <a href="{{ url_for('game.PlayerDetails', player_pk=player.pk_n) }}">
+        {{ player.first_name_c }} {{ player.second_name_c }} {{ player.last_name_c }}
+        </a>
+      </td>
+      <td>{{ player.technique.absolute_maximum_n }}</td>
+      <td>{{ player.endurance.absolute_maximum_n }}</td>
+      <td>{{ player.match_salary }}</td>
+      <td><a href="{{ url_for('game.HirePlayer', player_pk=player.pk_n) }}">Hire</a><td>
+  </tr>
+  {% endfor %}
 </table>
 {% else %}
 No free agents available.

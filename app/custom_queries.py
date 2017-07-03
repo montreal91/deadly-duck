@@ -34,12 +34,19 @@ ORDER BY season_n
 """
 
 CLUB_PLAYERS_SQL = """
-SELECT *
-FROM  players
+SELECT players.*
+FROM  players INNER JOIN skills ON players.technique_pk = skills.pk
 WHERE user_pk = :userpk
 AND   club_pk = :clubpk
 AND   is_active = 1
 AND   is_drafted = 1
+ORDER BY skills.current_maximum_n DESC
+"""
+
+# Valid as long as only one league exists
+CLUB_PKS_SQL = """
+SELECT  club_id_n
+FROM    clubs
 """
 
 CLUB_RECORDS_SQL = """

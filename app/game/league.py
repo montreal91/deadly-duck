@@ -1,23 +1,17 @@
 
 from random                 import shuffle
 
-from .                      import game
-from ..                     import db
+
+from app                    import db
 from app.data.game.club     import DdClub
-from app.game.game_context  import DdGameContext
-from config_game            import DdLeagueConfig, club_names
+from app.game               import game
+from config_game            import club_names
+from config_game            import DdLeagueConfig
+
 
 
 # TODO: move methods of this class to DdGameService
 class DdLeague( object ):
-    @staticmethod
-    def AddRostersToContext( user, ctx=DdGameContext() ):
-        clubs = game.service.GetAllClubs()
-        for club in clubs:
-            players = game.service.GetClubPlayers( user_pk=user.pk, club_pk=club.club_id_n )
-            ctx.SetClubRoster( club_pk=club.club_id_n, players_list=players )
-        game.contexts[user.pk] = ctx
-
     @staticmethod
     def CreateScheduleForUser( user ):
         divisions = dict()
@@ -93,8 +87,6 @@ class DdLeague( object ):
         db.session.add( user ) # @UndefinedVariable
         db.session.commit() # @UndefinedVariable
         DdLeague.CreateScheduleForUser( user )
-        game.contexts[user.pk] = DdGameContext()
-        DdLeague.AddRostersToContext( user )
 
 
     @staticmethod
@@ -133,7 +125,7 @@ class DdLeague( object ):
 
 
     @staticmethod
-    def _MakeMatchesBetweenDivisions( div1, div2, same_matches ):
+    def _MakeMatchesBetweenDivisions( div1: list, div2: list, same_matches: int ) -> list:
         """
         Generates list of matches between clubs in two different divisions.
         :type div1: list
@@ -149,7 +141,7 @@ class DdLeague( object ):
 
 
     @staticmethod
-    def _MakeMatchesInsideDivision( division, same_matches ):
+    def _MakeMatchesInsideDivision( division: list, same_matches: int ) -> list:
         """
         Creates list of games played by clubs in the same divisions.
         :type division: list

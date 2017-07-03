@@ -25,6 +25,8 @@ class DdDevelopmentConfig( DdConfig ):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get( "DEV_DATABASE_URL" ) or "sqlite:///" + os.path.join( basedir, "data-dev.sqlite" )
     SQLALCHEMY_ECHO = True
+    MEMCACHED_SERVERS = ["127.0.0.1:11211"]
+    MEMCACHED_DEFAULT_TIMEOUT = 10 * 60
 
 
 class DdTestingConfig( DdConfig ):
