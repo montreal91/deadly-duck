@@ -1,5 +1,7 @@
 
 const ACTIVE_CLASS_NAME = "active";
+const TRAINING_APPOINTMENT_STATUS_ID = "dd_training_appointment_status";
+const TRAINING_FORM_ID = "dd_training_form";
 
 
 function dd_select_tab(evt, tab_name) {
@@ -65,5 +67,39 @@ function dd_add_new_education() {
       document.getElementById("dd-result").innerHTML = "You need to specify faculty.";
     }
   }
+  return false;
+}
+
+function dd_set_training(player_pk) {
+  var forma = document.getElementById(TRAINING_FORM_ID);
+  var req = new XMLHttpRequest();
+  req.onreadystatechange = () => {
+    var response;
+    if (req.readyState == 4) {
+      if (req.status != 200) {
+      } else {
+        response = JSON.parse(req.responseText);
+        let status_div = document.getElementById(TRAINING_APPOINTMENT_STATUS_ID);
+        let status = response.status;
+        let bstp_class;
+        if (status === 1) {
+          bstp_class = "text-success";
+        } else if (status === 0) {
+          bstp_class = "text-danger";
+        }
+        status_div.innerHTML = "<p class='" + bstp_class + "'>" + response.message + "</p>"; 
+      }
+    }
+  }
+  req.open('POST', '/game/_set_training/');
+  req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+  var values = {
+    pk: player_pk,
+    training_type: forma.training_type.value,
+    training_intensity: forma.training_intensity.value
+  }
+  var post_vars = 'values=' + JSON.stringify(values);
+  req.send(post_vars);
   return false;
 }

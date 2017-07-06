@@ -1,10 +1,15 @@
 
+import json
 import logging
+
 
 from flask                      import flash, redirect
 from flask                      import render_template, url_for
 from flask                      import abort, current_app
+from flask                      import jsonify
+from flask                      import request
 from flask.views                import View
+from flask.views                import MethodView
 from flask_login                import current_user, login_required
 
 from app                        import db
@@ -16,6 +21,8 @@ from app.game.match_processor   import DdMatchProcessor
 from app.data.game.player       import DdPlayer
 from app.data.game.player       import PlayerModelComparator
 from config_game                import club_names
+from config_game                import DdTrainingIntensities
+from config_game                import DdTrainingTypes
 
 
 @game.route( "/start-new-career/<pk>/" )
@@ -169,13 +176,13 @@ def MainScreen():
         match=match,
         players=players,
         away_player=away_player,
-        # account=account,
         current_round=current_round,
         selected_player_pk=selected_player_pk
     )
 
 
-
+# TODO: separate class-based views from method views
+# and ajax from non-ajax views.
 class DdNextDayView( View ):
     decorators = [login_required]
     def __init__( self ):
@@ -232,6 +239,7 @@ class DdNextDayView( View ):
         for match in today_matches:
             self.ProcessMatch( current_user, match )
 
+        game.service.ProcessTrainingSession( user_pk=current_user.pk )
         game.service.ProcessDailyRecovery( 
             user_pk=current_user.pk,
             played_players=self._players_to_update
@@ -360,8 +368,10 @@ def PlayerDetails( player_pk ):
         "game/player_details.html",
         player=player,
         club=player.club,
+        intensities=DdTrainingIntensities,
         matches=matches,
-        show=player.club_pk == current_user.managed_club_pk
+        show=player.club_pk == current_user.managed_club_pk,
+        training_types=DdTrainingTypes
     )
 
 
@@ -399,6 +409,8 @@ def PlayoffSeriesDetails( username, series_pk ):
 @game.route( "/select_player/<int:pk>/" )
 @login_required
 def SelectPlayer( pk ):
+    # TODO: refactor this method.
+    # It can be done much easier.
     players = game.service.GetClubPlayers( 
         user_pk=current_user.pk,
         club_pk=current_user.managed_club_pk
@@ -411,6 +423,48 @@ def SelectPlayer( pk ):
     player = player[0]
     game.service.SetPlayerForNextMatch( user_pk=current_user.pk, player_pk=pk )
     return redirect( url_for( "game.MainScreen" ) )
+
+
+class DdSetTraining( MethodView ):
+    decorators = [login_required]
+
+    def post( self ):
+        vals = json.loads( request.form["values"] )
+        player = game.service.GetPlayer( player_pk=vals["pk"] )
+        if player.club_pk != current_user.managed_club_pk or player.user_pk != current_user.pk:
+            return jsonify( message="You can't set training for this user.", status=0 )
+
+        training_type = vals["training_type"]
+        training_intensity = int( vals["training_intensity"] )
+        if not self._CheckCorrectTrainingType( training_type ):
+            return jsonify( message="Incorrect training type.", status=0 )
+
+        if not self._CheckCorrectTrainingIntensity( training_intensity ):
+            return jsonify( message="Incorrect training intensity.", status=0 )
+
+        game.service.SetPlayerForTraining( 
+            user_pk=current_user.pk,
+            player_pk=player.pk_n,
+            training_type=training_type,
+            training_intensity=training_intensity
+        )
+        return jsonify( message="OK", status=1 )
+
+    def _CheckCorrectTrainingType( self, tt ):
+        for item in DdTrainingTypes:
+            if tt == item.value:
+                return True
+        return False
+
+    def _CheckCorrectTrainingIntensity( self, ti ):
+        for item in DdTrainingIntensities:
+            if ti == item.value:
+                return True
+        return False
+
+
+game.add_url_rule( "/_set_training/", view_func=DdSetTraining.as_view( "SetTraining" ) )
+
 
 
 @game.route( "/standings/<int:season>/" )
@@ -437,7 +491,7 @@ def StartNewCareer():
         logging.debug( "Creating Schedule for user {pk:d}".format( pk=current_user.pk ) )
         DdLeague.CreateScheduleForUser( current_user )
         logging.debug( "Creating new players for user {pk:d}".format( pk=current_user.pk ) )
-        game.service.CreateNewcomersForUser( current_user )
+        game.service.CreateNewcomersForUser( current_user.pk )
         logging.debug( "Create financial accounts for user {pk:d}".format( pk=current_user.pk ) )
         game.service.CreateStartingAccounts( current_user )
         return render_template( "game/start_new_career.html", divisions=divisions )

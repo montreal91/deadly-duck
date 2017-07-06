@@ -1,4 +1,6 @@
 
+from enum import Enum
+
 club_names = {
     1: [
         "Brisbane Rangers",
@@ -26,6 +28,7 @@ sets_to_win = 2
 
 # This number is for testing purposes, real should be much bigger
 retirement_age = 31
+
 
 class DdLeagueConfig:
     # This values should be even
@@ -58,3 +61,18 @@ class DdRatingsParamerers:
     PRECISION = 2
     REGULAR_POINTS_FACTOR = 2.5
     ROUND_COEFFICIENT = 25
+
+class DdTrainingTypes( Enum ):
+    ENDURANCE = "endurance"
+    TECHNIQUE = "technique"
+
+class DdTrainingIntensities( Enum ):
+    LOW = 2
+    MEDIUM = 4
+    HIGH = 8
+
+INTENSIVITY_PERCENTAGES = {
+    DdTrainingIntensities.LOW.value: 0.25,
+    DdTrainingIntensities.MEDIUM.value: 0.50,
+    DdTrainingIntensities.HIGH.value: 0.75
+}

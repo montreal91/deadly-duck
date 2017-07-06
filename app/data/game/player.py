@@ -39,7 +39,6 @@ class DdPlayer( db.Model ):
     endurance = db.relationship( # @UndefinedVariable
         "DdSkillModel",
         foreign_keys=[endurance_pk],
-        backref="player",
         lazy="subquery"
     )
     technique = db.relationship( # @UndefinedVariable

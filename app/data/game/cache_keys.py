@@ -15,6 +15,7 @@ class DdGameCacheKeys( Enum ):
     DRAFT_FOR_PLAYER = "draft[{user_pk}]"
     DRAFTER = "drafter[{user_pk}]"
     SELECTED_PLAYER = "selected_player[{user_pk}]"
+    TRAINING_SESSION = "training_session[{user_pk}]"
 
 
 class DdPlayerCacheKeys( Enum ):

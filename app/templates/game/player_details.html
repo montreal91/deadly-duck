@@ -14,6 +14,8 @@
 {% endif %}
 
 {# TODO: change True to show #}
+<div class="col-md-6">
+
 {% if True %}
 <p>
   <label>Technique</label>: {{ player.actual_technique }} | {{ player.technique.current_maximum_n }}
@@ -30,7 +32,7 @@
   <ul>
     <li><label>Maximum</label>: {{ player.endurance.absolute_maximum_n }}</li>
     <li><label>Talent</label>: {{ player.endurance.talent_n }}</li>
-    <li><label>Experience</label>: {{ player.endurance.experience_n }} / 
+    <li><label>Experience</label>: {{ player.endurance.experience_n }} /
     {{ player.endurance.ExperienceForSkillUp() }}</li>
   </ul>
 </p>
@@ -39,9 +41,41 @@
 </p>
 <p><label>Age</label>: {{ player.age_n }}</p>
 {% endif %}
-<p><label>Salary per match</label>: {{ player.match_salary }}</p>
-<p><label>Salary per day</label>: {{ player.passive_salary }}</p>
+</div>
 
+{% if show %}
+<div class="col-md-6">
+  <form id="dd_training_form">
+    <div class="form-group">
+      <label>Training Type</label>
+      <select class="form-control" name="training_type">
+        {% for item in training_types %}
+          <option>{{ item.value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group"> 
+      <label>Training Intensity</label>
+      <select class="form-control" name="training_intensity">
+        {% for item in intensities %}
+          <option>{{ item.value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <button type="button" class="btn btn-primary btn-lg" onclick="dd_set_training({{ player.pk_n }});">
+        Set Training
+      </button>
+    </div>
+    <div class="form-group">
+      <div id="dd_training_appointment_status"></div>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+  
+<div class="col-md-12">
 {% if matches %}    
 <p>
   <label>Recent matches</label>
@@ -61,7 +95,7 @@
   </table>
 </p>
 {% else %}
-    <strong>This player has not played any matches in current season yet.</strong>
+  <strong>This player has not played any matches in current season yet.</strong>
 {% endif %}
 
 {% if show %}
@@ -71,4 +105,11 @@
 {% endif %}
 
 {% include "includes/current_match_or_standings.html" %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script type="text/javascript" src="{{url_for('static', filename='magic.js')}}">
+  </script>
 {% endblock %}

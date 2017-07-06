@@ -26,8 +26,12 @@ from app.data.game.playoff_series import DdDaoPlayoffSeries
 from app.data.game.playoff_series import DdPlayoffSeries
 from app.data.game.skill import DdDaoSkill
 
-from config_game import DdLeagueConfig, DdRatingsParamerers
+from config_game import DdLeagueConfig
+from config_game import DdRatingsParamerers
+from config_game import DdTrainingTypes
 from config_game import club_names
+from config_game import INTENSIVITY_PERCENTAGES
+from app.data.game.training_session import DdTrainingSession
 
 
 class DdGameService( object ):
@@ -367,6 +371,30 @@ class DdGameService( object ):
             plr.RecoverStamina( recovered_stamina )
         self.SavePlayers( players_to_update )
 
+    def ProcessTrainingSession( self, user_pk: int ) -> None:
+        """
+        Processes training sessions for players, which user decided to train.
+        NOTE: Saves changes to database.
+        :param user_pk:
+        """
+        key = DdGameCacheKeys.TRAINING_SESSION.value.format( user_pk=user_pk ) # @UndefinedVariable
+        training_session = cache.Get( key )
+        if training_session is None:
+            return
+
+        players_to_update = []
+        t_sessions = training_session.training_sessions
+        for player_pk in t_sessions:
+            player = self.GetPlayer( player_pk )
+            self._ProcessTrainingSessionForPlayer( 
+                player=player,
+                session=t_sessions[player_pk]
+            )
+            players_to_update.append( player )
+        self.SavePlayers( players_to_update )
+        cache.DeleteKey( key )
+
+
     def SaveAccount( self, account ):
         self._dao_club_financial_account.SaveAccount( account )
 
@@ -431,9 +459,21 @@ class DdGameService( object ):
         self._dao_playoff_series.SavePlayoffSeriesList( series_list=series_list )
 
 
-
     def SaveRosters( self, rosters={} ):
         self._dao_player.SaveRosters( rosters )
+
+
+    def SetPlayerForTraining( self, user_pk, player_pk, training_type, training_intensity ):
+        key = DdGameCacheKeys.TRAINING_SESSION.value.format( user_pk=user_pk ) # @UndefinedVariable
+        training_session = cache.Get( key )
+        if training_session is None:
+            training_session = DdTrainingSession()
+        training_session.AddPlayerTraining( 
+            player_pk,
+            training_type,
+            training_intensity
+        )
+        cache.SetKey( key=key, value=training_session )
 
 
     def StartDraftForUser( self, user ) -> None:
@@ -457,14 +497,6 @@ class DdGameService( object ):
         )
         cache.SetKey( key=key, value=player_pk )
 
-
-    def SyncListOfPlayersSnapshots( self, player_snapshots_list=[] ):
-        player_models_list = []
-        for plr_snapshot in player_snapshots_list:
-            plr_model = self._dao_player.GetPlayer( plr_snapshot.pk )
-            plr_model.UpdateBySnapshot( snapshot=plr_snapshot )
-            player_models_list.append( plr_model )
-        self._dao_player.SavePlayers( players=player_models_list )
 
     def UnsetPlayerForNextMatch( self, user_pk=0 ):
         key = DdGameCacheKeys.SELECTED_PLAYER.value.format( # @UndefinedVariable
@@ -579,3 +611,26 @@ class DdGameService( object ):
         else:
             raise ValueError( "Incorrect number of sets." )
 
+    def _ProcessTrainingSessionForPlayer( self, player, session ):
+        if session.archetype == DdTrainingTypes.ENDURANCE.value:
+            max_exp = session.intensity ** 2 * 2
+            min_exp = int( max_exp / 2 )
+            exp = randint( min_exp, max_exp )
+            stamina_factor = int( player.current_stamina_n ) / player.max_stamina
+            player.endurance.AddExperience( 
+                int( exp * player.endurance.talent_n * stamina_factor )
+            )
+            player.RemoveStaminaLostInMatch( 
+                player.max_stamina * INTENSIVITY_PERCENTAGES[session.intensity]
+            )
+        elif session.archetype == DdTrainingTypes.TECHNIQUE.value:
+            max_exp = session.intensity ** 2 * 2
+            min_exp = int( max_exp / 2 )
+            exp = randint( min_exp, max_exp )
+            stamina_factor = int( player.current_stamina_n ) / player.max_stamina
+            player.technique.AddExperience( 
+                int( exp * player.technique.talent_n * stamina_factor )
+            )
+            player.RemoveStaminaLostInMatch( 
+                player.max_stamina * INTENSIVITY_PERCENTAGES[session.intensity]
+            )
