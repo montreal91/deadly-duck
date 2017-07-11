@@ -62,6 +62,10 @@ class DdRatingsParamerers:
     REGULAR_POINTS_FACTOR = 2.5
     ROUND_COEFFICIENT = 25
 
+class DdMiscConstants( Enum ):
+    CURRENT_VERSION = "0.3"
+    MAX_USERS       = 13
+
 class DdTrainingTypes( Enum ):
     ENDURANCE = "endurance"
     TECHNIQUE = "technique"

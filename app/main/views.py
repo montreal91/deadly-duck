@@ -1,20 +1,29 @@
 
-from json import loads
+from json               import loads
 
-from flask              import render_template, redirect, url_for, jsonify
-from flask              import abort, flash, request
-from flask_login        import login_required, current_user
+from flask              import abort
+from flask              import flash
+from flask              import jsonify
+from flask              import redirect
+from flask              import render_template
+from flask              import request
+from flask              import url_for
+from flask_login        import current_user
+from flask_login        import login_required
 
-from .                  import main
-from .forms             import DdEditProfileForm, DdEditProfileAdminForm
-from app.main.forms     import DdMakeFriendRequestForm
-from app.main.forms     import DdWriteMessageForm
-from app.main.forms     import DdUserSearchForm
-from ..                 import db
-from ..decorators       import AdminRequired
+from app                import db
 from app.data.main.role import DdRole
 from app.data.main.user import DdUser
 from app.data.models    import DdPost
+from app.decorators     import AdminRequired
+from app.main           import main
+from app.main.forms     import DdEditProfileAdminForm
+from app.main.forms     import DdEditProfileForm
+from app.main.forms     import DdMakeFriendRequestForm
+from app.main.forms     import DdWriteMessageForm
+from app.main.forms     import DdUserSearchForm
+
+from config_game        import DdMiscConstants
 
 
 @main.route( "/accept_friend_request/<int:pk>/" )
@@ -161,7 +170,9 @@ def Index():
         number_of_active_players=number_of_active_players,
         number_of_finished_matches=number_of_finished_matches,
         number_of_finished_series=number_of_finished_series,
-        number_of_users=number_of_users
+        number_of_users=number_of_users,
+        max_users=DdMiscConstants.MAX_USERS.value,
+        version=DdMiscConstants.CURRENT_VERSION.value
     )
 
 @main.route( "/messages/" )
