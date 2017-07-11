@@ -81,6 +81,10 @@ def CancelFriendRequest( pk ):
     return redirect( url_for( "main.Friends" ) )
 
 
+@main.route( "/contacts/" )
+def Contacts():
+    return render_template( "main/contacts.html" )
+
 @main.route( "/edit_education/" )
 @login_required
 def EditEducation():

@@ -1,4 +1,6 @@
 
+/* TODO: order all elements in the alphabetical order. */
+
 table.dd-table {
     width: 100%;
 }
@@ -97,6 +99,15 @@ div.post-content {
     min-height: 48px;
 }
 
+ul.dd-contacts {
+    font-size: 150%;
+    list-style-type: none;
+}
+
+ul.dd-contacts li {
+    padding-bottom: 5px;
+}
+
 .series-score {
     width: 50px;
 }
@@ -104,6 +115,7 @@ div.post-content {
 .lol {
     vertical-align: center;
 }
+
 
 .dd-tab-content {
     -webkit-animation: dd_fade_effect 1s;
