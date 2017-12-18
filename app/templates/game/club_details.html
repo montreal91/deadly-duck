@@ -20,10 +20,13 @@
   <div class="col-md-6">
   <h3>Players</h3>
   {% for player in players %}
-    <a href="{{ url_for('game.PlayerDetails', player_pk=player.pk_n) }}">    
+  [Level {{ player.level }}]
+  <a href="{{ url_for('game.PlayerDetails', player_pk=player.pk_n) }}">
     {{ player.first_name_c }} {{ player.second_name_c[0] }}.
-    {{ player.last_name_c }}<br>
-    </a>
+    {{ player.last_name_c }}
+  </a>
+  {{ player.age_n }}
+  <br>
   {% endfor %}
   </div>
 

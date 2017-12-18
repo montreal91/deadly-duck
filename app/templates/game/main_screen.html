@@ -12,7 +12,6 @@
   <p>
     Ongoing season: <mark>{{ current_user.current_season_n }}</mark><br>
     Today is: <mark>{{ current_user.current_day_n }}|{{ current_user.season_last_day }}</mark><br>
-    {# Cash: <mark>{{ account.money }}</mark> #}
   </p>
   <div class="col-md-6">
       
@@ -25,6 +24,7 @@
         <a href="{{ url_for('game.PlayerDetails', player_pk=away_player.pk_n)}}">
           {{ away_player.first_name_c[0] }}. {{ away_player.second_name_c[0] }}. {{ away_player.last_name_c }}
         </a>
+        (<strong>{{ away_player.level }}</strong>)
       </p>
     {% endif %}
   {% else %}
@@ -46,9 +46,6 @@
   <p>
     <a href="{{ url_for('game.FreeAgents') }}" class="btn btn-default btn-block">Free Agents</a>
   </p>
-  {# <p>
-    <a href="{{ url_for('game.PlayRestOfSeason') }}" class="btn btn-warning btn-block">Play Rest of Season</a>
-  </p> #}
   </div>
   <div class="col-md-6">
   
@@ -59,6 +56,8 @@
       <th>Name</th>
       <th>Technique</th>
       <th>Endurance</th>
+      <th>Level</th>
+      <th>Age</th>
       <th></th>
     </tr>
     {% for plr in players %}
@@ -69,13 +68,18 @@
     <td>
     <a href="{{ url_for('game.SelectPlayer', pk=plr.pk_n) }}">
       {{ plr.first_name_c }} {{ plr.last_name_c }}
-    </_ca>
     </td>
     <td>
       <strong>{{ plr.actual_technique / 10 }}</strong> / {{ plr.technique }}
     </td>
     <td>
-    {{ plr.endurance }}
+      {{ plr.endurance }}
+    </td>
+    <td>
+      {{ plr.level }}
+    </td>
+    <td>
+      {{ plr.age_n }}
     </td>
     <td>
       <a href="{{ url_for('game.PlayerDetails', player_pk=plr.pk_n) }}">Details</a>
