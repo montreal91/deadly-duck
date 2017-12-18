@@ -227,14 +227,6 @@ WHERE  user_pk = {user_pk}
 AND    season_n = {season}
 """
 
-NEWCOMERS_SQL = """
-SELECT    players.*, skills.absolute_maximum_n
-FROM      players INNER JOIN skills ON players.technique_pk = skills.pk
-WHERE     players.user_pk = :userpk
-AND       players.is_drafted = 0
-ORDER BY  skills.absolute_maximum_n
-"""
-
 NUMBER_OF_ACTIVE_FRIEND_REQUESTS_SQL = """
 SELECT  Count(*) as number_of_active_friend_requests
 FROM    friend_requests

@@ -72,10 +72,10 @@
     </_ca>
     </td>
     <td>
-      <strong>{{ plr.actual_technique }}</strong> / {{ plr.technique.current_maximum_n }}
+      <strong>{{ plr.actual_technique / 10 }}</strong> / {{ plr.technique }}
     </td>
     <td>
-    {{ plr.endurance.current_maximum_n }}
+    {{ plr.endurance }}
     </td>
     <td>
       <a href="{{ url_for('game.PlayerDetails', player_pk=plr.pk_n) }}">Details</a>

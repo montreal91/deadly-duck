@@ -15,7 +15,6 @@ from flask_login                import current_user, login_required
 from app                        import db
 from app.game                   import game
 from app.data.models            import DdUser
-from app.exceptions             import DdDraftPickException
 from app.game.league            import DdLeague
 from app.game.match_processor   import DdMatchProcessor
 from app.data.game.player       import DdPlayer
@@ -87,24 +86,6 @@ def DivisionStandings( season, division ):
         season=season
     )
 
-@game.route( "/draft/" )
-@login_required
-def Draft():
-    if game.service.GetNumberOfUndraftedPlayers( user_pk=current_user.pk ) == 0:
-        abort( 403 )
-    drafter = game.service.GetDrafter( current_user )
-    drafter.ProcessDraft()
-    game.service.UpdateDrafter( 
-        user_pk=current_user.pk,
-        drafter=drafter
-    )
-    if drafter.is_draft_over:
-        game.service.EndDraft( current_user.pk )
-        flash( "Season #{0:d} is started".format( current_user.current_season_n ) )
-        return redirect( url_for( "game.MainScreen" ) )
-    else:
-        return redirect( url_for( "game.PickScreen" ) )
-
 
 @game.route( "/fire_player/<int:player_pk>/" )
 @login_required
@@ -146,9 +127,6 @@ def MainScreen():
         return redirect( url_for( "main.Index" ) )
 
     club = game.service.GetClub( current_user.managed_club_pk )
-    if game.service.GetNumberOfUndraftedPlayers( user_pk=current_user.pk ) > 0:
-        game.service.StartDraftForUser( current_user )
-        return redirect( url_for( "game.Draft" ) )
     players = game.service.GetClubPlayers( 
         user_pk=current_user.pk,
         club_pk=current_user.managed_club_pk
@@ -228,10 +206,9 @@ class DdNextDayView( View ):
                 return redirect( url_for( "game.MainScreen" ) )
             elif game.service.NewSeasonCondition( d1=remaining_d1, d2=remaining_d2 ) is True:
                 game.service.SaveClubRecords( user=current_user )
+                game.service.StartNextSeason( user_pk=current_user.pk )
                 DdLeague.StartNextSeason( current_user )
-                game.service.StartDraftForUser( current_user )
-                flash( "Welcome to the entry draft." )
-                return redirect( url_for( "game.Draft" ) )
+                return redirect( url_for( "game.MainScreen" ) )
             else:
                 raise ValueError
 
@@ -291,69 +268,19 @@ class DdNextDayView( View ):
         home_player.RemoveStaminaLostInMatch( result.home_stamina_lost )
         away_player.RemoveStaminaLostInMatch( result.away_stamina_lost )
 
-        home_endurance_experience = DdPlayer.CalculateMatchEnduranceExperience( result.home_stamina_lost )
-        away_endurance_experience = DdPlayer.CalculateMatchEnduranceExperience( result.away_stamina_lost )
-        home_player.AddEnduranceExperience( home_endurance_experience )
-        away_player.AddEnduranceExperience( away_endurance_experience )
+        home_experience = DdPlayer.CalculateNewExperience( result.home_sets )
+        away_experience = DdPlayer.CalculateNewExperience( result.away_sets ) 
 
-        home_technique_experience = DdPlayer.CalculateMatchTechniqueExperience( 
-            games_lost=result.away_games,
-            games_won=result.home_games,
-            sets_lost=result.away_sets,
-            sets_won=result.home_sets
-        )
-        away_technique_experience = DdPlayer.CalculateMatchTechniqueExperience( 
-            games_lost=result.home_games,
-            games_won=result.away_games,
-            sets_lost=result.home_sets,
-            sets_won=result.away_sets
-        )
-        home_player.AddTechniqueExperience( home_technique_experience )
-        away_player.AddTechniqueExperience( away_technique_experience )
+        home_player.AddExperience(home_experience)
+        away_player.AddExperience(away_experience)
+
+        home_player.LevelUpAuto()
+        away_player.LevelUpAuto()
 
         self._players_to_update.append( home_player )
         self._players_to_update.append( away_player )
 
 game.add_url_rule( "/nextday/", view_func=DdNextDayView.as_view( 'NextDay' ) )
-
-
-@game.route( "/pick/<int:player_pk>/" )
-@login_required
-def PickPlayer( player_pk ):
-    if game.service.GetNumberOfUndraftedPlayers( current_user.pk ) == 0:
-        abort( 403 )
-
-    # User is trying to pick drafted  player
-    player = game.service.GetPlayer( player_pk )
-    if player is None or player.is_drafted:
-        abort( 403 )
-
-    drafter = game.service.GetDrafter( current_user )
-    if drafter is None:
-        return redirect( url_for( "game.Draft" ) )
-
-    try:
-        drafter.PickPlayer( player_pk=player_pk, club_pk=current_user.managed_club_pk )
-        game.service.UpdateDrafter( 
-            user_pk=current_user.pk,
-            drafter=drafter
-        )
-    except DdDraftPickException:
-        abort( 403 )
-
-    return redirect( url_for( "game.Draft" ) )
-
-
-@game.route( "/pick/" )
-@login_required
-def PickScreen():
-    if game.service.GetNumberOfUndraftedPlayers( current_user.pk ) == 0:
-        abort( 403 )
-    drafter = game.service.GetDrafter( current_user )
-    return render_template( 
-        "game/pick_screen.html",
-        players=drafter.remaining_newcomers
-    )
 
 
 @game.route( "/player/<int:player_pk>/" )
@@ -491,7 +418,7 @@ def StartNewCareer():
         logging.debug( "Creating Schedule for user {pk:d}".format( pk=current_user.pk ) )
         DdLeague.CreateScheduleForUser( current_user )
         logging.debug( "Creating new players for user {pk:d}".format( pk=current_user.pk ) )
-        game.service.CreateNewcomersForUser( current_user.pk )
+        game.service.CreateInitialPlayersForUser( current_user.pk )
         logging.debug( "Create financial accounts for user {pk:d}".format( pk=current_user.pk ) )
         game.service.CreateStartingAccounts( current_user )
         return render_template( "game/start_new_career.html", divisions=divisions )

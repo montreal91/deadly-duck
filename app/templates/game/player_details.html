@@ -18,28 +18,17 @@
 
 {% if True %}
 <p>
-  <label>Technique</label>: {{ player.actual_technique }} | {{ player.technique.current_maximum_n }}
-  <ul>
-    <li><label>Maximum</label>: {{ player.technique.absolute_maximum_n }}</li>
-    <li><label>Talent</label>: {{ player.technique.talent_n }}</li>
-    <li><label>Experience</label>: {{ player.technique.experience_n }} /
-    {{ player.technique.ExperienceForSkillUp() }}</li>
-  </ul>
-
+  <label>Technique</label>: {{ player.actual_technique / 10 }} | {{ player.technique }}
 </p>
 <p>
-  <label>Endurance</label>: {{ player.endurance.current_maximum_n }}<br>
-  <ul>
-    <li><label>Maximum</label>: {{ player.endurance.absolute_maximum_n }}</li>
-    <li><label>Talent</label>: {{ player.endurance.talent_n }}</li>
-    <li><label>Experience</label>: {{ player.endurance.experience_n }} /
-    {{ player.endurance.ExperienceForSkillUp() }}</li>
-  </ul>
+  <label>Endurance</label>: {{ player.endurance }}<br>
 </p>
 <p>
   <label>Stamina</label>: {{ player.current_stamina_n }}
 </p>
 <p><label>Age</label>: {{ player.age_n }}</p>
+<p><label>Level</label>: {{ player.level }}</p>
+<p><label>Experience</label>: {{ player.experience_n }} / {{ player.next_level_exp }}</p>
 {% endif %}
 </div>
 

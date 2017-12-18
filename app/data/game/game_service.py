@@ -17,15 +17,14 @@ from app.data.game.club_financial_account import DdDaoClubFinancialAccount
 from app.data.game.club_record import DdDaoClubRecord
 from app.data.game.club_record import PlayoffRecordComparator
 from app.data.game.club_record import RegularRecordComparator
-from app.data.game.drafter import DdDrafter
 from app.data.game.match import DdDaoMatch
 from app.data.game.match import DdMatchStatuses
 from app.data.game.player import DdDaoPlayer
 from app.data.game.player import DdPlayer
 from app.data.game.playoff_series import DdDaoPlayoffSeries
 from app.data.game.playoff_series import DdPlayoffSeries
-from app.data.game.skill import DdDaoSkill
 
+from config_game import DdGameplayConstants
 from config_game import DdLeagueConfig
 from config_game import DdRatingsParamerers
 from config_game import DdTrainingTypes
@@ -42,38 +41,37 @@ class DdGameService( object ):
         self._dao_match = DdDaoMatch()
         self._dao_player = DdDaoPlayer()
         self._dao_playoff_series = DdDaoPlayoffSeries()
-        self._dao_skill = DdDaoSkill()
 
     def AddFunds( self, user_pk=0, club_pk=0, funds=0.0 ):
         self._dao_club_financial_account.AddFunds( user_pk, club_pk, funds )
 
-    def AgeUpAllActivePlayers( self, user ):
-        players = self._dao_player.GetAllActivePlayers( user.pk )
+    def AgeUpAllActivePlayers( self, user_pk ):
+        players = self._dao_player.GetAllActivePlayers( user_pk )
         for player in players:
             player.AgeUp()
         self._dao_player.SavePlayers( players )
 
-    def CreateNewcomersForUser( self, user_pk: int ) -> None:
+    def CreateInitialPlayersForUser( self, user_pk ):
         first_names, last_names = DdPlayer.GetNames()
-        clubs = len( club_names[1] + club_names[2] )
-        number_of_new_players = randint( clubs * 2, clubs * 4 )
-        players, skills = [], []
-        for i in range( number_of_new_players ): # @UnusedVariable
-            endurance = self._dao_skill.GenerateNewSkill()
-            technique = self._dao_skill.GenerateNewSkill()
-            player = self._dao_player.CreatePlayer( 
-                first_name=choice( first_names ),
-                second_name=choice( first_names ),
-                last_name=choice( last_names ),
-                user_pk=user_pk,
-                endurance=endurance,
-                technique=technique
-            )
-            players.append( player )
-            skills.append( endurance )
-            skills.append( technique )
-        self._dao_skill.SaveSkills( skills )
-        self.SavePlayers( players )
+        clubs = self._dao_club.GetAllClubs()
+        players = []
+        for club in clubs:
+            skill = DdGameplayConstants.SKILL_BASE.value
+            for i in range( DdGameplayConstants.MAX_PLAYERS_IN_CLUB.value):
+                skill_diff = DdGameplayConstants.SKILL_GROWTH_PER_LEVEL.value * i * 2
+                player = self._dao_player.CreatePlayer(
+                    first_name=choice( first_names ),
+                    second_name=choice( first_names ),
+                    last_name=choice(last_names ),
+                    user_pk=user_pk,
+                    club_pk=club.club_id_n,
+                    technique=skill + skill_diff,
+                    endurance=skill + skill_diff,
+                    age=DdGameplayConstants.STARTING_AGE.value + i
+                )
+                players.append(player)
+        self.SavePlayers(players)
+
 
     def CreateNewMatch( 
         self,
@@ -103,7 +101,7 @@ class DdGameService( object ):
         length = len( div1_list )
         if final:
             top, low = 0, 0
-            recent_standings = self._dao_match.GetRecentStandings( user, for_draft=False )
+            recent_standings = self._dao_match.GetRecentStandings( user )
             if recent_standings.index( div1_list[0] ) > recent_standings.index( div2_list[0] ):
                 top = div1_list[0]
                 low = div2_list[0]
@@ -166,13 +164,6 @@ class DdGameService( object ):
         current_match = self.GetCurrentMatch( user )
         return current_match and not selected_player
 
-    def EndDraft( self, user_pk ):
-        key = DdGameCacheKeys.DRAFTER.value.format( user_pk=user_pk ) # @UndefinedVariable
-        drafter = cache.Get( key ) # Tricky point, but should be OKay
-        self.SavePlayers( drafter.drafted_newcomers )
-        cache.DeleteKey( key )
-
-
     def GetClub( self, club_pk ):
         return self._dao_club.GetClub( club_pk )
 
@@ -221,21 +212,6 @@ class DdGameService( object ):
             division=division
         )
 
-    def GetDrafter( self, user ) -> DdDrafter:
-        key = DdGameCacheKeys.DRAFTER.value.format( user_pk=user.pk ) # @UndefinedVariable
-        drafter = cache.Get( key )
-        if drafter is None:
-            newcomers = self.GetNewcomersSnapshotsForUser( user_pk=user.pk )
-            standings = self.GetRecentStandings( user=user, for_draft=True )
-            drafter = DdDrafter( 
-                user_pk=user.pk,
-                user_club_pk=user.managed_club_pk,
-                remaining_newcomers=newcomers,
-                standings=standings
-            )
-            cache.SetKey( key=key, value=drafter )
-        return drafter
-
     def GetFinancialAccount( self, user_pk=0, club_pk=0 ):
         return self._dao_club_financial_account.GetFinancialAccount( user_pk, club_pk )
 
@@ -266,9 +242,6 @@ class DdGameService( object ):
     def GetMaxPlayoffRound( self, user=None ):
         return self._dao_playoff_series.GetMaxPlayoffRound( user=user )
 
-    def GetNewcomersSnapshotsForUser( self, user_pk: int ) -> list:
-        return self._dao_player.GetNewcomersSnapshotsForUser( user_pk )
-
     def GetNumberOfActivePlayers( self ):
         return self._dao_player.GetNumberOfActivePlayers()
 
@@ -277,9 +250,6 @@ class DdGameService( object ):
 
     def GetNumberOfFinishedSeries( self ):
         return self._dao_playoff_series.GetNumberOfFinishedSeries()
-
-    def GetNumberOfUndraftedPlayers( self, user_pk: int ) -> int:
-        return self._dao_player.GetNumberOfUndraftedPlayers( user_pk=user_pk )
 
     def GetPlayer( self, player_pk ):
         return self._dao_player.GetPlayer( player_pk )
@@ -299,8 +269,8 @@ class DdGameService( object ):
             season
         )
 
-    def GetRecentStandings( self, user, for_draft=False ):
-        return self._dao_match.GetRecentStandings( user, for_draft=for_draft )
+    def GetRecentStandings( self, user ):
+        return self._dao_match.GetRecentStandings( user )
 
     def GetRemainingClubs( self, user ):
         div1standings, div2standings = self._GetClubsQualifiedToPlayoffs( user=user )
@@ -364,11 +334,7 @@ class DdGameService( object ):
                     players_to_update.append( plr )
         players_to_update += played_players
         for plr in players_to_update:
-            recovered_stamina = randint( 
-                plr.max_stamina // 8,
-                plr.max_stamina // 4
-            )
-            plr.RecoverStamina( recovered_stamina )
+            plr.RecoverStamina( DdGameplayConstants.STAMINA_RECOVERY_PER_DAY.value )
         self.SavePlayers( players_to_update )
 
     def ProcessTrainingSession( self, user_pk: int ) -> None:
@@ -441,7 +407,7 @@ class DdGameService( object ):
     def SavePlayer( self, player ):
         self._dao_player.SavePlayer( player )
 
-    def SavePlayers( self, players=[] ):
+    def SavePlayers( self, players ):
         self._dao_player.SavePlayers( players )
 
     def SavePlayoffSeriesList( self, series_list=[] ):
@@ -475,28 +441,28 @@ class DdGameService( object ):
         )
         cache.SetKey( key=key, value=training_session )
 
-
-    def StartDraftForUser( self, user ) -> None:
-        if self.GetNumberOfUndraftedPlayers( user_pk=user.pk ) == 0:
-            self.CreateNewcomersForUser( user.pk )
-        newcomers = self.GetNewcomersSnapshotsForUser( user_pk=user.pk )
-        drafter = DdDrafter( 
-            user_pk=user.pk,
-            user_club_pk=user.managed_club_pk,
-            remaining_newcomers=newcomers,
-            standings=self.GetRecentStandings( user=user, for_draft=True )
-        )
-        key = DdGameCacheKeys.DRAFTER.value.format( # @UndefinedVariable
-            user_pk=user.pk
-        )
-        cache.SetKey( key=key, value=drafter )
-
     def SetPlayerForNextMatch( self, user_pk=0, player_pk=0 ):
         key = DdGameCacheKeys.SELECTED_PLAYER.value.format( # @UndefinedVariable
             user_pk=user_pk,
         )
         cache.SetKey( key=key, value=player_pk )
 
+    def StartNextSeason(self, user_pk):
+        players = self._dao_player.GetAllActivePlayers( user_pk=user_pk )
+        for player in players:
+            player.AgeUp()
+            player.AfterSeasonRest()
+
+        clubs = self._dao_club.GetAllClubs()
+        for club in clubs:
+            active_players = [player for player in players if player.is_active and player.club_pk == club.club_id_n]
+            new_players = self._CreateNewcomersForClub(
+                user_pk=user_pk,
+                club_pk=club.club_id_n,
+                number=DdGameplayConstants.MAX_PLAYERS_IN_CLUB.value - len(active_players)
+            )
+            players += new_players
+        self.SavePlayers(players=players)
 
     def UnsetPlayerForNextMatch( self, user_pk=0 ):
         key = DdGameCacheKeys.SELECTED_PLAYER.value.format( # @UndefinedVariable
@@ -541,11 +507,6 @@ class DdGameService( object ):
             accounts.append( account )
         self._dao_club_financial_account.SaveAccounts( accounts=accounts )
 
-    def UpdateDrafter( self, user_pk: int, drafter: DdDrafter ) -> None:
-        key = DdGameCacheKeys.DRAFTER.value.format( user_pk=user_pk ) # @UndefinedVariable
-        cache.SetKey( key=key, value=drafter )
-
-
     def _CreateMatchesForSeriesList( self, series_list=[], first_day=0 ):
         new_matches = []
         for series in series_list:
@@ -558,6 +519,23 @@ class DdGameService( object ):
                 )
                 new_matches.append( match )
         self._dao_match.SaveMatches( new_matches )
+
+    def _CreateNewcomersForClub( self, user_pk, club_pk, number ):
+        players = []
+        first_names, last_names = DdPlayer.GetNames()
+        for i in range(number):
+            player = self._dao_player.CreatePlayer(
+                first_name=choice(first_names),
+                second_name=choice(first_names),
+                last_name=choice(last_names),
+                user_pk=user_pk,
+                club_pk=club_pk,
+                technique=DdGameplayConstants.SKILL_BASE.value,
+                endurance=DdGameplayConstants.SKILL_BASE.value,
+                age=DdGameplayConstants.STARTING_AGE.value
+            )
+            players.append(player)
+        return players
 
     def _GetClubsQualifiedToPlayoffs( self, user ):
         div1standings = [row.club_pk for row in self.GetDivisionStandings( user_pk=user.pk, season=user.current_season_n, division=1 )]
@@ -611,26 +589,22 @@ class DdGameService( object ):
         else:
             raise ValueError( "Incorrect number of sets." )
 
-    def _ProcessTrainingSessionForPlayer( self, player, session ):
-        if session.archetype == DdTrainingTypes.ENDURANCE.value:
-            max_exp = session.intensity ** 2 * 2
-            min_exp = int( max_exp / 2 )
-            exp = randint( min_exp, max_exp )
-            stamina_factor = int( player.current_stamina_n ) / player.max_stamina
-            player.endurance.AddExperience( 
-                int( exp * player.endurance.talent_n * stamina_factor )
+    def _ProcessTrainingSessionForPlayer( self, player ):
+        player.AddExperience( DdGameplayConstants.EXPERIENCE_PER_TRAINING.value )
+
+    def _CreateNewcomersForClub( self, user_pk, club_pk, number ):
+        players = []
+        first_names, last_names = DdPlayer.GetNames()
+        for i in range(number):
+            player = self._dao_player.CreatePlayer(
+                first_name=choice(first_names),
+                second_name=choice(first_names),
+                last_name=choice(last_names),
+                user_pk=user_pk,
+                club_pk=club_pk,
+                technique=DdGameplayConstants.SKILL_BASE.value,
+                endurance=DdGameplayConstants.SKILL_BASE.value,
+                age=DdGameplayConstants.STARTING_AGE.value
             )
-            player.RemoveStaminaLostInMatch( 
-                player.max_stamina * INTENSIVITY_PERCENTAGES[session.intensity]
-            )
-        elif session.archetype == DdTrainingTypes.TECHNIQUE.value:
-            max_exp = session.intensity ** 2 * 2
-            min_exp = int( max_exp / 2 )
-            exp = randint( min_exp, max_exp )
-            stamina_factor = int( player.current_stamina_n ) / player.max_stamina
-            player.technique.AddExperience( 
-                int( exp * player.technique.talent_n * stamina_factor )
-            )
-            player.RemoveStaminaLostInMatch( 
-                player.max_stamina * INTENSIVITY_PERCENTAGES[session.intensity]
-            )
+            players.append(player)
+        return players

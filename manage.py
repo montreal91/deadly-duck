@@ -11,7 +11,6 @@ from app.data.game.game_service import DdGameService
 from app.data.game.match import DdMatch
 from app.data.game.player import DdPlayer
 from app.data.game.playoff_series import DdPlayoffSeries
-from app.data.game.skill import DdSkillModel
 from app.data.main.role import DdRole, DdPermission
 from app.data.main.user import DdUser
 from flask_migrate  import Migrate, MigrateCommand
@@ -54,7 +53,6 @@ def MakeShellContext():
         DdPlayoffSeries=DdPlayoffSeries,
         DdPost=DdPost,
         DdRole=DdRole,
-        DdSkillModel=DdSkillModel,
         DdUser=DdUser,
         ConfirmUser=ConfirmUser
     )

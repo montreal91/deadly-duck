@@ -205,10 +205,10 @@ class DdDaoMatch( object ):
             for row in table
         ]
 
-    def GetRecentStandings( self, user, for_draft=False ):
+    def GetRecentStandings( self, user ):
         table = db.engine.execute( # @UndefinedVariable
             STANDINGS_SQL.format( 
-                user.current_season_n - int( for_draft ),
+                user.current_season_n,
                 user.pk
             )
         ).fetchall() # @UndefinedVariable

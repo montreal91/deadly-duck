@@ -9,7 +9,6 @@ from config_game            import club_names
 from config_game            import DdLeagueConfig
 
 
-
 # TODO: move methods of this class to DdGameService
 class DdLeague( object ):
     @staticmethod
@@ -83,7 +82,6 @@ class DdLeague( object ):
     def StartNextSeason( user ):
         user.current_season_n += 1
         user.current_day_n = 0
-        game.service.AgeUpAllActivePlayers( user )
         db.session.add( user ) # @UndefinedVariable
         db.session.commit() # @UndefinedVariable
         DdLeague.CreateScheduleForUser( user )

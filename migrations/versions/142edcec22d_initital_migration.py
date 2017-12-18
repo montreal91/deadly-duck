@@ -1,13 +1,13 @@
-"""Initial migrations
+"""Initital migration
 
-Revision ID: 539b5186f48
+Revision ID: 142edcec22d
 Revises: None
-Create Date: 2017-02-19 23:44:51.545767
+Create Date: 2017-12-17 00:52:27.214345
 
 """
 
 # revision identifiers, used by Alembic.
-revision = '539b5186f48'
+revision = '142edcec22d'
 down_revision = None
 
 from alembic import op
@@ -31,6 +31,29 @@ def upgrade():
     sa.UniqueConstraint('name')
     )
     op.create_index(op.f('ix_roles_default'), 'roles', ['default'], unique=False)
+    op.create_table('skills',
+    sa.Column('pk', sa.Integer(), nullable=False),
+    sa.Column('absolute_maximum_n', sa.SmallInteger(), nullable=False),
+    sa.Column('current_maximum_n', sa.SmallInteger(), nullable=False),
+    sa.Column('current_value_n', sa.SmallInteger(), nullable=False),
+    sa.Column('talent_n', sa.SmallInteger(), nullable=False),
+    sa.Column('experience_n', sa.Integer(), nullable=False),
+    sa.PrimaryKeyConstraint('pk')
+    )
+    op.create_table('universities',
+    sa.Column('pk', sa.Integer(), nullable=False),
+    sa.Column('name_c', sa.String(length=64), nullable=False),
+    sa.PrimaryKeyConstraint('pk')
+    )
+    op.create_index(op.f('ix_universities_name_c'), 'universities', ['name_c'], unique=True)
+    op.create_table('faculties',
+    sa.Column('pk', sa.Integer(), nullable=False),
+    sa.Column('name_c', sa.String(length=64), nullable=False),
+    sa.Column('university_pk', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['university_pk'], ['universities.pk'], ),
+    sa.PrimaryKeyConstraint('pk')
+    )
+    op.create_index(op.f('ix_faculties_name_c'), 'faculties', ['name_c'], unique=False)
     op.create_table('users',
     sa.Column('pk', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(length=64), nullable=True),
@@ -53,6 +76,12 @@ def upgrade():
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
+    op.create_table('faculty_registrations',
+    sa.Column('user_pk', sa.Integer(), nullable=True),
+    sa.Column('faculty_pk', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['faculty_pk'], ['faculties.pk'], ),
+    sa.ForeignKeyConstraint(['user_pk'], ['users.pk'], )
+    )
     op.create_table('financial_accounts',
     sa.Column('pk_n', sa.Integer(), nullable=False),
     sa.Column('user_pk', sa.Integer(), nullable=True),
@@ -62,17 +91,53 @@ def upgrade():
     sa.ForeignKeyConstraint(['user_pk'], ['users.pk'], ),
     sa.PrimaryKeyConstraint('pk_n')
     )
+    op.create_table('friend_requests',
+    sa.Column('pk', sa.Integer(), nullable=False),
+    sa.Column('from_pk', sa.Integer(), nullable=True),
+    sa.Column('to_pk', sa.Integer(), nullable=True),
+    sa.Column('timestamp_dt', sa.DateTime(), nullable=True),
+    sa.Column('is_accepted', sa.Boolean(), nullable=True),
+    sa.Column('is_rejected', sa.Boolean(), nullable=True),
+    sa.Column('message_txt', sa.Text(), nullable=True),
+    sa.ForeignKeyConstraint(['from_pk'], ['users.pk'], ),
+    sa.ForeignKeyConstraint(['to_pk'], ['users.pk'], ),
+    sa.PrimaryKeyConstraint('pk')
+    )
+    op.create_table('friendship',
+    sa.Column('pk', sa.Integer(), nullable=False),
+    sa.Column('friend_one_pk', sa.Integer(), nullable=True),
+    sa.Column('friend_two_pk', sa.Integer(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('timestamp_dt', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['friend_one_pk'], ['users.pk'], ),
+    sa.ForeignKeyConstraint(['friend_two_pk'], ['users.pk'], ),
+    sa.PrimaryKeyConstraint('pk')
+    )
+    op.create_table('messages',
+    sa.Column('pk', sa.Integer(), nullable=False),
+    sa.Column('from_pk', sa.Integer(), nullable=True),
+    sa.Column('to_pk', sa.Integer(), nullable=True),
+    sa.Column('subject_c', sa.String(length=64), nullable=True),
+    sa.Column('text_txt', sa.Text(), nullable=False),
+    sa.Column('is_read', sa.Boolean(), nullable=True),
+    sa.Column('timestamp_dt', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['from_pk'], ['users.pk'], ),
+    sa.ForeignKeyConstraint(['to_pk'], ['users.pk'], ),
+    sa.PrimaryKeyConstraint('pk')
+    )
     op.create_table('players',
     sa.Column('pk_n', sa.Integer(), nullable=False),
     sa.Column('first_name_c', sa.String(length=64), nullable=False),
     sa.Column('second_name_c', sa.String(length=64), nullable=True),
     sa.Column('last_name_c', sa.String(length=64), nullable=False),
-    sa.Column('technique_n', sa.Numeric(precision=5, scale=2), nullable=False),
-    sa.Column('endurance_n', sa.Numeric(precision=5, scale=2), nullable=True),
-    sa.Column('current_stamina_n', sa.Numeric(precision=5, scale=2), nullable=True),
+    sa.Column('technique_n', sa.Integer(), nullable=True),
+    sa.Column('endurance_n', sa.Integer(), nullable=True),
+    sa.Column('experience_n', sa.Integer(), nullable=True),
+    sa.Column('exhaustion_n', sa.Integer(), nullable=True),
+    sa.Column('abilities_c', sa.String(length=6), nullable=True),
+    sa.Column('current_stamina_n', sa.Integer(), nullable=True),
     sa.Column('age_n', sa.Integer(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
-    sa.Column('is_drafted', sa.Boolean(), nullable=True),
     sa.Column('user_pk', sa.Integer(), nullable=True),
     sa.Column('club_pk', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['club_pk'], ['clubs.club_id_n'], ),
@@ -109,6 +174,30 @@ def upgrade():
     sa.PrimaryKeyConstraint('pk')
     )
     op.create_index(op.f('ix_posts_timestamp'), 'posts', ['timestamp'], unique=False)
+    op.create_table('university_registrations',
+    sa.Column('user_pk', sa.Integer(), nullable=True),
+    sa.Column('university_pk', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['university_pk'], ['universities.pk'], ),
+    sa.ForeignKeyConstraint(['user_pk'], ['users.pk'], )
+    )
+    op.create_table('club_records',
+    sa.Column('pk', sa.Integer(), nullable=False),
+    sa.Column('club_pk', sa.Integer(), nullable=True),
+    sa.Column('user_pk', sa.Integer(), nullable=True),
+    sa.Column('season_n', sa.Integer(), nullable=True),
+    sa.Column('regular_season_position_n', sa.Integer(), nullable=True),
+    sa.Column('regular_season_points_n', sa.Integer(), nullable=True),
+    sa.Column('last_playoff_series_pk', sa.Integer(), nullable=True),
+    sa.Column('timestamp_dt', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['club_pk'], ['clubs.club_id_n'], ),
+    sa.ForeignKeyConstraint(['last_playoff_series_pk'], ['playoff_series.pk'], ),
+    sa.ForeignKeyConstraint(['user_pk'], ['users.pk'], ),
+    sa.PrimaryKeyConstraint('pk')
+    )
+    op.create_index(op.f('ix_club_records_club_pk'), 'club_records', ['club_pk'], unique=False)
+    op.create_index(op.f('ix_club_records_pk'), 'club_records', ['pk'], unique=False)
+    op.create_index(op.f('ix_club_records_season_n'), 'club_records', ['season_n'], unique=False)
+    op.create_index(op.f('ix_club_records_user_pk'), 'club_records', ['user_pk'], unique=False)
     op.create_table('matches',
     sa.Column('match_pk_n', sa.Integer(), nullable=False),
     sa.Column('home_team_pk', sa.Integer(), nullable=True),
@@ -158,6 +247,12 @@ def downgrade():
     op.drop_index(op.f('ix_matches_away_team_pk'), table_name='matches')
     op.drop_index(op.f('ix_matches_away_player_pk'), table_name='matches')
     op.drop_table('matches')
+    op.drop_index(op.f('ix_club_records_user_pk'), table_name='club_records')
+    op.drop_index(op.f('ix_club_records_season_n'), table_name='club_records')
+    op.drop_index(op.f('ix_club_records_pk'), table_name='club_records')
+    op.drop_index(op.f('ix_club_records_club_pk'), table_name='club_records')
+    op.drop_table('club_records')
+    op.drop_table('university_registrations')
     op.drop_index(op.f('ix_posts_timestamp'), table_name='posts')
     op.drop_table('posts')
     op.drop_index(op.f('ix_playoff_series_user_pk'), table_name='playoff_series')
@@ -168,10 +263,19 @@ def downgrade():
     op.drop_index(op.f('ix_playoff_series_low_seed_pk'), table_name='playoff_series')
     op.drop_table('playoff_series')
     op.drop_table('players')
+    op.drop_table('messages')
+    op.drop_table('friendship')
+    op.drop_table('friend_requests')
     op.drop_table('financial_accounts')
+    op.drop_table('faculty_registrations')
     op.drop_index(op.f('ix_users_username'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
+    op.drop_index(op.f('ix_faculties_name_c'), table_name='faculties')
+    op.drop_table('faculties')
+    op.drop_index(op.f('ix_universities_name_c'), table_name='universities')
+    op.drop_table('universities')
+    op.drop_table('skills')
     op.drop_index(op.f('ix_roles_default'), table_name='roles')
     op.drop_table('roles')
     op.drop_table('clubs')

@@ -3,31 +3,42 @@ from enum import Enum
 
 club_names = {
     1: [
-        "Brisbane Rangers",
+        "Auckland Legion",
+        "Brisbane Broncos",
         "Canberra Masters",
         "Dandenong Pianists",
         "Melbourne Rockets",
-        "Melbourne Slams",
-        "Sydney Cangaroos",
+        "Sydney Storm",
+        "Sydney Volts",
         "Tasmanian Devils",
     ],
     2: [
-        "Adelaide Thrashers",
-        "Broome Witchers",
+        "Adelaide Lightning",
+        "Adelaide Falcons",
+        "Bunbury Ravens",
         "Darwin Ducks",
         "Mandurah Turtles",
         "Perth Penguins",
         "Rockingham Rocks",
         "Western Fury",
-        # "Bunbury Pandas",
     ]
 }
 
 number_of_recent_matches = 5
 sets_to_win = 2
 
-# This number is for testing purposes, real should be much bigger
-retirement_age = 31
+
+class DdGameplayConstants(Enum):
+    EXHAUSTION_PER_GAME = 10
+    EXHAUSTION_PER_TRAINING = 5
+    EXPERIENCE_COEFFICIENT = 50
+    LEVEL_EXPERIENCE_COEFFICIENT = 50
+    MAX_PLAYERS_IN_CLUB = 5
+    RETIREMENT_AGE = 21
+    SKILL_BASE = 50
+    SKILL_GROWTH_PER_LEVEL = 5
+    STAMINA_RECOVERY_PER_DAY = 25
+    STARTING_AGE = 16
 
 
 class DdLeagueConfig:
@@ -45,7 +56,7 @@ class DdPlayerSkills:
     MAX_VALUE = 10
     STANDARD_DEVIATION = 2.5
 
-    ENDURANCE_FACTOR = 2
+    ENDURANCE_FACTOR = 1
     MIN_STAMINA_LOST = 1
     MAX_STAMINA_LOST = 3
     DAILY_RECOVERY_FACTOR = 0.2

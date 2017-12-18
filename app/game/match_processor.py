@@ -143,19 +143,21 @@ class DdMatchProcessor( object ):
         return self._res
 
     def _CalculateActualSkill( self, player, actual_stamina=0 ):
-        max_stamina = player.max_stamina
-        stamina_factor = actual_stamina / Decimal( max_stamina )
-        return Decimal( player.technique.current_maximum_n ) * stamina_factor
+        stamina_factor = actual_stamina / player.max_stamina
+        return max(
+            player.technique_n * stamina_factor,
+            player.technique_n * 0.2
+        )
 
     def _CalculateActualStamina( self, player, lost_stamina=0 ):
-        actual_stamina = Decimal( player.current_stamina_n ) - Decimal( lost_stamina )
+        return player.current_stamina_n - lost_stamina
         if actual_stamina < 0:
             return 0
         else:
             return actual_stamina
 
     def _CalculateStaminaLostInGame( self ):
-        return randint( 1, 3 ) * 0.75
+        return 4
 
     def _IsSetOver( self, hgames, agames ):
         c1 = hgames >= 6 and hgames - agames >= 2
