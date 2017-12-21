@@ -268,8 +268,14 @@ class DdNextDayView( View ):
         home_player.RemoveStaminaLostInMatch( result.home_stamina_lost )
         away_player.RemoveStaminaLostInMatch( result.away_stamina_lost )
 
-        home_experience = DdPlayer.CalculateNewExperience( result.home_sets )
-        away_experience = DdPlayer.CalculateNewExperience( result.away_sets ) 
+        home_experience = DdPlayer.CalculateNewExperience(
+            result.home_sets,
+            away_player
+        )
+        away_experience = DdPlayer.CalculateNewExperience(
+            result.away_sets,
+            home_player
+        ) 
 
         home_player.AddExperience(home_experience)
         away_player.AddExperience(away_experience)

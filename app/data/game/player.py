@@ -40,11 +40,11 @@ class DdPlayer( db.Model ):
     @property
     def actual_technique( self ):
         stamina_factor = self.current_stamina_n / self.max_stamina
-        return round( self.technique_n * stamina_factor, 2 )
+        return round( self.technique_n * stamina_factor / 10, 1 )
 
     @property
     def endurance(self):
-        return self.endurance_n / 10
+        return round( self.endurance_n / 10, 1 )
 
 
     @property
@@ -100,13 +100,6 @@ class DdPlayer( db.Model ):
         if self.age_n >= DdGameplayConstants.RETIREMENT_AGE.value:
             self.is_active = False
 
-    def RecoverStamina( self, recovered_stamina=0 ):
-        self.current_stamina_n += recovered_stamina
-        if self.current_stamina_n > self.max_stamina:
-            self.current_stamina_n = self.max_stamina
-
-    def RemoveStaminaLostInMatch( self, lost_stamina=0 ):
-        self.current_stamina_n -= lost_stamina
 
     def LevelUpAuto( self ):
         while self.experience_n >= self.next_level_exp:
@@ -116,10 +109,22 @@ class DdPlayer( db.Model ):
             else:
                 self.endurance_n += DdGameplayConstants.SKILL_GROWTH_PER_LEVEL.value
 
+    def RecoverStamina( self, recovered_stamina=0 ):
+        self.current_stamina_n += recovered_stamina
+        if self.current_stamina_n > self.max_stamina:
+            self.current_stamina_n = self.max_stamina
+
+    def RemoveStaminaLostInMatch( self, lost_stamina=0 ):
+        self.current_stamina_n -= lost_stamina
 
     @staticmethod
-    def CalculateNewExperience( sets_won ):
-        return DdGameplayConstants.EXPERIENCE_COEFFICIENT.value * sets_won
+    def CalculateNewExperience( sets_won, opponent ):
+        base = DdGameplayConstants.EXPERIENCE_COEFFICIENT.value * sets_won
+        factor = DdGameplayConstants.EXPERIENCE_LEVEL_FACTOR.value
+        factor *= opponent.level
+        factor /= 100 # 100%
+        factor += 1
+        return round( base * factor )
 
 
     @staticmethod
@@ -253,4 +258,4 @@ class DdDaoPlayer( object ):
 
 
 def PlayerModelComparator( player_model ):
-    return player_model.actual_technique * 1.2 + player_model.endurance_n
+    return player_model.actual_technique * 1.2 + player_model.endurance
