@@ -3,6 +3,7 @@ import json
 from collections import namedtuple
 
 from sqlalchemy import and_, text
+from sqlalchemy.dialects import postgresql
 
 from app import db
 from app.custom_queries import CURRENT_MATCH_SQL, DAY_RESULTS_SQL
@@ -54,14 +55,14 @@ class DdMatch( db.Model ):
     day_n = db.Column( db.Integer, default=0, index=True ) # @UndefinedVariable
     context_json = db.Column( db.Text ) # @UndefinedVariable
     status_en = db.Column( # @UndefinedVariable
-        db.Enum( # @UndefinedVariable
+        postgresql.ENUM( # @UndefinedVariable
             DdMatchStatuses.planned,
             DdMatchStatuses.finished,
-            DdMatchStatuses.aborted
+            DdMatchStatuses.aborted,
+            name="match_status"
         ),
         nullable=False,
         default=DdMatchStatuses.planned,
-        index=True
     )
 
     playoff_series_pk = db.Column( db.Integer, db.ForeignKey( "playoff_series.pk" ) ) # @UndefinedVariable
@@ -168,6 +169,30 @@ class DdDaoMatch( object ):
         else:
             return None
 
+    def GetDayResults( self, user_pk, season, day ):
+        query_res = db.engine.execute( # @UndefinedVariable
+            text( DAY_RESULTS_SQL ).params( 
+                userpk=user_pk,
+                season=season,
+                day=day
+            )
+        ).fetchall()
+        return [
+            DdMatchSnapshot( 
+                pk=row["match_pk_n"],
+                home_team=row["home_club"],
+                away_team=row["away_club"],
+                home_player=row["home_player"],
+                away_player=row["away_player"],
+                home_skill="",
+                away_skill="",
+                full_score=row["full_score_c"],
+                home_team_pk=row["home_team_pk"],
+                away_team_pk=row["away_team_pk"]
+            )
+            for row in query_res
+        ]
+
     def GetDivisionStandings( self, user_pk=0, season=0, division=0 ):
         table = db.engine.execute( # @UndefinedVariable
             STANDINGS_FOR_DIVISION_SQL.format( # @UndefinedVariable
@@ -214,29 +239,6 @@ class DdDaoMatch( object ):
         ).fetchall() # @UndefinedVariable
         return [row[0] for row in reversed( table )]
 
-    def GetDayResults( self, user_pk, season, day ):
-        query_res = db.engine.execute( # @UndefinedVariable
-            text( DAY_RESULTS_SQL ).params( 
-                userpk=user_pk,
-                season=season,
-                day=day
-            )
-        ).fetchall()
-        return [
-            DdMatchSnapshot( 
-                pk=row["match_pk_n"],
-                home_team=row["home_club"],
-                away_team=row["away_club"],
-                home_player=row["home_player"],
-                away_player=row["away_player"],
-                home_skill="",
-                away_skill="",
-                full_score=row["full_score_c"],
-                home_team_pk=row["home_team_pk"],
-                away_team_pk=row["away_team_pk"]
-            )
-            for row in query_res
-        ]
 
     def GetNumberOfFinishedMatches( self ):
         return DdMatch.query.filter_by( status_en=DdMatchStatuses.finished ).count()
@@ -258,3 +260,7 @@ class DdDaoMatch( object ):
     def SaveMatches( self, matches=[] ):
         db.session.add_all( matches ) # @UndefinedVariable
         db.session.commit() # @UndefinedVariable
+
+
+def MatchChronologicalComparator(match):
+    return match.day_n

@@ -14,8 +14,8 @@ class DdConfig:
     MAIL_USERNAME = os.environ.get( "MAIL_USERNAME" )
     MAIL_PASSWORD = os.environ.get( "MAIL_PASSWORD" )
     MEMCACHED_DEFAULT_TIMEOUT = 10 * 60
-    SECRET_KEY = os.environ.get( "SECRET_KEY" ) or "go fork yourself"
     MEMCACHED_SERVERS = ["127.0.0.1:11211"]
+    SECRET_KEY = os.environ.get( "SECRET_KEY" ) or "go fork yourself"
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
 
     @staticmethod
@@ -25,7 +25,7 @@ class DdConfig:
 
 class DdDevelopmentConfig( DdConfig ):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get( "DEV_DATABASE_URL" ) or "sqlite:///" + os.path.join( basedir, "data-dev.sqlite" )
+    SQLALCHEMY_DATABASE_URI = "postgresql://duck:duck18@localhost/duck_dev"
     SQLALCHEMY_ECHO = True
 
 

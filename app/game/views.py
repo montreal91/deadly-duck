@@ -13,12 +13,13 @@ from flask.views                import MethodView
 from flask_login                import current_user, login_required
 
 from app                        import db
-from app.game                   import game
-from app.data.models            import DdUser
-from app.game.league            import DdLeague
-from app.game.match_processor   import DdMatchProcessor
+from app.data.game.match        import MatchChronologicalComparator
 from app.data.game.player       import DdPlayer
 from app.data.game.player       import PlayerModelComparator
+from app.data.models            import DdUser
+from app.game                   import game
+from app.game.league            import DdLeague
+from app.game.match_processor   import DdMatchProcessor
 from config_game                import club_names
 from config_game                import DdTrainingIntensities
 from config_game                import DdTrainingTypes
@@ -332,10 +333,11 @@ def Playoffs():
 @game.route( "/user/<username>/playoff_series_details/<int:series_pk>/" )
 @login_required
 def PlayoffSeriesDetails( username, series_pk ):
-    series = game.service.GetPlayoffSeries( series_pk=series_pk )
     user = DdUser.query.filter_by( username=username ).first() # @UndefinedVariable
     if user is None:
         abort( 404 )
+    series = game.service.GetPlayoffSeries( series_pk=series_pk )
+    series.matches.sort(key=MatchChronologicalComparator)
     return render_template( "game/playoff_series_details.html", series=series )
 
 

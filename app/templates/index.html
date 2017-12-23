@@ -35,29 +35,6 @@
     Enjoy your time here, you help us to make this game better.
   </p>
   <hr>
-  <h2>Best Managers</h2>
-  {% if ratings %}
-    <table class="table">
-      <tr>
-        <th>#</th>
-        <th>Username</th>
-        <th>Rating</th>
-      </tr>
-      {% for row in ratings %}
-        <tr {% if current_user.username == row["username"] %}class="info"{% endif %}>
-          <td>{{ loop.index }}</td>
-          <td>
-            <a href="{{ url_for('main.User', username=row['username']) }}">
-              {{ row["username"] }}
-            </a>
-          </td>
-          <td>{{ row["rating_points"] }}</td>
-        </tr>
-      {% endfor %}
-    </table>
-  {% else %}
-    There are no rated users yet.
-  {% endif %}
 </div>
 <div class="col-md-4">
   {% if current_user.managed_club_pk %}

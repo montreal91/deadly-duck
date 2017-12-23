@@ -163,14 +163,12 @@ def Friends():
 
 @main.route( "/", methods=["GET", "POST"] )
 def Index():
-    ratings = main.game_service.GetGlobalRatings()
     number_of_active_players = main.game_service.GetNumberOfActivePlayers()
     number_of_finished_matches = main.game_service.GetNumberOfFinishedMatches()
     number_of_finished_series = main.game_service.GetNumberOfFinishedSeries()
     number_of_users = main.service.GetNumberOfUsers()
     return render_template( 
         "index.html",
-        ratings=ratings,
         number_of_active_players=number_of_active_players,
         number_of_finished_matches=number_of_finished_matches,
         number_of_finished_series=number_of_finished_series,

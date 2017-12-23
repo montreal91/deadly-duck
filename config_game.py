@@ -3,7 +3,7 @@ from enum import Enum
 
 club_names = {
     1: [
-        "Auckland Legion",
+        "Auckland Aces",
         "Brisbane Broncos",
         "Canberra Masters",
         "Dandenong Pianists",
@@ -13,13 +13,13 @@ club_names = {
         "Tasmanian Devils",
     ],
     2: [
-        "Adelaide Lightning",
         "Adelaide Falcons",
         "Bunbury Ravens",
         "Darwin Ducks",
         "Mandurah Turtles",
         "Perth Penguins",
         "Rockingham Rocks",
+        "Southern Raiders",
         "Western Fury",
     ]
 }
@@ -75,7 +75,7 @@ class DdRatingsParamerers:
     ROUND_COEFFICIENT = 25
 
 class DdMiscConstants( Enum ):
-    CURRENT_VERSION = "0.3"
+    CURRENT_VERSION = "3.0"
     MAX_USERS       = 13
 
 class DdTrainingTypes( Enum ):

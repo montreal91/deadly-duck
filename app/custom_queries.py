@@ -38,8 +38,8 @@ SELECT players.*
 FROM  players INNER JOIN skills ON players.technique_pk = skills.pk
 WHERE user_pk = :userpk
 AND   club_pk = :clubpk
-AND   is_active = 1
-AND   is_drafted = 1
+AND   is_active = TRUE
+AND   is_drafted = TRUE
 ORDER BY skills.current_maximum_n DESC
 """
 
@@ -127,7 +127,7 @@ WHERE (
     (friend_one_pk = :u1_pk AND friend_two_pk = :u2_pk) OR
     (friend_one_pk = :u2_pk AND friend_two_pk = :u1_pk)
 )
-AND     is_active = 1
+AND     is_active = TRUE
 """
 
 FRIENDS_SQL = """
@@ -137,12 +137,12 @@ WHERE pk IN (
     SELECT  friend_two_pk
     FROM    friendship
     WHERE   friend_one_pk = :user_pk
-    AND     is_active = 1
+    AND     is_active = TRUE
     UNION
     SELECT  friend_one_pk
     FROM    friendship
     WHERE   friend_two_pk = :user_pk
-    AND     is_active = 1
+    AND     is_active = TRUE
 )
 """
 
@@ -153,7 +153,7 @@ WHERE   (
     (friend_one_pk = :u1_pk AND friend_two_pk = :u2_pk) OR 
     (friend_one_pk = :u2_pk AND friend_two_pk = :u1_pk)
 )
-AND     is_active = 1
+AND     is_active = TRUE
 """
 
 GLOBAL_USER_RATING_SQL = """
@@ -243,12 +243,12 @@ WHERE pk IN (
     SELECT  friend_two_pk
     FROM    friendship
     WHERE   friend_one_pk = :user_pk
-    AND     is_active = 1
+    AND     is_active = TRUE
     UNION
     SELECT  friend_one_pk
     FROM    friendship
     WHERE   friend_two_pk = :user_pk
-    AND     is_active = 1
+    AND     is_active = TRUE
 )
 """
 
@@ -256,8 +256,8 @@ NUMBER_OF_INCOMING_FRIEND_REQUESTS_SQL = """
 SELECT  Count(*) AS incoming_friend_requests
 FROM    friend_requests
 WHERE   to_pk = :user_pk
-AND     is_accepted = 0
-AND     is_rejected = 0
+AND     is_accepted = FALSE
+AND     is_rejected = FALSE
 """
 
 NUMBER_OF_INCOMING_NEW_MESSAGES_FROM_USER = """
@@ -265,22 +265,22 @@ SELECT Count(*) AS number_of_incoming_messages
 FROM messages
 WHERE to_pk = :user_pk
 AND from_pk = :sender_pk
-AND is_read = 0
+AND is_read = FALSE
 """
 
 NUMBER_OF_OUTCOMING_FRIEND_REQUESTS_SQL = """
 SELECT  Count(*) AS outcoming_friend_requests
 FROM    friend_requests
 WHERE   from_pk = :user_pk
-AND     is_accepted = 0
-AND     is_rejected = 0
+AND     is_accepted = FALSE
+AND     is_rejected = FALSE
 """
 
 NUMBER_OF_TOTAL_INCOMING_NEW_MESSAGES = """
 SELECT Count(*) AS number_of_incoming_messages
 FROM messages
 WHERE to_pk = :user_pk
-AND is_read = 0
+AND is_read = FALSE
 """
 
 OUTCOMING_FRIEND_REQUESTS_SQL = """
