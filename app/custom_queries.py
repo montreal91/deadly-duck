@@ -296,6 +296,14 @@ WHERE users.pk = outcoming_requests.to_pk
 ORDER BY outcoming_requests.timestamp_dt DESC
 """
 
+PLAYOFF_SERIES_SQL = """
+SELECT *
+FROM playoff_series
+WHERE user_pk = :userpk
+AND season_n = :season
+ORDER BY pk ASC;
+"""
+
 RECENT_PLAYER_MATCHES_SQL = """
 SELECT   match_pk_n, (
     SELECT club_name_c

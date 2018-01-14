@@ -1,6 +1,16 @@
 
 /* TODO: order all elements in the alphabetical order. */
 
+.dd-playoffs-draw .dd-result-box {
+    fill: #ffffff;
+    stroke: #aaaaaa;
+    stroke-width: 1px;
+}
+
+.dd-playoffs-draw .dd-inner-line {
+    stroke: #aaaaaa;
+}
+
 table.dd-table {
     width: 100%;
 }

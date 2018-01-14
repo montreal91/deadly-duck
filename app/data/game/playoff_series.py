@@ -1,10 +1,12 @@
 
+from flask import url_for
 from sqlalchemy import and_, text
 
 from app import db
 from config_game import DdLeagueConfig
 from app.custom_queries import FINAL_PLAYOFF_SERIES_FOR_CLUB_SQL
 from app.custom_queries import MAX_PLAYOFF_ROUND_SQL
+from app.custom_queries import PLAYOFF_SERIES_SQL
 from app.custom_queries import SERIES_IN_ONE_ROUND_IN_ONE_DIVISION_SQL
 
 class DdPlayoffSeriesStatuses:
@@ -31,6 +33,24 @@ class DdPlayoffSeries( db.Model ):
 
     top_seed = db.relationship( "DdClub", foreign_keys=[top_seed_pk] ) # @UndefinedVariable
     low_seed = db.relationship( "DdClub", foreign_keys=[low_seed_pk] ) # @UndefinedVariable
+
+    @property
+    def dictionary( self ):
+        top_seed = {
+            "club_name": self.top_seed.club_name_c,
+            "matches": self.top_seed_victories_n,
+        }
+
+        low_seed = {
+            "club_name": self.low_seed.club_name_c,
+            "matches": self.low_seed_victories_n,
+        }
+        return {
+            "top_seed": top_seed,
+            "low_seed": low_seed,
+            "pk": self.pk,
+            "url": url_for("game.PlayoffSeriesDetails", series_pk=self.pk)
+        }
 
     def GetLowSeedMatchesWon( self, sets_to_win=0 ):
         return sum( self._GetSetsLowSpeedWon( m ) == sets_to_win for m in self.matches )
@@ -107,11 +127,11 @@ class DdDaoPlayoffSeries( object ):
         series.round_n = round_n
         return series
 
-    def GetAllPlayoffSeries( self, user=None ):
-        return DdPlayoffSeries.query.filter( 
-            and_( 
-                DdPlayoffSeries.season_n == user.current_season_n,
-                DdPlayoffSeries.user_pk == user.pk
+    def GetAllPlayoffSeries( self, user_pk, season ):
+        return DdPlayoffSeries.query.from_statement( 
+            text( PLAYOFF_SERIES_SQL ).params(
+                userpk=user_pk,
+                season=season
             )
         ).all()
 

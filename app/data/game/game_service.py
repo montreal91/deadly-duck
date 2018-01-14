@@ -176,8 +176,8 @@ class DdGameService( object ):
     def GetAllClubsInDivision( self, division ):
         return self._dao_club.GetAllClubsInDivision( division )
 
-    def GetAllPlayoffSeries( self, user=None ):
-        return self._dao_playoff_series.GetAllPlayoffSeries( user=user )
+    def GetAllPlayoffSeries( self, user_pk, season ):
+        return self._dao_playoff_series.GetAllPlayoffSeries( user_pk, season )
 
     def GetBestClubRecord( self, user=None, club_pk=0 ):
         playoff_records = self._dao_club_record.GetPlayoffRecords( club_pk=club_pk, user=user )
@@ -275,7 +275,10 @@ class DdGameService( object ):
     def GetRemainingClubs( self, user ):
         div1standings, div2standings = self._GetClubsQualifiedToPlayoffs( user=user )
 
-        series_list = self.GetAllPlayoffSeries( user=user )
+        series_list = self.GetAllPlayoffSeries(
+            user_pk=user.pk,
+            season=user.current_season_n
+        )
         if len( series_list ) == 0:
             return div1standings, div2standings
 

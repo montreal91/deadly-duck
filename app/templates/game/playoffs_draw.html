@@ -1,0 +1,119 @@
+
+{% extends "base.html" %}
+
+{% block subtitle %}
+  Season: {{ current_user.current_season_n }} Playoffs
+{% endblock %}
+
+{% block page_content %}
+
+
+<div id="dd-draw-app">
+  <h3>Season [[ season ]]</h3>
+  <p>
+    <button class="btn btn-default" v-on:click="Previous"><<</button>
+    <button class="btn btn-default" v-on:click="Update">Update</button>
+    <button class="btn btn-default" v-on:click="Next">>></button>
+  </p>
+  <svg class=dd-playoffs-draw width="900" height="600" v-if="series.length">
+    <g v-if="series[0]">  
+      <rect class="dd-result-box" x="5" y="5" width="225" height="80" />
+      <line class="dd-inner-line" x1="5" x2="265" y1="45" y2="45"/>
+      <line class="dd-inner-line" x1="190" x2="190" y1="5" y2="85"/>
+      <text x="15" y="30">[[series[0].top_seed.club_name]]</text>
+      <text x="15" y="70">[[series[0].low_seed.club_name]]</text>
+      <a v-bind:href="series[0].url">
+        <text x="205" y="30">[[series[0].top_seed.matches]]</text>
+        <text x="205" y="70">[[series[0].low_seed.matches]]</text>
+      </a>
+
+      <rect class="dd-result-box" x="5" y="105" width="225" height="80" />
+      <line class="dd-inner-line" x1="5" x2="265" y1="145"  y2="145"/>
+      <line class="dd-inner-line" x1="190" x2="190" y1="105" y2="185"/>
+      <text x="15" y="130">[[series[1].top_seed.club_name]]</text>
+      <text x="15" y="170">[[series[1].low_seed.club_name]]</text>
+      <a v-bind:href="series[1].url">
+        <text x="205" y="130">[[series[1].top_seed.matches]]</text>
+        <text x="205" y="170">[[series[1].low_seed.matches]]</text>
+      </a>
+      
+      <line class="dd-inner-line" x1="265" x2="265" y1="45" y2="145"/>
+    </g>
+  
+    <g v-if="series[2]">
+      <rect class="dd-result-box" x="5" y="205" width="225" height="80" />
+      <line class="dd-inner-line" x1="5" x2="265" y1="245" y2="245"/>
+      <line class="dd-inner-line" x1="190" x2="190" y1="205" y2="285"/>
+      <text x="15" y="230">[[series[2].top_seed.club_name]]</text>
+      <text x="15" y="270">[[series[2].low_seed.club_name]]</text>
+      <a v-bind:href="series[2].url">
+        <text x="205" y="230">[[series[2].top_seed.matches]]</text>
+        <text x="205" y="270">[[series[2].low_seed.matches]]</text>
+      </a>
+  
+      <rect class="dd-result-box" x="5" y="305" width="225" height="80" />
+      <line class="dd-inner-line" x1="5" x2="265" y1="345"  y2="345"/>
+      <line class="dd-inner-line" x1="190" x2="190" y1="305" y2="385"/>
+      <text x="15" y="330">[[series[3].top_seed.club_name]]</text>
+      <text x="15" y="370">[[series[3].low_seed.club_name]]</text>
+      <a v-bind:href="series[3].url">
+        <text x="205" y="330">[[series[3].top_seed.matches]]</text>
+        <text x="205" y="370">[[series[3].low_seed.matches]]</text>
+      </a>
+      
+      <line class="dd-inner-line" x1="265" x2="265" y1="245" y2="345"/>
+    </g>
+  
+    <g v-if="series[4]">
+      <rect class="dd-result-box" x="305" y="55" width="225" height="80" />
+      <line class="dd-inner-line" x1="265" x2="565" y1="95" y2="95"/>
+      <line class="dd-inner-line" x1="490" x2="490" y1="55" y2="135"/>
+      <text x="315" y="80">[[series[4].top_seed.club_name]]</text>
+      <text x="315" y="120">[[series[4].low_seed.club_name]]</text>
+      <a v-bind:href="series[4].url">
+        <text x="505" y="80">[[series[4].top_seed.matches]]</text>
+        <text x="505" y="120">[[series[4].low_seed.matches]]</text>
+      </a>
+  
+      <rect class="dd-result-box" x="305" y="255" width="225" height="80" />
+      <line class="dd-inner-line" x1="265" x2="565" y1="295" y2="295"/>
+      <line class="dd-inner-line" x1="490" x2="490" y1="255" y2="335"/>
+      <text x="315" y="280">[[series[5].top_seed.club_name]]</text>
+      <text x="315" y="320">[[series[5].low_seed.club_name]]</text>
+      <a v-bind:href="series[5].url">
+        <text x="505" y="280">[[series[5].top_seed.matches]]</text>
+        <text x="505" y="320">[[series[5].low_seed.matches]]</text>
+      </a>
+      
+      <line class="dd-inner-line" x1="565" x2="565" y1="95" y2="295"/>
+    </g>
+    
+    <g v-if="series[6]">
+      <rect class="dd-result-box" x="605" y="155" width="225" height="80" />
+      <line class="dd-inner-line" x1="565" x2="830" y1="195" y2="195"/>
+      <line class="dd-inner-line" x1="790" x2="790" y1="155" y2="235"/>
+      <text x="615" y="180">[[series[6].top_seed.club_name]]</text>
+      <text x="615" y="220">[[series[6].low_seed.club_name]]</text>
+      <a v-bind:href="series[6].url">
+        <text x="805" y="180">[[series[6].top_seed.matches]]</text>
+        <text x="805" y="220">[[series[6].low_seed.matches]]</text>
+      </a>
+    </g>
+  </svg>
+  <div v-if="!series.length">
+    No playoffs in this season yet.
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script type="text/javascript">
+    const CURRENT_SEASON = {{ current_user.current_season_n }};
+    const USERNAME = "{{ current_user.username }}";
+  </script>
+  <script type="text/javascript" src="https://unpkg.com/vue@2.5.13/dist/vue.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/axios@0.17.1/dist/axios.min.js"></script>
+  <script type="text/javascript" src="{{ url_for('static', filename='playoffs_draw.js')}}"></script>
+{% endblock %}

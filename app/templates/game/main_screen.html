@@ -33,13 +33,11 @@
   <p>
     <a href="{{ url_for('game.NextDay') }}" class="btn btn-primary btn-block">Next Day</a>
   </p>
-  {% if current_round %}
-    <p>
-      <a href="{{ url_for('game.Playoffs' ) }}" class="btn btn-default btn-block">
-        PlayOffs
-      </a>
-    </p>
-  {% endif %}
+  <p>
+    <a href="{{ url_for('game.Playoffs' ) }}" class="btn btn-default btn-block">
+      PlayOffs
+    </a>
+  </p>
   <p>
     <a href="{{ url_for('game.Standings', season=current_user.current_season_n) }}" class="btn btn-default btn-block">Standings</a>
   </p>

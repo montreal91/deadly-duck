@@ -309,33 +309,34 @@ def PlayerDetails( player_pk ):
     )
 
 
-@game.route( "/playoffs/" )
-@login_required
-def Playoffs():
-    current_round = game.service.GetMaxPlayoffRound( user=current_user )
-    if current_round is None:
-        return redirect( url_for( "game.MainScreen" ) )
+class DdPlayoffs( MethodView ):
+    decorators = [login_required]
 
-    series_dict = {}
-    for i in range( current_round ):
-        series = game.service.GetPlayoffSeriesByRoundAndDivision( 
-            user=current_user,
-            rnd=i + 1
+    def get( self ):
+        series_dict = {}
+        return render_template( 
+            "game/playoffs_draw.html",
+            series_dict=series_dict,
+            season=current_user.current_season_n
         )
-        series_dict[i] = series
-    return render_template( 
-        "game/playoffs.html",
-        series_dict=series_dict,
-        season=current_user.current_season_n
-    )
+
+    def post( self ):
+        json_data = request.json
+        season = int(json_data["season"])
+        series = game.service.GetAllPlayoffSeries(
+            user_pk=current_user.pk,
+            season=season
+        )
+        series = [s.dictionary for s in series]
+        return jsonify({"series": series})
 
 
-@game.route( "/user/<username>/playoff_series_details/<int:series_pk>/" )
+game.add_url_rule( "/playoffs/", view_func=DdPlayoffs.as_view( "Playoffs" ) )
+
+
+@game.route( "/playoff_series_details/<int:series_pk>/" )
 @login_required
-def PlayoffSeriesDetails( username, series_pk ):
-    user = DdUser.query.filter_by( username=username ).first() # @UndefinedVariable
-    if user is None:
-        abort( 404 )
+def PlayoffSeriesDetails( series_pk ):
     series = game.service.GetPlayoffSeries( series_pk=series_pk )
     series.matches.sort(key=MatchChronologicalComparator)
     return render_template( "game/playoff_series_details.html", series=series )
@@ -355,7 +356,7 @@ def SelectPlayer( pk ):
     if len( player ) != 1:
         abort( 403 )
 
-    player = player[0]
+    # player = player[0]
     game.service.SetPlayerForNextMatch( user_pk=current_user.pk, player_pk=pk )
     return redirect( url_for( "game.MainScreen" ) )
 
