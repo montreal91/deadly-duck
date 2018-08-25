@@ -51,20 +51,29 @@ class DdMainService( object ):
             text=text
         )
 
+    def CreateNewUser(self, social_pk, username, email):
+        return self._dao_user.CreateNewUser(social_pk, username, email)
+
+
     def FindUserByPartOfUsername( self, search_token="" ):
         return self._dao_user.FindUserByPartOfUsername( search_token=search_token )
+
 
     def GetAllFriendsForUser( self, user_pk ):
         return self._dao_user.GetAllFriendsForUser( user_pk=user_pk )
 
+
     def GetAllIncomingMessages( self, user_pk=0 ):
         return self._dao_message.GetAllIncomingMessages( user_pk=user_pk )
+
 
     def GetAllOutcomingMessages( self, user_pk=0 ):
         return self._dao_message.GetAllOutcomingMessages( user_pk=user_pk )
 
+
     def GetAllUniversities( self ):
         return self._dao_university.GetAllUniversities()
+
 
     def GetClassmatesForUser( self, user=None ):
         res = []
@@ -73,17 +82,22 @@ class DdMainService( object ):
 
         return [student for student in res if student != user]
 
+
     def GetFriendRequestByPk( self, request_pk=0 ):
         return self._dao_friendship.GetFriendRequestByPk( request_pk=request_pk )
+
 
     def GetFriendshipObject( self, u1_pk=0, u2_pk=0 ):
         return self._dao_friendship.GetFriendshipObject( u1_pk=u1_pk, u2_pk=u2_pk )
 
+
     def GetIncomingFriendRequests( self, user_pk=0 ):
         return self._dao_friendship.GetIncomingFriendRequests( user_pk=user_pk )
 
+
     def GetMessageByPk( self, pk ):
         return self._dao_message.GetMessageByPk( pk )
+
 
     def GetNumberOfActiveFriendRequests( self, user_one_pk=0, user_two_pk=0 ):
         return self._dao_friendship.GetNumberOfActiveFriendRequests( 
@@ -91,30 +105,43 @@ class DdMainService( object ):
             user_two_pk=user_two_pk
         )
 
+
     def GetNumberOfFriends( self, user_pk=0 ):
         return self._dao_user.GetNumberOfFriends( user_pk=user_pk )
+
 
     def GetNumberOfIncomingFriendRequests( self, user_pk=0 ):
         return self._dao_friendship.GetNumberOfIncomingFriendRequests( user_pk=user_pk )
 
+
     def GetNumberOfOutcomingFriendRequests( self, user_pk=0 ):
         return self._dao_friendship.GetNumberOfOutcomingFriendRequests( user_pk=user_pk )
+
 
     def GetNumberOfUsers( self ):
         return self._dao_user.GetNumberOfUsers()
 
+
     def GetOutcomingFriendRequests( self, user_pk=0 ):
         return self._dao_friendship.GetOutcomingFriendRequests( user_pk=user_pk )
 
+
     def GetTotalNumberOfIncomingNewMessages( self, user_pk=0 ):
         return self._dao_message.GetTotalNumberOfIncomingNewMessages( user_pk=user_pk )
+
 
     def GetUniversityFaculties( self, university_pk=0 ):
         university = self._dao_university.GetUniversityByPk( pk=university_pk )
         return university.faculties
 
+
+    def GetUserBySocialPk( self, social_pk: str = "" ):
+        return self._dao_user.GetUserBySocialPk( social_pk )
+
+
     def GetUserByUsername( self, username="" ):
         return self._dao_user.GetUserByUsername( username=username )
+
 
     def IsFriendshipPossible( self, user_one_pk=0, user_two_pk=0 ):
         if user_one_pk == user_two_pk:

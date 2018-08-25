@@ -1,29 +1,28 @@
 
-from json               import loads
+from json                       import loads
 
-from flask              import abort
-from flask              import flash
-from flask              import jsonify
-from flask              import redirect
-from flask              import render_template
-from flask              import request
-from flask              import url_for
-from flask_login        import current_user
-from flask_login        import login_required
+from flask                      import abort
+from flask                      import flash
+from flask                      import jsonify
+from flask                      import redirect
+from flask                      import render_template
+from flask                      import request
+from flask                      import url_for
+from flask_login                import current_user
+from flask_login                import login_required
 
-from app                import db
-from app.data.main.role import DdRole
-from app.data.main.user import DdUser
-from app.data.models    import DdPost
-from app.decorators     import AdminRequired
-from app.main           import main
-from app.main.forms     import DdEditProfileAdminForm
-from app.main.forms     import DdEditProfileForm
-from app.main.forms     import DdMakeFriendRequestForm
-from app.main.forms     import DdWriteMessageForm
-from app.main.forms     import DdUserSearchForm
-
-from config_game        import DdMiscConstants
+from app                        import db
+from app.data.main.role         import DdRole
+from app.data.main.user         import DdUser
+from app.data.models            import DdPost
+from app.decorators             import AdminRequired
+from app.main                   import main
+from app.main.forms             import DdEditProfileAdminForm
+from app.main.forms             import DdEditProfileForm
+from app.main.forms             import DdMakeFriendRequestForm
+from app.main.forms             import DdWriteMessageForm
+from app.main.forms             import DdUserSearchForm
+from configuration.config_game  import DdMiscConstants
 
 
 @main.route( "/accept_friend_request/<int:pk>/" )
@@ -199,6 +198,7 @@ def ReadMessage( pk ):
         main.service.SaveMessage( message=message )
     return render_template( "main/full_message.html", message=message )
 
+
 @main.route( "/reject_friend_request/<int:pk>/" )
 @login_required
 def RejectFriendRequest( pk ):
@@ -210,11 +210,13 @@ def RejectFriendRequest( pk ):
     main.service.SaveFriendRequest( friend_request=request )
     return redirect( url_for( "main.Friends" ) )
 
+
 @main.route( "/remove_education/<int:faculty_pk>/" )
 @login_required
 def RemoveEducation( faculty_pk ):
     main.service.RemoveEducationFromUser( user=current_user, faculty_pk=faculty_pk )
     return redirect( url_for( "main.User", username=current_user.username ) )
+
 
 @main.route( "/remove_from_friends/<int:pk>/" )
 @login_required

@@ -1,11 +1,11 @@
 
-from random                 import shuffle
+from random                     import shuffle
 
-from app                    import db
-from app.data.game.club     import DdClub
-from app.game               import game
-from config_game            import club_names
-from config_game            import DdLeagueConfig
+from app                        import db
+from app.data.game.club         import DdClub
+from app.game                   import game
+from configuration.config_game  import club_names
+from configuration.config_game  import DdLeagueConfig
 
 
 # TODO: move methods of this class to DdGameService

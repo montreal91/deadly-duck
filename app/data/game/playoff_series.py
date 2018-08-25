@@ -1,14 +1,14 @@
 
-from flask              import url_for
-from sqlalchemy         import and_
-from sqlalchemy         import text
+from flask                      import url_for
+from sqlalchemy                 import and_
+from sqlalchemy                 import text
 
-from app                import db
-from config_game        import DdLeagueConfig
-from app.custom_queries import FINAL_PLAYOFF_SERIES_FOR_CLUB_SQL
-from app.custom_queries import MAX_PLAYOFF_ROUND_SQL
-from app.custom_queries import PLAYOFF_SERIES_SQL
-from app.custom_queries import SERIES_IN_ONE_ROUND_IN_ONE_DIVISION_SQL
+from app                        import db
+from app.custom_queries         import FINAL_PLAYOFF_SERIES_FOR_CLUB_SQL
+from app.custom_queries         import MAX_PLAYOFF_ROUND_SQL
+from app.custom_queries         import PLAYOFF_SERIES_SQL
+from app.custom_queries         import SERIES_IN_ONE_ROUND_IN_ONE_DIVISION_SQL
+from configuration.config_game  import DdLeagueConfig
 
 
 class DdPlayoffSeriesStatuses:
@@ -19,22 +19,22 @@ class DdPlayoffSeriesStatuses:
 
 class DdPlayoffSeries( db.Model ):
     __tablename__ = "playoff_series"
-    pk = db.Column( db.Integer, primary_key=True, index=True ) # @UndefinedVariable
-    top_seed_pk = db.Column( db.ForeignKey( "clubs.club_id_n" ), index=True ) # @UndefinedVariable
-    low_seed_pk = db.Column( db.ForeignKey( "clubs.club_id_n" ), index=True ) # @UndefinedVariable
-    user_pk = db.Column( db.ForeignKey( "users.pk" ), index=True ) # @UndefinedVariable
+    pk = db.Column( db.Integer, primary_key=True, index=True )
+    top_seed_pk = db.Column( db.ForeignKey( "clubs.club_id_n" ), index=True )
+    low_seed_pk = db.Column( db.ForeignKey( "clubs.club_id_n" ), index=True )
+    user_pk = db.Column( db.ForeignKey( "users.pk" ), index=True )
 
-    top_seed_victories_n = db.Column( db.Integer, default=0, nullable=False ) # @UndefinedVariable
-    low_seed_victories_n = db.Column( db.Integer, default=0, nullable=False ) # @UndefinedVariable
+    top_seed_victories_n = db.Column( db.Integer, default=0, nullable=False )
+    low_seed_victories_n = db.Column( db.Integer, default=0, nullable=False )
 
-    season_n = db.Column( db.Integer, default=0, nullable=False, index=True ) # @UndefinedVariable
-    round_n = db.Column( db.Integer, default=0, nullable=False, index=True ) # @UndefinedVariable
-    is_finished = db.Column( db.Boolean, default=False, nullable=False ) # @UndefinedVariable
+    season_n = db.Column( db.Integer, default=0, nullable=False, index=True )
+    round_n = db.Column( db.Integer, default=0, nullable=False, index=True )
+    is_finished = db.Column( db.Boolean, default=False, nullable=False )
 
-    matches = db.relationship( "DdMatch", backref="playoff_series" ) # @UndefinedVariable
+    matches = db.relationship( "DdMatch", backref="playoff_series" )
 
-    top_seed = db.relationship( "DdClub", foreign_keys=[top_seed_pk] ) # @UndefinedVariable
-    low_seed = db.relationship( "DdClub", foreign_keys=[low_seed_pk] ) # @UndefinedVariable
+    top_seed = db.relationship( "DdClub", foreign_keys=[top_seed_pk] )
+    low_seed = db.relationship( "DdClub", foreign_keys=[low_seed_pk] )
 
     @property
     def dictionary( self ):
@@ -148,12 +148,12 @@ class DdDaoPlayoffSeries( object ):
 
 
     def GetMaxPlayoffRound( self, user=None ):
-        res = db.engine.execute( # @UndefinedVariable
+        res = db.engine.execute(
             MAX_PLAYOFF_ROUND_SQL.format( 
                 user_pk=user.pk,
                 season=user.current_season_n
             )
-        ).first() # @UndefinedVariable
+        ).first()
         return res["max_round"]
 
     def GetNumberOfFinishedSeries( self ):
@@ -185,13 +185,13 @@ class DdDaoPlayoffSeries( object ):
         pos.is_finished = pos.IsFinished( 
             matches_to_win=DdLeagueConfig.MATCHES_TO_WIN,
         )
-        db.session.add( pos ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+        db.session.add( pos )
+        db.session.commit()
 
     def SavePlayoffSeriesList( self, series_list=[] ):
         for srs in series_list:
             srs.is_finished = srs.IsFinished( 
                 matches_to_win=DdLeagueConfig.MATCHES_TO_WIN,
             )
-        db.session.add_all( series_list ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+        db.session.add_all( series_list )
+        db.session.commit()

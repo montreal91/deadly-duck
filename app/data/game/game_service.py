@@ -24,12 +24,12 @@ from app.data.game.player                   import DdPlayer
 from app.data.game.playoff_series           import DdDaoPlayoffSeries
 from app.data.game.playoff_series           import DdPlayoffSeries
 
-from config_game                            import DdGameplayConstants
-from config_game                            import DdLeagueConfig
-from config_game                            import DdRatingsParamerers
-from config_game                            import DdTrainingTypes
-from config_game                            import club_names
-from config_game                            import INTENSIVITY_PERCENTAGES
+from configuration.config_game              import DdGameplayConstants
+from configuration.config_game              import DdLeagueConfig
+from configuration.config_game              import DdRatingsParamerers
+from configuration.config_game              import DdTrainingTypes
+from configuration.config_game              import club_names
+from configuration.config_game              import INTENSIVITY_PERCENTAGES
 from app.data.game.training_session         import DdTrainingSession
 
 

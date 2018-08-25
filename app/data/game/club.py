@@ -1,15 +1,16 @@
 
-from sqlalchemy         import text
+from sqlalchemy                 import text
 
-from app                import db
-from app.custom_queries import CLUB_PKS_SQL
-from config_game        import club_names
+from app                        import db
+from app.custom_queries         import CLUB_PKS_SQL
+from configuration.config_game  import club_names
+
 
 class DdClub( db.Model ):
     __tablename__ = "clubs"
-    club_id_n = db.Column( db.Integer, primary_key=True ) # @UndefinedVariable
-    club_name_c = db.Column( db.String( 64 ) ) # @UndefinedVariable
-    division_n = db.Column( db.Integer ) # @UndefinedVariable
+    club_id_n = db.Column( db.Integer, primary_key=True )
+    club_name_c = db.Column( db.String( 64 ) )
+    division_n = db.Column( db.Integer )
 
     def __repr__( self ):
         return "<Club %r>" % self.club_name_c
@@ -37,5 +38,5 @@ class DdDaoClub( object ):
                 club.club_name_c = name
                 club.division_n = div
                 new_clubs.append( club )
-        db.session.add_all( new_clubs ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+        db.session.add_all( new_clubs )
+        db.session.commit()

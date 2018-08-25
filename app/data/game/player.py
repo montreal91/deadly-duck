@@ -1,41 +1,41 @@
 
 import json
 import math
-from decimal                import Decimal
-from random                 import randint
+from decimal                    import Decimal
+from random                     import randint
 
-from sqlalchemy             import and_
-from sqlalchemy             import text
+from sqlalchemy                 import and_
+from sqlalchemy                 import text
 
-from app                    import db
-from app.custom_queries     import RECENT_PLAYER_MATCHES_SQL
-from app.data.game.match    import DdMatchSnapshot
-from config_game            import number_of_recent_matches
-from config_game            import DdGameplayConstants
-from config_game            import DdPlayerSkills
+from app                        import db
+from app.custom_queries         import RECENT_PLAYER_MATCHES_SQL
+from app.data.game.match        import DdMatchSnapshot
+from configuration.config_game  import number_of_recent_matches
+from configuration.config_game  import DdGameplayConstants
+from configuration.config_game  import DdPlayerSkills
 
 
 class DdPlayer( db.Model ):
     __tablename__ = "players"
-    pk_n = db.Column( db.Integer, primary_key=True ) # @UndefinedVariable
-    first_name_c = db.Column( db.String( 64 ), nullable=False ) # @UndefinedVariable
-    second_name_c = db.Column( db.String( 64 ) ) # @UndefinedVariable
-    last_name_c = db.Column( db.String( 64 ), nullable=False ) # @UndefinedVariable
+    pk_n = db.Column( db.Integer, primary_key=True )
+    first_name_c = db.Column( db.String( 64 ), nullable=False )
+    second_name_c = db.Column( db.String( 64 ) )
+    last_name_c = db.Column( db.String( 64 ), nullable=False )
 
     technique_n = db.Column( db.Integer, default=50 )
     endurance_n = db.Column( db.Integer, default=50 )
     experience_n = db.Column( db.Integer, default=0 )
     exhaustion_n = db.Column( db.Integer, default=0 )
     abilities_c = db.Column( db.String( 6 ), default="000000" )
-    current_stamina_n = db.Column( db.Integer, default=100 ) # @UndefinedVariable
-    age_n = db.Column( db.Integer, default=20 ) # @UndefinedVariable
-    is_active = db.Column( db.Boolean, default=True ) # @UndefinedVariable
+    current_stamina_n = db.Column( db.Integer, default=100 )
+    age_n = db.Column( db.Integer, default=20 )
+    is_active = db.Column( db.Boolean, default=True )
 
-    user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ) ) # @UndefinedVariable
-    club_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) ) # @UndefinedVariable
+    user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ) )
+    club_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ) )
 
-    user = db.relationship( "DdUser", foreign_keys=[user_pk], lazy="subquery" ) # @UndefinedVariable
-    club = db.relationship( "DdClub", foreign_keys=[club_pk], lazy="subquery" ) # @UndefinedVariable
+    user = db.relationship( "DdUser", foreign_keys=[user_pk], lazy="subquery" )
+    club = db.relationship( "DdClub", foreign_keys=[club_pk], lazy="subquery" )
 
     @property
     def actual_technique( self ):
@@ -133,7 +133,7 @@ class DdPlayer( db.Model ):
 
     @staticmethod
     def GetNames():
-        with open( "names.json" ) as datafile:
+        with open( "configuration/names.json" ) as datafile:
             all_names = json.load( datafile )
         return all_names["names"], all_names["surnames"]
 
@@ -215,13 +215,13 @@ class DdDaoPlayer( object ):
         return DdPlayer.query.get( player_pk )
 
     def GetPlayerRecentMatches( self, player_pk, season ):
-        query_res = db.engine.execute( # @UndefinedVariable
+        query_res = db.engine.execute(
             RECENT_PLAYER_MATCHES_SQL.format( 
                 player_pk,
                 season,
                 number_of_recent_matches
             )
-        ).fetchall() # @UndefinedVariable
+        ).fetchall()
         return [
             DdMatchSnapshot( 
                 pk=res[0],
@@ -238,12 +238,12 @@ class DdDaoPlayer( object ):
         ]
 
     def SavePlayer( self, player ):
-        db.session.add( player ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+        db.session.add( player )
+        db.session.commit()
 
     def SavePlayers( self, players ):
-        db.session.add_all( players ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+        db.session.add_all( players )
+        db.session.commit()
 
     def SaveRosters( self, rosters ):
         players = []
@@ -253,8 +253,8 @@ class DdDaoPlayer( object ):
                 player.club_pk = club_pk
                 player.is_drafted = True
                 players.append( player )
-        db.session.add_all( players ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+        db.session.add_all( players )
+        db.session.commit()
 
 
 def PlayerModelComparator( player_model ):
