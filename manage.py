@@ -1,12 +1,8 @@
 
-#!/usr/bin/env python
-
 import os
 
 from flask_migrate                  import Migrate
 from flask_migrate                  import MigrateCommand
-from flask_script                   import Manager
-from flask_script                   import Shell
 
 from app                            import CreateApp
 from app                            import db
@@ -24,26 +20,7 @@ from app.data.main.user             import DdUser
 
 
 app = CreateApp( os.getenv( "FLASK_CONFIG" ) or "default" )
-manager = Manager( app )
 migrate = Migrate( app, db )
-
-def ConfirmUser( username=None, email=None ):
-    u = None
-    if username:
-        u = DdUser.query.filter_by( username=username ).first() # @UndefinedVariable
-    elif email:
-        u = DdUser.query.filter_by( email=email ).first() # @UndefinedVariable
-    else:
-        print( "You should specify username or email" )
-        return
-
-    if u is None:
-        print( "No such user in the database." )
-        return
-
-    u.confirmed = True
-    db.session.add( u ) # @UndefinedVariable
-    db.session.commit() # @UndefinedVariable
 
 
 def MakeShellContext():
@@ -63,21 +40,16 @@ def MakeShellContext():
         ConfirmUser=ConfirmUser
     )
 
-manager.add_command( "shell", Shell( make_context=MakeShellContext ) )
-manager.add_command( "db", MigrateCommand )
 
-
-@manager.command
+@app.cli.command()
 def test():
     import unittest
     tests = unittest.TestLoader().discover( "tests" )
     unittest.TextTestRunner( verbosity=2 ).run( tests )
 
-@manager.command
+
+@app.cli.command()
 def initapp():
     service = DdGameService()
-    DdUser.GenerateTestingUsers()
+    DdRole.InsertRoles()
     service.InsertClubs()
-
-if __name__ == '__main__':
-    manager.run()

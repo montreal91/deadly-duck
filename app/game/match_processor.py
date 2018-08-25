@@ -1,11 +1,11 @@
 
-from collections    import namedtuple
-from decimal        import Decimal
-from enum           import Enum
-from random         import randint
+from collections                import namedtuple
+from decimal                    import Decimal
+from enum                       import Enum
+from random                     import randint
 
-from config_game    import sets_to_win
-from stat_tools     import LoadedToss
+from configuration.config_game  import sets_to_win
+from stat_tools                 import LoadedToss
 
 DdSetResult = namedtuple( 
     "DdSetResult", [

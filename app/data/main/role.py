@@ -12,11 +12,11 @@ class DdPermission:
 
 class DdRole( db.Model ):
     __tablename__ = "roles"
-    pk = db.Column( db.Integer, primary_key=True ) # @UndefinedVariable
-    name = db.Column( db.String( 64 ), unique=True ) # @UndefinedVariable
-    default = db.Column( db.Boolean, default=False, index=True ) # @UndefinedVariable
-    permissions = db.Column( db.Integer ) # @UndefinedVariable
-    users = db.relationship( "DdUser", backref="role", lazy="dynamic" ) # @UndefinedVariable
+    pk = db.Column( db.Integer, primary_key=True )
+    name = db.Column( db.String( 64 ), unique=True )
+    default = db.Column( db.Boolean, default=False, index=True )
+    permissions = db.Column( db.Integer )
+    users = db.relationship( "DdUser", backref="role", lazy="dynamic" )
 
 
     @staticmethod
@@ -44,8 +44,8 @@ class DdRole( db.Model ):
                 role = DdRole( name=r )
             role.permissions = roles[ r ][ 0 ]
             role.default = roles[ r ][ 1 ]
-            db.session.add( role ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+            db.session.add( role )
+        db.session.commit()
 
     def __repr__( self ):
         return "<Role %r>" % self.name

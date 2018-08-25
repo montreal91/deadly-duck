@@ -23,9 +23,9 @@ from app.data.models            import DdUser
 from app.game                   import game
 from app.game.league            import DdLeague
 from app.game.match_processor   import DdMatchProcessor
-from config_game                import club_names
-from config_game                import DdTrainingIntensities
-from config_game                import DdTrainingTypes
+from configuration.config_game  import club_names
+from configuration.config_game  import DdTrainingIntensities
+from configuration.config_game  import DdTrainingTypes
 
 
 @game.route( "/start-new-career/<pk>/" )
@@ -33,8 +33,8 @@ from config_game                import DdTrainingTypes
 def ChooseManagedClub( pk ):
     if current_user.managed_club_pk is None:
         current_user.managed_club_pk = pk
-        db.session.add( current_user ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+        db.session.add( current_user )
+        db.session.commit()
         return redirect( url_for( "game.MainScreen" ) )
     else:
         return redirect( url_for( "main.Index" ) )
@@ -228,8 +228,8 @@ class DdNextDayView( View ):
         game.service.SaveMatches( today_matches )
         current_user.current_day_n += 1
         game.service.UnsetPlayerForNextMatch( current_user.pk )
-        db.session.add( current_user ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+        db.session.add( current_user )
+        db.session.commit()
         return redirect( 
             url_for( 
                 ".DayResults",

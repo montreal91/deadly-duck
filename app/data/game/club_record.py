@@ -1,31 +1,31 @@
 
-from datetime           import datetime
+from datetime                   import datetime
 
-from sqlalchemy         import text
+from sqlalchemy                 import text
 
-from app                import db
-from app.custom_queries import BEST_PLAYOFF_RECORD_SQL
-from app.custom_queries import BEST_REGULAR_RECORD_SQL
-from app.custom_queries import CLUB_RECORDS_SQL
-from config_game        import DdLeagueConfig
+from app                        import db
+from app.custom_queries         import BEST_PLAYOFF_RECORD_SQL
+from app.custom_queries         import BEST_REGULAR_RECORD_SQL
+from app.custom_queries         import CLUB_RECORDS_SQL
+from configuration.config_game  import DdLeagueConfig
 
 
 class DdClubRecord( db.Model ):
     __tablename__ = "club_records"
-    pk = db.Column( db.Integer, primary_key=True, index=True ) # @UndefinedVariable
-    club_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ), index=True ) # @UndefinedVariable
-    user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ), index=True ) # @UndefinedVariable
-    season_n = db.Column( db.Integer, index=True ) # @UndefinedVariable
+    pk = db.Column( db.Integer, primary_key=True, index=True )
+    club_pk = db.Column( db.Integer, db.ForeignKey( "clubs.club_id_n" ), index=True )
+    user_pk = db.Column( db.Integer, db.ForeignKey( "users.pk" ), index=True )
+    season_n = db.Column( db.Integer, index=True )
 
-    regular_season_position_n = db.Column( db.Integer, default=0 ) # @UndefinedVariable
-    regular_season_points_n = db.Column( db.Integer, default=0 ) # @UndefinedVariable
-    last_playoff_series_pk = db.Column( db.Integer, db.ForeignKey( "playoff_series.pk" ) ) # @UndefinedVariable
-    last_playoff_series = db.relationship( # @UndefinedVariable
+    regular_season_position_n = db.Column( db.Integer, default=0 )
+    regular_season_points_n = db.Column( db.Integer, default=0 )
+    last_playoff_series_pk = db.Column( db.Integer, db.ForeignKey( "playoff_series.pk" ) )
+    last_playoff_series = db.relationship(
         "DdPlayoffSeries",
         foreign_keys=[last_playoff_series_pk]
     )
 
-    timestamp_dt = db.Column( db.DateTime(), default=datetime.utcnow ) # @UndefinedVariable
+    timestamp_dt = db.Column( db.DateTime(), default=datetime.utcnow )
 
 class DdDaoClubRecord( object ):
     def CreateClubRecord( 
@@ -77,12 +77,12 @@ class DdDaoClubRecord( object ):
 
 
     def SaveClubRecord( self, club_record=None ):
-        db.session.add( club_record ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+        db.session.add( club_record )
+        db.session.commit()
 
     def SaveClubRecords( self, club_records=[] ):
-        db.session.add_all( club_records ) # @UndefinedVariable
-        db.session.commit() # @UndefinedVariable
+        db.session.add_all( club_records )
+        db.session.commit()
 
 
 def PlayoffRecordComparator( record ):

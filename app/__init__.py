@@ -3,16 +3,17 @@
 
 import logging
 
-from flask              import Flask
-from flask              import g
-from flask_bootstrap    import Bootstrap
-from flask_login        import LoginManager
-from flask_mail         import Mail
-from flask_moment       import Moment
-from flask_sqlalchemy   import SQLAlchemy
+from flask                  import Flask
+from flask                  import g
+from flask_bootstrap        import Bootstrap
+from flask_login            import LoginManager
+from flask_mail             import Mail
+from flask_moment           import Moment
+from flask_sqlalchemy       import SQLAlchemy
 
-from config             import config
-from core.cache         import DdCache
+from configuration.config   import config
+from configuration.config   import DdConfig
+from core.cache             import DdCache
 
 bootstrap = Bootstrap()
 mail = Mail()
@@ -34,6 +35,7 @@ def CreateApp( config_name ):
     )
     app = Flask( __name__ )
     app.config.from_object( config[ config_name ] )
+    app.config["OAUTH_CREDENTIALS"] = DdConfig.GetOauthCredentials()
     config[ config_name ].InitApp( app )
 
     bootstrap.init_app( app )
@@ -44,13 +46,13 @@ def CreateApp( config_name ):
     login_manager.init_app( app )
 
     # Blueprints registration
-    from .main import main as main_blueprint
+    from app.main import main as main_blueprint
     app.register_blueprint( main_blueprint )
 
-    from .auth import auth as auth_blueprint
+    from app.auth import auth as auth_blueprint
     app.register_blueprint( auth_blueprint, url_prefix="/auth" )
 
-    from .game import game as game_blueprint
+    from app.game import game as game_blueprint
     app.register_blueprint( game_blueprint, url_prefix="/game" )
 
     return app
