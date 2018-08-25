@@ -1,24 +1,17 @@
 
 {% extends "base.html" %}
 
-{% import "bootstrap/wtf.html" as wtf %}
-
-{% block subtitle %}Login{% endblock %}
+{% block subtitle %}Log In{% endblock %}
 
 {% block page_content %}
-
 <div class="page-header">
-  <h1>Login</h1>
-</div>
-<div class="col-md-4">
-  {{ wtf.quick_form( form ) }}
-  <br>
-  {# <p>Forgot your password? <a fref="{{ url_for('auth.PasswordResetRequest') }}">Click here to reset it</a>.</p> #}
-  {# <p>New user? <a href="{{ url_for('auth.Register') }}">Click here to register</a>.</p> #}
   <p>
-    Want to join testing group?<br>
-    Please, contact with development team.
+    To log in, use one of the following links:
+  </p>
+
+  <p>
+    <a href="{{ url_for('auth.OauthAuthorize', provider='google') }}">Google</a><br>
+    <a href="{{ url_for('auth.OauthAuthorize', provider='vk') }}">Vk</a><br>
   </p>
 </div>
-
 {% endblock %}

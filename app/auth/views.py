@@ -18,7 +18,7 @@ from app.auth.oauth     import DdOAuthSignIn
 def Login():
     if current_user.is_authenticated:
         return redirect( url_for( "main.Index") )
-    return render_template( "auth/index.html" )
+    return render_template( "auth/login.html" )
 
 
 @auth.route( "/logout/" )

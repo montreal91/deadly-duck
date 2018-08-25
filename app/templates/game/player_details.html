@@ -16,7 +16,6 @@
 {# TODO: change True to show #}
 <div class="col-md-6">
 
-{% if True %}
 <p>
   <label>Technique</label>: {{ player.actual_technique }} | {{ player.technique }}
 </p>
@@ -29,39 +28,7 @@
 <p><label>Age</label>: {{ player.age_n }}</p>
 <p><label>Level</label>: {{ player.level }}</p>
 <p><label>Experience</label>: {{ player.experience_n }} / {{ player.next_level_exp }}</p>
-{% endif %}
 </div>
-
-{% if show %}
-<div class="col-md-6">
-  <form id="dd_training_form">
-    <div class="form-group">
-      <label>Training Type</label>
-      <select class="form-control" name="training_type">
-        {% for item in training_types %}
-          <option>{{ item.value }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-group"> 
-      <label>Training Intensity</label>
-      <select class="form-control" name="training_intensity">
-        {% for item in intensities %}
-          <option>{{ item.value }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-group">
-      <button type="button" class="btn btn-primary btn-lg" onclick="dd_set_training({{ player.pk_n }});">
-        Set Training
-      </button>
-    </div>
-    <div class="form-group">
-      <div id="dd_training_appointment_status"></div>
-    </div>
-  </form>
-</div>
-{% endif %}
 
   
 <div class="col-md-12">
