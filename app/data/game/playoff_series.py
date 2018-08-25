@@ -1,13 +1,15 @@
 
-from flask import url_for
-from sqlalchemy import and_, text
+from flask              import url_for
+from sqlalchemy         import and_
+from sqlalchemy         import text
 
-from app import db
-from config_game import DdLeagueConfig
+from app                import db
+from config_game        import DdLeagueConfig
 from app.custom_queries import FINAL_PLAYOFF_SERIES_FOR_CLUB_SQL
 from app.custom_queries import MAX_PLAYOFF_ROUND_SQL
 from app.custom_queries import PLAYOFF_SERIES_SQL
 from app.custom_queries import SERIES_IN_ONE_ROUND_IN_ONE_DIVISION_SQL
+
 
 class DdPlayoffSeriesStatuses:
     PLANNED = 0

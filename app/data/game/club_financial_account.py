@@ -1,8 +1,9 @@
 
-from flask import abort
+from flask      import abort
 from sqlalchemy import and_
 
-from app import db
+from app        import db
+
 
 class DdClubFinancialAccount( db.Model ):
     __tablename__ = "financial_accounts"
@@ -14,6 +15,7 @@ class DdClubFinancialAccount( db.Model ):
     @property
     def money( self ):
         return self.money_nn
+
 
 class DdDaoClubFinancialAccount( object ):
     def AddFunds( self, user_pk=0, club_pk=0, funds=0 ):

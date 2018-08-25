@@ -1,7 +1,6 @@
 
 from random                 import shuffle
 
-
 from app                    import db
 from app.data.game.club     import DdClub
 from app.game               import game

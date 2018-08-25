@@ -1,12 +1,14 @@
 
 import hashlib
+
 from datetime           import datetime
 
-
-from flask              import current_app, request
-from flask_login        import AnonymousUserMixin, UserMixin
+from flask              import current_app
+from flask              import request
+from flask_login        import AnonymousUserMixin
+from flask_login        import UserMixin
 from itsdangerous       import TimedJSONWebSignatureSerializer as Serializer
-from sqlalchemy import text
+from sqlalchemy         import text
 from werkzeug.security  import check_password_hash, generate_password_hash
 
 from app                import db

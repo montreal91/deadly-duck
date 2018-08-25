@@ -13,6 +13,7 @@ from app.custom_queries import NUMBER_OF_INCOMING_FRIEND_REQUESTS_SQL
 from app.custom_queries import NUMBER_OF_OUTCOMING_FRIEND_REQUESTS_SQL
 from app.custom_queries import OUTCOMING_FRIEND_REQUESTS_SQL
 
+
 class DdFriendRequest( db.Model ):
     __tablename__ = "friend_requests"
     pk = db.Column( db.Integer, primary_key=True ) # @UndefinedVariable
@@ -31,6 +32,7 @@ class DdFriendRequest( db.Model ):
             from_pk=self.from_pk,
             to_pk=self.to_pk
         )
+
 
 class DdFriendship( db.Model ):
     __tablename__ = "friendship"

@@ -1,18 +1,24 @@
 
 import json
-from collections import namedtuple
 
-from sqlalchemy import and_, text
-from sqlalchemy.dialects import postgresql
+from collections            import namedtuple
 
-from app import db
-from app.custom_queries import CURRENT_MATCH_SQL, DAY_RESULTS_SQL
-from app.custom_queries import STANDINGS_SQL, STANDINGS_FOR_DIVISION_SQL
+from sqlalchemy             import and_
+from sqlalchemy             import text
+from sqlalchemy.dialects    import postgresql
+
+from app                    import db
+from app.custom_queries     import CURRENT_MATCH_SQL
+from app.custom_queries     import DAY_RESULTS_SQL
+from app.custom_queries     import STANDINGS_FOR_DIVISION_SQL
+from app.custom_queries     import STANDINGS_SQL
+
 
 class DdMatchStatuses:
     planned = "planned"
     finished = "finished"
     aborted = "aborted"
+
 
 DdMatchSnapshot = namedtuple( 
     "DdMathcSnapshot",
@@ -42,6 +48,7 @@ DdStandingsRowSnapshot = namedtuple(
     ],
     rename=True
  )
+
 
 class DdMatch( db.Model ):
     __tablename__ = "matches"
@@ -101,6 +108,7 @@ class DdMatch( db.Model ):
             self.home_team_pk,
             self.away_team_pk
         )
+
 
 class DdDaoMatch( object ):
     def CreateNewMatch( 

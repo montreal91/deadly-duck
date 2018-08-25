@@ -1,16 +1,23 @@
 
-from flask              import render_template, redirect, request
-from flask              import url_for, flash
+from flask              import flash
+from flask              import redirect
+from flask              import render_template
+from flask              import request
+from flask              import url_for
+from flask_login        import current_user
+from flask_login        import login_user
+from flask_login        import login_required
+from flask_login        import logout_user
 
-from flask.ext.login    import login_user, logout_user, login_required
-from flask.ext.login    import current_user
-
-from .                  import auth
-from ..                 import db
+from app                import db
+from app.auth           import auth
+from app.auth.forms     import DdChangeEmailForm
+from app.auth.forms     import DdChangePasswordForm
+from app.auth.forms     import DdLoginForm
+from app.auth.forms     import DdPasswordResetForm
+from app.auth.forms     import DdPasswordResetRequestForm
+from app.auth.forms     import DdRegistrationForm
 from app.data.models    import DdUser
-from .forms             import DdLoginForm, DdRegistrationForm, DdChangePasswordForm
-from .forms             import DdPasswordResetRequestForm, DdPasswordResetForm
-from .forms             import DdChangeEmailForm
 
 
 @auth.before_app_request
@@ -61,15 +68,7 @@ def Register():
         user.password = form.password.data
         db.session.add( user )
         db.session.commit()
-#         token = user.GenerateConfirmationToken()
         flash( "A confirmation email has been sent to you by email." )
-#         SendEmail(
-#             user.email,
-#             "Confirm Your Account",
-#             "auth/email/confirm",
-#             user=user,
-#             token=token
-#         )
         return redirect( url_for( "auth.Login" ) )
     return render_template( "auth/register.html", form=form )
 

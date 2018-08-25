@@ -5,7 +5,8 @@ import smtplib
 from threading      import Thread
 from email.message  import Message
 
-from flask          import current_app, render_template
+from flask          import current_app
+from flask          import render_template
 
 
 def SendAsyncEmail( app, msg ):

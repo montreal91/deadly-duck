@@ -1,8 +1,10 @@
 
-from app.data.main.education import DdDaoFaculty, DdDaoUniversity
-from app.data.main.friendship import DdDaoFriendship
-from app.data.main.message import DdDaoMessage
-from app.data.main.user import DdDaoUser
+from app.data.main.education    import DdDaoFaculty
+from app.data.main.education    import DdDaoUniversity
+from app.data.main.friendship   import DdDaoFriendship
+from app.data.main.message      import DdDaoMessage
+from app.data.main.user         import DdDaoUser
+
 
 class Placeholder:
     pass

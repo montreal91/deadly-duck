@@ -1,13 +1,13 @@
 
-from datetime import datetime
+from datetime           import datetime
 
-from sqlalchemy import text
+from sqlalchemy         import text
 
-from app import db
+from app                import db
 from app.custom_queries import BEST_PLAYOFF_RECORD_SQL
 from app.custom_queries import BEST_REGULAR_RECORD_SQL
 from app.custom_queries import CLUB_RECORDS_SQL
-from config_game import DdLeagueConfig
+from config_game        import DdLeagueConfig
 
 
 class DdClubRecord( db.Model ):

@@ -4,9 +4,10 @@ Created on Jun 21, 2017
 @author: montreal91
 """
 
-from functools import wraps
+from functools              import wraps
 
 from werkzeug.contrib.cache import MemcachedCache
+
 
 class DdCache( object ):
     def __init__( self, flask_app=None ):

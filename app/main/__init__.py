@@ -12,13 +12,15 @@ main.service = DdMainService()
 main.game_service = DdGameService()
 
 
-from .                  import views, errors
 from app.data.main.role import DdPermission
+from app.main           import errors
+from app.main           import views
 
 
 @main.app_context_processor
 def InjectPermissions():
     return dict( Permissions=DdPermission )
+
 
 @main.app_context_processor
 def NumericFriendFunctions():

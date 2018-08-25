@@ -13,6 +13,7 @@ university_registrations = db.Table( # @UndefinedVariable
     db.Column( "university_pk", db.Integer, db.ForeignKey( "universities.pk" ) ) # @UndefinedVariable
  )
 
+
 class DdFaculty( db.Model ):
     __tablename__ = "faculties"
     pk = db.Column( db.Integer, primary_key=True ) # @UndefinedVariable
@@ -32,6 +33,7 @@ class DdFaculty( db.Model ):
             name=self.name_c,
             university=self.university.name_c
         )
+
 
 class DdUniversity( db.Model ):
     __tablename__ = "universities"

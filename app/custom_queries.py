@@ -199,8 +199,8 @@ FROM users, (
     SELECT *
     FROM friend_requests
     WHERE to_pk = :user_pk
-    AND is_accepted = 0
-    AND is_rejected = 0
+    AND is_accepted = FALSE
+    AND is_rejected = FALSE
 ) AS incoming_requests
 WHERE users.pk = incoming_requests.from_pk
 ORDER BY incoming_requests.timestamp_dt DESC
@@ -232,8 +232,8 @@ SELECT  Count(*) as number_of_active_friend_requests
 FROM    friend_requests
 WHERE   ((from_pk = :user_one_pk AND to_pk = :user_two_pk) OR
         (from_pk = :user_two_pk AND to_pk = :user_one_pk))
-AND     is_accepted = 0
-AND     is_rejected = 0
+AND     is_accepted = FALSE
+AND     is_rejected = FALSE
 """
 
 NUMBER_OF_FRIENDS_SQL = """
@@ -289,8 +289,8 @@ FROM users, (
     SELECT *
     FROM friend_requests
     WHERE from_pk = :user_pk
-    AND is_accepted = 0
-    AND is_rejected = 0
+    AND is_accepted = FALSE
+    AND is_rejected = FALSE
 ) AS outcoming_requests
 WHERE users.pk = outcoming_requests.to_pk
 ORDER BY outcoming_requests.timestamp_dt DESC

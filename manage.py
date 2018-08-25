@@ -3,18 +3,24 @@
 
 import os
 
-from app                import CreateApp, db, cache
-from app.data.models    import DdPost
-from app.data.game.club import DdClub
-from app.data.game.club_record import DdClubRecord
-from app.data.game.game_service import DdGameService
-from app.data.game.match import DdMatch
-from app.data.game.player import DdPlayer
-from app.data.game.playoff_series import DdPlayoffSeries
-from app.data.main.role import DdRole, DdPermission
-from app.data.main.user import DdUser
-from flask_migrate  import Migrate, MigrateCommand
-from flask_script   import Manager, Shell
+from flask_migrate                  import Migrate
+from flask_migrate                  import MigrateCommand
+from flask_script                   import Manager
+from flask_script                   import Shell
+
+from app                            import CreateApp
+from app                            import db
+from app                            import cache
+from app.data.models                import DdPost
+from app.data.game.club             import DdClub
+from app.data.game.club_record      import DdClubRecord
+from app.data.game.game_service     import DdGameService
+from app.data.game.match            import DdMatch
+from app.data.game.player           import DdPlayer
+from app.data.game.playoff_series   import DdPlayoffSeries
+from app.data.main.role             import DdRole
+from app.data.main.role             import DdPermission
+from app.data.main.user             import DdUser
 
 
 app = CreateApp( os.getenv( "FLASK_CONFIG" ) or "default" )
