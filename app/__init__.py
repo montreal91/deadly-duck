@@ -3,15 +3,16 @@
 
 import logging
 
-from config import config
-from flask import Flask, g
-from flask_bootstrap import Bootstrap
-from flask_login import LoginManager
-from flask_mail import Mail
-from flask_moment import Moment
-from flask_sqlalchemy import SQLAlchemy
+from flask              import Flask
+from flask              import g
+from flask_bootstrap    import Bootstrap
+from flask_login        import LoginManager
+from flask_mail         import Mail
+from flask_moment       import Moment
+from flask_sqlalchemy   import SQLAlchemy
 
-from core.cache import DdCache
+from config             import config
+from core.cache         import DdCache
 
 bootstrap = Bootstrap()
 mail = Mail()

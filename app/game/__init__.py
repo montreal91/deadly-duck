@@ -8,4 +8,4 @@ game.selected_players = {}
 game.contexts = {}
 game.service = DdGameService()
 
-from . import views
+from app.game import views

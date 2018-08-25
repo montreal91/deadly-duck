@@ -8,6 +8,7 @@ This module contains all cache keys used in DdGameService
 
 from enum import Enum
 
+
 class DdGameCacheKeys( Enum ):
     """
     Enum which contains keys which are not specific for any model

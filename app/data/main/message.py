@@ -1,11 +1,13 @@
-from datetime import datetime
 
-from sqlalchemy import and_
-from sqlalchemy import text
+from datetime           import datetime
+
+from sqlalchemy         import and_
+from sqlalchemy         import text
 
 from app                import db
 from app.custom_queries import INCOMING_MESSAGES_SQL
 from app.custom_queries import NUMBER_OF_TOTAL_INCOMING_NEW_MESSAGES
+
 
 class DdMessage( db.Model ):
     __tablename__ = "messages"
@@ -29,6 +31,7 @@ class DdMessage( db.Model ):
             username1=self.from_user.username,
             username2=self.to_user.username
         )
+
 
 class DdDaoMessage( object ):
     def CreateMessage( self, from_pk=0, to_pk=0, subject="", text="" ):

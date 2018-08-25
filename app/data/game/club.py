@@ -1,9 +1,9 @@
 
-from sqlalchemy import text
+from sqlalchemy         import text
 
-from app import db
+from app                import db
 from app.custom_queries import CLUB_PKS_SQL
-from config_game import club_names
+from config_game        import club_names
 
 class DdClub( db.Model ):
     __tablename__ = "clubs"

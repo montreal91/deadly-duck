@@ -2,15 +2,18 @@
 import json
 import logging
 
-
-from flask                      import flash, redirect
-from flask                      import render_template, url_for
-from flask                      import abort, current_app
+from flask                      import abort
+from flask                      import current_app
+from flask                      import flash
 from flask                      import jsonify
+from flask                      import redirect
+from flask                      import render_template
 from flask                      import request
-from flask.views                import View
+from flask                      import url_for
 from flask.views                import MethodView
-from flask_login                import current_user, login_required
+from flask.views                import View
+from flask_login                import current_user
+from flask_login                import login_required
 
 from app                        import db
 from app.data.game.match        import MatchChronologicalComparator
