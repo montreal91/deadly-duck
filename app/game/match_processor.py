@@ -35,6 +35,16 @@ class DdMatchResult( object ):
         self._away_stamina_lost = 0
 
 
+    def __repr__(self):
+        res = self._full_score
+        string = "{score}, stamina: {home_stamina:2d}:{away_stamina:2d}"
+        return string.format(
+            score=self._full_score,
+            home_stamina=self._home_stamina_lost,
+            away_stamina=self._away_stamina_lost,
+        )
+
+
     @property
     def away_games( self ):
         return self._away_games

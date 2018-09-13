@@ -6,7 +6,7 @@ from flask      import current_app
 from app        import CreateApp, db
 
 
-class XBasicsTestCase( TestCase ):
+class BasicsTestCase( TestCase ):
     def setUp( self ):
         self.app            = CreateApp( "testing" )
         self.app_context    = self.app.app_context()
