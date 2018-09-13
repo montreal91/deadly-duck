@@ -172,7 +172,6 @@ def Index():
         number_of_finished_matches=number_of_finished_matches,
         number_of_finished_series=number_of_finished_series,
         number_of_users=number_of_users,
-        max_users=DdMiscConstants.MAX_USERS.value,
         version=DdMiscConstants.CURRENT_VERSION.value
     )
 

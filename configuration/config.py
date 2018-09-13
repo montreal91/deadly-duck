@@ -19,6 +19,7 @@ class DdConfig:
     OAUTH_CREDENTIALS_FILE = "configuration/oauth_credentials_dev.json"
     SECRET_KEY = os.environ.get( "SECRET_KEY" ) or "go fork yourself"
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
     @classmethod
@@ -43,7 +44,7 @@ class DdDevelopmentConfig( DdConfig ):
 
 class DdTestingConfig( DdConfig ):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get( "TEST_DATABASE_URL" ) or "sqlite:///" + os.path.join( basedir, "data-test.sqlite" )
+    SQLALCHEMY_DATABASE_URI = "postgresql://duck:duck18@localhost/duck_test"
 
 
 class DdProductionConfig( DdConfig ):

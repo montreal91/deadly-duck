@@ -43,7 +43,7 @@ class DdGameplayConstants(Enum):
 
 
 class DdLeagueConfig:
-    # This values should be even
+    # These values should be even
     EXDIV_MATCHES = 2
     INDIV_MATCHES = 4
     DIV_CLUBS_IN_PLAYOFFS = 4 # This number should be power of two
@@ -51,6 +51,7 @@ class DdLeagueConfig:
     MATCHES_TO_WIN = 4
     GAP_DAYS = 2
     SERIES_TOP_HOME_PATTERN = ( True, True, False, False, True, False, True )
+
 
 class DdPlayerSkills:
     MEAN_VALUE = 5
@@ -74,18 +75,21 @@ class DdRatingsParamerers:
     REGULAR_POINTS_FACTOR = 2.5
     ROUND_COEFFICIENT = 25
 
+
 class DdMiscConstants( Enum ):
-    CURRENT_VERSION = "3.0"
-    MAX_USERS       = 13
+    CURRENT_VERSION = "3.0 (alpha)"
+
 
 class DdTrainingTypes( Enum ):
     ENDURANCE = "endurance"
     TECHNIQUE = "technique"
 
+
 class DdTrainingIntensities( Enum ):
     LOW = 2
     MEDIUM = 4
     HIGH = 8
+
 
 INTENSIVITY_PERCENTAGES = {
     DdTrainingIntensities.LOW.value: 0.25,

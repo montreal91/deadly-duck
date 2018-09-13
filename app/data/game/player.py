@@ -1,6 +1,7 @@
 
 import json
 import math
+
 from decimal                    import Decimal
 from random                     import randint
 
@@ -195,7 +196,6 @@ class DdDaoPlayer( object ):
                 DdPlayer.user_pk == user_pk,
                 DdPlayer.club_pk == None,
                 DdPlayer.is_active == True,
-                DdPlayer.is_drafted == True
             )
         )
         return res.all()
