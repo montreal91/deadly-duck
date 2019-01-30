@@ -50,7 +50,7 @@ class DdLeagueConfig:
     SETS_TO_WIN = 2
     MATCHES_TO_WIN = 4
     GAP_DAYS = 2
-    SERIES_TOP_HOME_PATTERN = ( True, True, False, False, True, False, True )
+    SERIES_TOP_HOME_PATTERN = (True, True, False, False, True, False, True)
 
 
 class DdPlayerSkills:
@@ -62,7 +62,7 @@ class DdPlayerSkills:
     MIN_STAMINA_LOST = 1
     MAX_STAMINA_LOST = 3
     DAILY_RECOVERY_FACTOR = 0.2
-    POSSIBLE_TALENTS = ( 1, 2, 4 )
+    POSSIBLE_TALENTS = (1, 2, 4)
     SKILL_PRECISION = 2
 
     SET_EXPERIENCE_FACTOR = 50
@@ -76,16 +76,16 @@ class DdRatingsParamerers:
     ROUND_COEFFICIENT = 25
 
 
-class DdMiscConstants( Enum ):
+class DdMiscConstants(Enum):
     CURRENT_VERSION = "3.0 (alpha)"
 
 
-class DdTrainingTypes( Enum ):
+class DdTrainingTypes(Enum):
     ENDURANCE = "endurance"
     TECHNIQUE = "technique"
 
 
-class DdTrainingIntensities( Enum ):
+class DdTrainingIntensities(Enum):
     LOW = 2
     MEDIUM = 4
     HIGH = 8

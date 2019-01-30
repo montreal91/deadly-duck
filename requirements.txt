@@ -33,7 +33,6 @@ six==1.10.0
 SQLAlchemy==1.1.15
 traitlets==4.3.2
 typing==3.6.1
-uWSGI==2.0.14
 wcwidth==0.1.7
 Werkzeug==0.14.1
 WTForms==2.0.2
