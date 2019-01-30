@@ -9,7 +9,7 @@ This module contains all cache keys used in DdGameService
 from enum import Enum
 
 
-class DdGameCacheKeys( Enum ):
+class DdGameCacheKeys(Enum):
     """
     Enum which contains keys which are not specific for any model
     """
@@ -19,7 +19,7 @@ class DdGameCacheKeys( Enum ):
     TRAINING_SESSION = "training_session[{user_pk}]"
 
 
-class DdPlayerCacheKeys( Enum ):
+class DdPlayerCacheKeys(Enum):
     """
     This enum contains player-related keys.
     """

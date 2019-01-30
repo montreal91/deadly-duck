@@ -19,25 +19,25 @@ from flask import url_for
 from rauth import OAuth2Service
 
 
-class DdOAuthSignIn( object ):
+class DdOAuthSignIn(object):
     providers = None
 
-    def __init__( self, provider_name: str ) -> None:
+    def __init__(self, provider_name: str) -> None:
         self.provider_name = provider_name
         credentials = current_app.config["OAUTH_CREDENTIALS"][provider_name]
         self.consumer_id = credentials["id"]
         self.consumer_secret = credentials["secret"]
 
 
-    def Authorize( self ) -> None:
+    def Authorize(self) -> None:
         pass
 
 
-    def Callback( self ) -> tuple:
+    def Callback(self) -> tuple:
         pass
 
 
-    def GetCallbackUrl( self ) -> str:
+    def GetCallbackUrl(self) -> str:
         return url_for(
             "auth.OauthCallback",
             provider=self.provider_name,
@@ -46,7 +46,7 @@ class DdOAuthSignIn( object ):
 
 
     @classmethod
-    def GetProvider( cls, provider_name: str ):
+    def GetProvider(cls, provider_name: str):
         if cls.providers is None:
             cls.providers = {}
             for provider_class in cls.__subclasses__():
@@ -55,9 +55,9 @@ class DdOAuthSignIn( object ):
         return cls.providers[provider_name]
 
 
-class DdGoogleSignIn( DdOAuthSignIn ):
-    def __init__( self ):
-        super().__init__( "google" )
+class DdGoogleSignIn(DdOAuthSignIn):
+    def __init__(self):
+        super().__init__("google")
         self.service = OAuth2Service(
             name="google",
             client_id=self.consumer_id,
@@ -68,7 +68,7 @@ class DdGoogleSignIn( DdOAuthSignIn ):
         self.sign_in_url = "https://www.googleapis.com/oauth2/v1/userinfo"
 
 
-    def Authorize( self ) -> Response:
+    def Authorize(self) -> Response:
         return redirect(
             self.service.get_authorize_url(
                 scope="profile",
@@ -78,7 +78,7 @@ class DdGoogleSignIn( DdOAuthSignIn ):
         )
 
 
-    def Callback( self ) -> tuple:
+    def Callback(self) -> tuple:
         if "code" not in request.args:
             return None, None, None
 
@@ -105,17 +105,17 @@ class DdGoogleSignIn( DdOAuthSignIn ):
         ).json()
 
         return (
-            "google${}".format( me["id"] ),
+            "google${}".format(me["id"] ),
             "{initial}{family_name}".format(
-                initial=me.get( "given_name" )[0].lower(),
-                family_name=me.get( "family_name" ).lower()
+                initial=me.get("given_name" )[0].lower(),
+                family_name=me.get("family_name" ).lower()
             ),
             None
         )
 
 
-class DdVkSignIn( DdOAuthSignIn ):
-    def __init__( self ):
+class DdVkSignIn(DdOAuthSignIn):
+    def __init__(self):
         super().__init__("vk")
         self.service = OAuth2Service(
             name="vk",
@@ -127,7 +127,7 @@ class DdVkSignIn( DdOAuthSignIn ):
         )
 
 
-    def Authorize( self ) -> Response:
+    def Authorize(self) -> Response:
         return redirect(
             self.service.get_authorize_url(
                 scope="email",
@@ -136,7 +136,7 @@ class DdVkSignIn( DdOAuthSignIn ):
             )
         )
 
-    def Callback( self ) -> tuple:
+    def Callback(self) -> tuple:
         if "code" not in request.args:
             return None, None, None
 
@@ -148,11 +148,11 @@ class DdVkSignIn( DdOAuthSignIn ):
         }
         me = requests.get(
             self.service.access_token_url,
-            cookies=dict( request.cookies ),
+            cookies=dict(request.cookies ),
             params=payload
         ).json()
         return (
-            "vk${0:d}".format( me["user_id"] ),
-            me.get( "email" ).split( "@" )[0],
-            me.get( "email" )
+            "vk${0:d}".format(me["user_id"] ),
+            me.get("email" ).split("@" )[0],
+            me.get("email" )
         )

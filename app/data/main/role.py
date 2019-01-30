@@ -10,43 +10,43 @@ class DdPermission:
     ADMINISTER = 0x80
 
 
-class DdRole( db.Model ):
+class DdRole(db.Model):
     __tablename__ = "roles"
-    pk = db.Column( db.Integer, primary_key=True )
-    name = db.Column( db.String( 64 ), unique=True )
-    default = db.Column( db.Boolean, default=False, index=True )
-    permissions = db.Column( db.Integer )
-    users = db.relationship( "DdUser", backref="role", lazy="dynamic" )
+    pk = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    default = db.Column(db.Boolean, default=False, index=True)
+    permissions = db.Column(db.Integer)
+    users = db.relationship("DdUser", backref="role", lazy="dynamic")
 
 
     @staticmethod
     def InsertRoles():
         roles = {
-            "User": ( 
+            "User": (
                 DdPermission.FOLLOW |
                 DdPermission.COMMENT |
                 DdPermission.WRITE_ARTICLES,
                 True,
             ),
-            "Moderator": ( 
+            "Moderator": (
                 DdPermission.FOLLOW |
                 DdPermission.COMMENT |
                 DdPermission.WRITE_ARTICLES |
                 DdPermission.MODERATE_COMMENTS,
                 False,
             ),
-            "Administrator": ( 0xff, False ),
+            "Administrator": (0xff, False),
         }
 
         for r in roles:
-            role = DdRole.query.filter_by( name=r ).first()
+            role = DdRole.query.filter_by(name=r).first()
             if role is None:
-                role = DdRole( name=r )
+                role = DdRole(name=r)
             role.permissions = roles[ r ][ 0 ]
             role.default = roles[ r ][ 1 ]
-            db.session.add( role )
+            db.session.add(role)
         db.session.commit()
 
-    def __repr__( self ):
+    def __repr__(self):
         return "<Role %r>" % self.name
 

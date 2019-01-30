@@ -1,11 +1,11 @@
 
-from flask_wtf          import Form
-from wtforms            import BooleanField
-from wtforms            import SelectField
-from wtforms            import StringField
-from wtforms            import SubmitField
-from wtforms            import TextAreaField
-from wtforms            import ValidationError
+from flask_wtf import Form
+from wtforms import BooleanField
+from wtforms import SelectField
+from wtforms import StringField
+from wtforms import SubmitField
+from wtforms import TextAreaField
+from wtforms import ValidationError
 from wtforms.validators import Email
 from wtforms.validators import Length
 from wtforms.validators import Regexp
@@ -15,68 +15,68 @@ from app.data.main.role import DdRole
 from app.data.main.user import DdUser
 
 
-class DdEditProfileForm( Form ):
-    name = StringField( "Real Name", validators=[Length( 0, 64 )] )
-    location = StringField( "Location", validators=[Length( 0, 64 )] )
-    about_me = TextAreaField( "About me" )
-    submit = SubmitField( "Submit" )
+class DdEditProfileForm(Form):
+    name = StringField("Real Name", validators=[Length(0, 64)])
+    location = StringField("Location", validators=[Length(0, 64)])
+    about_me = TextAreaField("About me")
+    submit = SubmitField("Submit")
 
 
-class DdEditProfileAdminForm( Form ):
-    email = StringField( "Email", validators=[Required(), Length( 1, 64 ), Email()] )
-    username = StringField( 
+class DdEditProfileAdminForm(Form):
+    email = StringField("Email", validators=[Required(), Length(1, 64), Email()])
+    username = StringField(
         "Username",
         validators=[
             Required(),
-            Length( 1, 64 ),
-            Regexp( 
+            Length(1, 64),
+            Regexp(
                 "^[A-Za-z][A-Za-z0-9.]*$",
                 0,
                 "Usernames must have only letters, numbers, dots and underscores."
             )
         ]
     )
-    confirmed = BooleanField( "Confirmed" )
-    role = SelectField( "Role", coerce=int )
-    name = StringField( "Real Name", validators=[Length( 0, 64 )] )
-    location = StringField( "Location", validators=[Length( 0, 64 )] )
-    about_me = TextAreaField( "About me" )
-    submit = SubmitField( "Submit" )
+    confirmed = BooleanField("Confirmed")
+    role = SelectField("Role", coerce=int)
+    name = StringField("Real Name", validators=[Length(0, 64)])
+    location = StringField("Location", validators=[Length(0, 64)])
+    about_me = TextAreaField("About me")
+    submit = SubmitField("Submit")
 
-    def __init__( self, user, *args, **kwargs ):
-        super( DdEditProfileAdminForm, self ).__init__( *args, **kwargs )
+    def __init__(self, user, *args, **kwargs):
+        super(DdEditProfileAdminForm, self).__init__(*args, **kwargs)
 
         self.role.choices = [
-            ( role.pk, role.name ) for role in DdRole.query.order_by( DdRole.name ).all() # @UndefinedVariable
+            (role.pk, role.name) for role in DdRole.query.order_by(DdRole.name).all()
         ]
         self.user = user
 
 
-    def validate_email( self, field ):
-        if field.data != self.user.email and DdUser.query.filter_by( email=field.data ).first(): # @UndefinedVariable
-            raise ValidationError( "Email is already registered." )
+    def validate_email(self, field):
+        if field.data != self.user.email and DdUser.query.filter_by(email=field.data).first():
+            raise ValidationError("Email is already registered.")
 
 
-    def validate_username( self, field ):
-        if field.data != self.user.username and DdUser.query.filter_by( username=field.data ).first(): # @UndefinedVariable
-            raise ValidationError( "Username is already in use." )
+    def validate_username(self, field):
+        if field.data != self.user.username and DdUser.query.filter_by(username=field.data).first():
+            raise ValidationError("Username is already in use.")
 
 
-class DdMakeFriendRequestForm( Form ):
-    message = TextAreaField( "Message" )
-    submit = SubmitField( "Submit" )
+class DdMakeFriendRequestForm(Form):
+    message = TextAreaField("Message")
+    submit = SubmitField("Submit")
 
 
-class DdPostForm( Form ):
-    body = TextAreaField( "What's on your mind?", validators=[Required()] )
-    submit = SubmitField( "Submit" )
+class DdPostForm(Form):
+    body = TextAreaField("What's on your mind?", validators=[Required()])
+    submit = SubmitField("Submit")
 
-class DdUserSearchForm( Form ):
-    username = StringField( "Any part of username", validators=[Required()] )
-    submit = SubmitField( "Submit" )
+class DdUserSearchForm(Form):
+    username = StringField("Any part of username", validators=[Required()])
+    submit = SubmitField("Submit")
 
 
-class DdWriteMessageForm( Form ):
-    subject = StringField( "Subject" )
-    message = TextAreaField( "Message", validators=[Required()] )
-    submit = SubmitField( "Submit" )
+class DdWriteMessageForm(Form):
+    subject = StringField("Subject")
+    message = TextAreaField("Message", validators=[Required()])
+    submit = SubmitField("Submit")
