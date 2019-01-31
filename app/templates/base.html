@@ -76,7 +76,7 @@
             </ul>
           </li>
         {% else %}
-          <li><a href="{{ url_for( 'auth.Login' ) }}">Sign In</a></li>
+          <li><a href="{{ url_for('auth.Login') }}">Sign In</a></li>
         {% endif %}
       </ul>
     </div>
@@ -94,9 +94,14 @@
   {% endfor %}
   {% block page_content %}{% endblock %}
 </div>
+
+{% block vue_components %}{% endblock %}
+
 {% endblock %}
 
 {% block scripts %}
   {{ super() }}
   {{ moment.include_moment() }}
+  <script type="text/javascript" src="https://unpkg.com/vue@2.5.13/dist/vue.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/axios@0.17.1/dist/axios.min.js"></script>
 {% endblock %}

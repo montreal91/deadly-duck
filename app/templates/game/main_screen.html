@@ -6,6 +6,7 @@
 {% endblock %}
 
 {% block page_content %}
+<div id="dd-main-screen-app">
   <div class="page-header">
     <h2>{{ club.club_name_c }}</h2>
   </div>
@@ -14,7 +15,7 @@
     Today is: <mark>{{ current_user.current_day_n }}</mark><br>
   </p>
   <div class="col-md-6">
-      
+
   {% if match %}
     <h4>Upcoming match is</h4>
     <h3>{{ match.home_team }} versus {{ match.away_team }}</h3>
@@ -31,7 +32,9 @@
     <h3>No matches for today</h3>
   {% endif %}
   <p>
-    <a href="{{ url_for('game.NextDay') }}" class="btn btn-primary btn-block">Next Day</a>
+    <button class="btn btn-primary btn-block" v-on:click="NextDay">
+      Next Day
+    </button>
   </p>
   <p>
     <a href="{{ url_for('game.Playoffs' ) }}" class="btn btn-default btn-block">
@@ -46,8 +49,9 @@
   </p>
   </div>
   <div class="col-md-6">
-  
+
   <h3>Players</h3>
+
   <table class="table">
     <tr>
       <th>#</th>
@@ -58,32 +62,37 @@
       <th>Age</th>
       <th></th>
     </tr>
-    {% for plr in players %}
-    <tr {% if plr.pk_n ==selected_player_pk %}class="success" {% endif %}>
-    <td>
-    {{ loop.index }}
-    </td>
-    <td>
-    <a href="{{ url_for('game.SelectPlayer', pk=plr.pk_n) }}">
-      {{ plr.first_name_c }} {{ plr.last_name_c }}
-    </td>
-    <td>
-      <strong>{{ plr.actual_technique }}</strong> / {{ plr.technique }}
-    </td>
-    <td>
-      {{ plr.endurance }}
-    </td>
-    <td>
-      {{ plr.level }}
-    </td>
-    <td>
-      {{ plr.age_n }}
-    </td>
-    <td>
-      <a href="{{ url_for('game.PlayerDetails', player_pk=plr.pk_n) }}">Details</a>
-    </td>
-  </tr>
-  {% endfor %}
+
+    <tr
+      v-for="(player, index) in players"
+      v-bind:class="{info: player.pk === selected}"
+    >
+      <td v-text="index + 1"></td>
+      <td>
+        <button class="btn-link" v-text="PlayerName(player)" v-on:click="SelectPlayer(player)"></button>
+      </td>
+      <td>
+        <strong v-text="FloatToFixed(player.actual_technique)"></strong> /
+        <span v-text="FloatToFixed(player.technique)"></span>
+      </td>
+      <td v-text="FloatToFixed(player.endurance)"></td>
+      <td v-text="player.level"></td>
+      <td v-text="player.age"></td>
+      <td>Details</td>
+    </tr>
+
   </table>
-  </div>
+</div>
+{% endblock %}
+
+{% block vue_templates %}
+  {{ super() }}
+  <script type="text/x-template" id="dd-vue-template-player-row">
+  {% include "includes/current_match_or_standings.html" %}
+  </script>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script type="text/javascript" src="{{url_for('static', filename='main_screen.js') }}"></script>
 {% endblock %}

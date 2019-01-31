@@ -4,6 +4,7 @@ import math
 
 from decimal import Decimal
 from random import randint
+from typing import Dict
 
 from sqlalchemy import and_
 from sqlalchemy import text
@@ -47,10 +48,25 @@ class DdPlayer(db.Model):
     def endurance(self):
         return round(self.endurance_n / 10, 1)
 
-
     @property
     def full_name(self):
         return self.first_name_c + " " + self.second_name_c + " " + self.last_name_c
+
+    @property
+    def json(self) -> Dict:
+        """Returns a dictionary with json-serializable data."""
+        return dict(
+            pk=self.pk_n,
+            first_name=self.first_name_c,
+            second_name=self.second_name_c,
+            last_name=self.last_name_c,
+            technique=self.technique,
+            endurance=self.endurance,
+            actual_technique=self.actual_technique,
+            level=self.level,
+            age=self.age_n,
+        )
+
 
     @property
     def level(self):

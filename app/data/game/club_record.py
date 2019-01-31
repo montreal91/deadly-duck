@@ -84,7 +84,7 @@ class DdDaoClubRecord(object):
         db.session.add(club_record)
         db.session.commit()
 
-    def SaveClubRecords(self, club_records=[]):
+    def SaveClubRecords(self, club_records):
         db.session.add_all(club_records)
         db.session.commit()
 

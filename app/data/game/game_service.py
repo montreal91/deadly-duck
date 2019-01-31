@@ -24,6 +24,7 @@ from app.data.game.player import DdDaoPlayer
 from app.data.game.player import DdPlayer
 from app.data.game.playoff_series import DdDaoPlayoffSeries
 from app.data.game.playoff_series import DdPlayoffSeries
+from app.data.main.user import DdUser
 
 from configuration.config_game import DdGameplayConstants
 from configuration.config_game import DdLeagueConfig
@@ -52,7 +53,7 @@ class DdGameService(object):
             player.AgeUp()
         self._dao_player.SavePlayers(players)
 
-    def CreateInitialPlayersForUser(self, user_pk):
+    def CreateInitialPlayersForUser(self, user_pk: int):
         first_names, last_names = DdPlayer.GetNames()
         clubs = self._dao_club.GetAllClubs()
         players = []
@@ -325,7 +326,7 @@ class DdGameService(object):
         return cache.Get(key)
 
 
-    def GetTodayMatches(self, user ):
+    def GetTodayMatches(self, user):
         return self._dao_match.GetTodayMatches(user)
 
     def InsertClubs(self):
@@ -336,7 +337,7 @@ class DdGameService(object):
         condition2 = len(d2) == 1 and len(d1) == 0
         return condition1 or condition2
 
-    def ProcessDailyRecovery(self, user_pk=0, played_players=[]):
+    def ProcessDailyRecovery(self, user_pk: int, played_players: List):
         """
         Restores stamina for active players of given user 'at the end of the day'.
         Important: saves changes to database.
@@ -396,7 +397,7 @@ class DdGameService(object):
     def SaveMatch(self, match=None):
         self._dao_match.SaveMatch(match=match)
 
-    def SaveMatches(self, matches=[]):
+    def SaveMatches(self, matches: List):
         series_to_update = []
         for match in matches:
             series = match.playoff_series
@@ -431,7 +432,7 @@ class DdGameService(object):
     def SavePlayers(self, players):
         self._dao_player.SavePlayers(players)
 
-    def SavePlayoffSeriesList(self, series_list=[]):
+    def SavePlayoffSeriesList(self, series_list: List):
         matches_to_abort = []
         for series in series_list:
             if not series.IsFinished(matches_to_win=DdLeagueConfig.MATCHES_TO_WIN):
@@ -491,7 +492,7 @@ class DdGameService(object):
         )
         cache.DeleteKey(key)
 
-    def UpdateAccountsAfterMatch(self, matches=[]):
+    def UpdateAccountsAfterMatch(self, matches: List):
         accounts = []
         for match in matches:
             home_account = self._dao_club_financial_account.GetFinancialAccount(
@@ -528,7 +529,7 @@ class DdGameService(object):
             accounts.append(account)
         self._dao_club_financial_account.SaveAccounts(accounts=accounts)
 
-    def _CreateMatchesForSeriesList(self, series_list=[], first_day=0):
+    def _CreateMatchesForSeriesList(self, series_list: List, first_day: int):
         new_matches = []
         for series in series_list:
             shift = series_list.index(series) % 2
@@ -541,7 +542,12 @@ class DdGameService(object):
                 new_matches.append(match)
         self._dao_match.SaveMatches(new_matches)
 
-    def _CreateNewcomersForClub(self, user_pk, club_pk, number):
+    def _CreateNewcomersForClub(
+        self,
+        user_pk: int,
+        club_pk: int,
+        number: int
+    ) -> List[DdPlayer]:
         players = []
         first_names, last_names = DdPlayer.GetNames()
         for i in range(number):
@@ -558,7 +564,7 @@ class DdGameService(object):
             players.append(player)
         return players
 
-    def _GetClubsQualifiedToPlayoffs(self, user):
+    def _GetClubsQualifiedToPlayoffs(self, user: DdUser):
         div1standings = [row.club_pk for row in self.GetDivisionStandings(user_pk=user.pk, season=user.current_season_n, division=1)]
         div2standings = [row.club_pk for row in self.GetDivisionStandings(user_pk=user.pk, season=user.current_season_n, division=2)]
 

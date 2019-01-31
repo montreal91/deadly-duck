@@ -3,7 +3,6 @@ var app = new Vue({
   el: "#dd-draw-app",
   data: {
     season: CURRENT_SEASON,
-    username: USERNAME,
     series: []
   },
   methods: {

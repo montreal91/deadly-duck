@@ -1,4 +1,12 @@
 
+"""
+Game-related views.
+
+Created on Jan 26, 2016
+
+@author: montreal91
+"""
+
 import json
 import logging
 
@@ -11,7 +19,6 @@ from flask import render_template
 from flask import request
 from flask import url_for
 from flask.views import MethodView
-from flask.views import View
 from flask_login import current_user
 from flask_login import login_required
 
@@ -48,7 +55,10 @@ def ClubDetails(club_pk):
         user_pk=current_user.pk,
         club_pk=club_pk
     )
-    records = game.service.GetClubRecordsForUser(club_pk=club_pk, user=current_user)
+    records = game.service.GetClubRecordsForUser(
+        club_pk=club_pk,
+        user=current_user
+    )
     return render_template(
         "game/club_details.html",
         club=club,
@@ -56,6 +66,16 @@ def ClubDetails(club_pk):
         records=records,
     )
 
+@game.route("/api/current_user_club_players/", methods=["POST"])
+@login_required
+def CurrentUserClubPlayers():
+    """Ajax view that responses with list of players for current user."""
+    players = game.service.GetClubPlayers(
+        user_pk=current_user.pk,
+        club_pk=current_user.managed_club_pk,
+    )
+    players.sort(key=PlayerModelComparator, reverse=True)
+    return jsonify(players=[player.json for player in players])
 
 @game.route("/day/<int:season>/<int:day>/")
 @login_required
@@ -165,25 +185,37 @@ def MainScreen():
 
 # TODO: separate class-based views from method views
 # and ajax from non-ajax views.
-class DdNextDayView(View):
+class DdNextDayView(MethodView):
     decorators = [login_required]
+
+    _LOG_STRING = (
+        "User {pk:d} plays next day. "
+        "Season #{season:d}. Day #{day:d}"
+    )
+
     def __init__(self):
-        super(DdNextDayView, self).__init__()
+        super().__init__()
         self._players_to_update = []
 
-    def dispatch_request(self):
+    def post(self):
         logging.debug(
-            "User {pk:d} plays next day. Season #{season:d}. Day #{day:d}".format(
+            self._LOG_STRING.format(
                 pk=current_user.pk,
                 season=current_user.current_season_n,
                 day=current_user.current_day_n
             )
         )
-        if game.service.DoesUserNeedToSelectPlayer(current_user):
+
+        if request.json["selected_player"] is None:
             flash("You have to select player to play next match.")
-            return redirect(url_for("game.MainScreen"))
+            abort(403)
+            # return redirect(url_for("game.MainScreen"))
+
+        self._selected_player = request.json["selected_player"]
         if current_user.current_day_n > current_user.season_last_day:
-            remaining_d1, remaining_d2 = game.service.GetRemainingClubs(current_user)
+            remaining_d1, remaining_d2 = game.service.GetRemainingClubs(
+                current_user
+            )
             poff_round = game.service.GetMaxPlayoffRound(user=current_user)
             new_round_string = "PlayOff Round #{round:d} is started."
             if poff_round is None:
@@ -196,7 +228,7 @@ class DdNextDayView(View):
                     final=False
                 )
                 flash(new_round_string.format(round=1))
-                return redirect(url_for("game.MainScreen"))
+                return jsonify(new_href=url_for("game.MainScreen"))
             elif len(remaining_d1) != 0 and len(remaining_d2) != 0:
                 # Start later round of play-off
                 game.service.CreateNewPlayoffRound(
@@ -207,12 +239,14 @@ class DdNextDayView(View):
                     final=len(remaining_d1) == 1
                 )
                 flash(new_round_string.format(round=poff_round + 1))
-                return redirect(url_for("game.MainScreen"))
-            elif game.service.NewSeasonCondition(d1=remaining_d1, d2=remaining_d2) is True:
+                return jsonify(new_href=url_for("game.MainScreen"))
+            elif (game.service.NewSeasonCondition(
+                    d1=remaining_d1, d2=remaining_d2
+            )):
                 game.service.SaveClubRecords(user=current_user)
                 game.service.StartNextSeason(user_pk=current_user.pk)
                 DdLeague.StartNextSeason(current_user)
-                return redirect(url_for("game.MainScreen"))
+                return jsonify(new_href=url_for("game.MainScreen"))
             else:
                 raise ValueError
 
@@ -230,31 +264,39 @@ class DdNextDayView(View):
         game.service.UnsetPlayerForNextMatch(current_user.pk)
         db.session.add(current_user)
         db.session.commit()
-        return redirect(
-            url_for(
-                ".DayResults",
-                season=current_user.current_season_n,
-                day=current_user.current_day_n - 1
-            )
-        )
+
+        return jsonify(new_href=url_for(
+            "game.DayResults",
+            season=current_user.current_season_n,
+            day=current_user.current_day_n - 1,
+        ))
 
     def ProcessMatch(self, user, match, autoplay=False):
         home_player, away_player = None, None
+        selected_player = game.service.GetPlayer(self._selected_player)
         if match.home_team_pk == user.managed_club_pk and not autoplay:
-            home_player = game.service.GetPlayer(
-                player_pk=game.service.GetSelectedPlayerForNextMatch(user_pk=current_user.pk)
+            home_player = selected_player
+            ai_players = game.service.GetClubPlayers(
+                user_pk=user.pk,
+                club_pk=match.away_team_pk
             )
-            ai_players = game.service.GetClubPlayers(user_pk=user.pk, club_pk=match.away_team_pk)
             away_player = max(ai_players, key=PlayerModelComparator)
         elif match.away_team_pk == user.managed_club_pk and not autoplay:
-            ai_players = game.service.GetClubPlayers(user_pk=user.pk, club_pk=match.home_team_pk)
-            home_player = max(ai_players, key=PlayerModelComparator)
-            away_player = game.service.GetPlayer(
-                player_pk=game.service.GetSelectedPlayerForNextMatch(user_pk=current_user.pk)
+            ai_players = game.service.GetClubPlayers(
+                user_pk=user.pk,
+                club_pk=match.home_team_pk
             )
+            home_player = max(ai_players, key=PlayerModelComparator)
+            away_player = selected_player
         else:
-            home_ai = game.service.GetClubPlayers(user_pk=user.pk, club_pk=match.home_team_pk)
-            away_ai = game.service.GetClubPlayers(user_pk=user.pk, club_pk=match.away_team_pk)
+            home_ai = game.service.GetClubPlayers(
+                user_pk=user.pk,
+                club_pk=match.home_team_pk
+            )
+            away_ai = game.service.GetClubPlayers(
+                user_pk=user.pk,
+                club_pk=match.away_team_pk
+            )
             home_player = max(home_ai, key=PlayerModelComparator)
             away_player = max(away_ai, key=PlayerModelComparator)
         match_processor = DdMatchProcessor()
@@ -290,7 +332,7 @@ class DdNextDayView(View):
         self._players_to_update.append(home_player)
         self._players_to_update.append(away_player)
 
-game.add_url_rule("/nextday/", view_func=DdNextDayView.as_view('NextDay'))
+game.add_url_rule("/next_day/", view_func=DdNextDayView.as_view('NextDay'))
 
 
 @game.route("/player/<int:player_pk>/")
@@ -402,7 +444,10 @@ class DdSetTraining(MethodView):
         return False
 
 
-game.add_url_rule("/_set_training/", view_func=DdSetTraining.as_view("SetTraining"))
+game.add_url_rule(
+    "/api/set_training/",
+    view_func=DdSetTraining.as_view("SetTraining")
+)
 
 
 
