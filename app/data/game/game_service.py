@@ -1,4 +1,12 @@
 
+"""
+This file contains one class: DdGameService. The purpose of this module is to
+incapsulate all game logic and calls to the database.
+
+Created on Nov 29, 2016
+
+@author: montreal91
+"""
 import logging
 
 from decimal import Decimal
@@ -36,6 +44,11 @@ from app.data.game.training_session import DdTrainingSession
 
 
 class DdGameService(object):
+    """One class to rule them all. Or to incapsulate game logic indeed.
+
+    Everything related to game logic have to reside here.
+    Game views should never acces data directly. Only through this class.
+    """
     def __init__(self):
         self._dao_club = DdDaoClub()
         self._dao_club_financial_account = DdDaoClubFinancialAccount()
@@ -54,21 +67,21 @@ class DdGameService(object):
         self._dao_player.SavePlayers(players)
 
     def CreateInitialPlayersForUser(self, user_pk: int):
+        """Creates default set of users at the beginning of the career."""
         first_names, last_names = DdPlayer.GetNames()
         clubs = self._dao_club.GetAllClubs()
         players = []
         for club in clubs:
             skill = DdGameplayConstants.SKILL_BASE.value
             for i in range(DdGameplayConstants.MAX_PLAYERS_IN_CLUB.value):
-                skill_diff = DdGameplayConstants.SKILL_GROWTH_PER_LEVEL.value * i * 2
                 player = self._dao_player.CreatePlayer(
                     first_name=choice(first_names),
                     second_name=choice(first_names),
                     last_name=choice(last_names),
                     user_pk=user_pk,
                     club_pk=club.club_id_n,
-                    technique=skill + skill_diff,
-                    endurance=skill + skill_diff,
+                    technique=skill,
+                    endurance=skill,
                     age=DdGameplayConstants.STARTING_AGE.value + i
                 )
                 players.append(player)
@@ -242,7 +255,8 @@ class DdGameService(object):
     def GetListOfClubPrimaryKeys(self):
         return self._dao_club.GetListOfClubPrimaryKeys()
 
-    # TODO: move it to some DAO. Service should not have direct access to database.
+    # TODO: move it to some DAO.
+    # Service should not have direct access to database.
     def GetGlobalRatings(self):
         return db.engine.execute(
             text(GLOBAL_USER_RATING_SQL).params(
