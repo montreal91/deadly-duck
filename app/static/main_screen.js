@@ -10,9 +10,23 @@
 let app = new Vue({
   el: "#dd-main-screen-app",
   data: {
+    away_player: null,
     hello: "Hello",
+    match: null,
     players: "Nonez",
     selected: null,
+    show_away_player: false,
+  },
+  computed: {
+    //
+    // Shows match banner like "Team A versut Team B"
+    //
+    match_banner: function() {
+      if (this.match !== null) {
+        return this.match.home_team + " versus " + this.match.away_team;
+      }
+      return "No matches for today";
+    },
   },
   methods: {
     //
@@ -26,7 +40,7 @@ let app = new Vue({
     // Sends request to the server to start a new day.
     //
     NextDay: function() {
-      if (this.selected === null) {
+      if (this.selected === null && this.match !== null) {
         // TODO: in this case we should let user know that (s)he needs
         // to choose a player for next match...
         return;
@@ -57,9 +71,18 @@ let app = new Vue({
       this.selected = player.pk;
     },
 
+    //
+    // Toggles flag which is responsible for showing data of away player.
+    //
+    ToggleShowAwayPlayer: function() {
+      this.show_away_player = !this.show_away_player;
+    },
+
     _GetPlayers: function() {
-      axios.post("/game/api/current_user_club_players/", {season: 1}).then(
+      axios.post("/game/api/main_screen_context/", {season: 1}).then(
         (response) => {
+          this.away_player = response.data.away_player;
+          this.match = response.data.match;
           this.players = response.data.players;
         }
       ).catch(

@@ -150,7 +150,7 @@ FRIENDSHIP_SQL = """
 SELECT  *
 FROM    friendship
 WHERE   (
-    (friend_one_pk = :u1_pk AND friend_two_pk = :u2_pk) OR 
+    (friend_one_pk = :u1_pk AND friend_two_pk = :u2_pk) OR
     (friend_one_pk = :u2_pk AND friend_two_pk = :u1_pk)
 )
 AND     is_active = TRUE
@@ -216,8 +216,8 @@ ORDER BY timestamp_dt DESC
 MAX_DAY_IN_SEASON_SQL = """
 SELECT Max(day_n)
 FROM   matches
-WHERE  user_pk = {0:d}
-AND    season_n = {1:d}
+WHERE  user_pk = :user
+AND    season_n = :season
 """
 
 MAX_PLAYOFF_ROUND_SQL = """
@@ -355,8 +355,8 @@ SELECT club_id_n, club_name_c, (
         ELSE 0 END
     )
     FROM  matches
-    WHERE season_n = {0:d}
-    AND   user_pk = {1:d}
+    WHERE season_n = :season
+    AND   user_pk = :user
     AND   status_en = 'finished'
     AND   playoff_series_pk IS NULL
 ) AS sets, (
@@ -369,8 +369,8 @@ SELECT club_id_n, club_name_c, (
         ELSE 0 END
     )
     FROM  matches
-    WHERE season_n = {0:d}
-    AND   user_pk = {1:d}
+    WHERE season_n = :season
+    AND   user_pk = :user
     AND   status_en = 'finished'
     AND   playoff_series_pk IS NULL
 ) AS games, (
@@ -378,12 +378,15 @@ SELECT club_id_n, club_name_c, (
     FROM   matches
     WHERE  (home_team_pk = clubs.club_id_n OR away_team_pk = clubs.club_id_n)
     AND    status_en = 'finished'
-    AND    season_n = {0:d}
-    AND    user_pk = {1:d}
+    AND    season_n = :season
+    AND    user_pk = :user
     AND    playoff_series_pk IS NULL
 ) AS played
 FROM clubs
 ORDER BY sets DESC, games DESC
 """
 
-STANDINGS_FOR_DIVISION_SQL = STANDINGS_SQL[0:-31] + "WHERE division_n = {2:d}\n" + STANDINGS_SQL[-31:]
+STANDINGS_FOR_DIVISION_SQL = (
+    f"{STANDINGS_SQL[0:-31]} WHERE division_n = :division\n"
+    f"{STANDINGS_SQL[-31:]}"
+)

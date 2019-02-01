@@ -21,8 +21,6 @@ def load_user(user_id):
     user = DdUser.query.get(int(user_id))
     if user is None:
         return user
-    max_day = db.engine.execute(MAX_DAY_IN_SEASON_SQL.format(user.pk, user.current_season_n)).first()
-    user.season_last_day = max_day[0]
     return user
 
 

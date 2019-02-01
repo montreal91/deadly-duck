@@ -66,16 +66,6 @@ def ClubDetails(club_pk):
         records=records,
     )
 
-@game.route("/api/current_user_club_players/", methods=["POST"])
-@login_required
-def CurrentUserClubPlayers():
-    """Ajax view that responses with list of players for current user."""
-    players = game.service.GetClubPlayers(
-        user_pk=current_user.pk,
-        club_pk=current_user.managed_club_pk,
-    )
-    players.sort(key=PlayerModelComparator, reverse=True)
-    return jsonify(players=[player.json for player in players])
 
 @game.route("/day/<int:season>/<int:day>/")
 @login_required
@@ -146,21 +136,28 @@ def HirePlayer(player_pk):
 @game.route("/main/")
 @login_required
 def MainScreen():
+    """Renders main screen."""
     logging.debug("User {pk:d} is on main screen".format(pk=current_user.pk))
     if current_user.managed_club_pk is None:
         return redirect(url_for("main.Index"))
 
     club = game.service.GetClub(current_user.managed_club_pk)
+
+    return render_template(
+        "game/main_screen.html",
+        club=club,
+    )
+
+
+@game.route("/api/main_screen_context/", methods=["POST"])
+@login_required
+def MainScreenContext():
+    """Ajax view that responses with context data for main screen."""
     players = game.service.GetClubPlayers(
         user_pk=current_user.pk,
-        club_pk=current_user.managed_club_pk
+        club_pk=current_user.managed_club_pk,
     )
     players.sort(key=PlayerModelComparator, reverse=True)
-    selected_player_pk = game.service.GetSelectedPlayerForNextMatch(
-        current_user.pk
-    )
-    if not selected_player_pk:
-        selected_player_pk = -1
 
     match = game.service.GetCurrentMatch(current_user)
     if match is not None and match.home_team_pk == current_user.managed_club_pk:
@@ -169,17 +166,17 @@ def MainScreen():
             club_pk=match.away_team_pk
         )
         away_player = max(ai_players, key=PlayerModelComparator)
+        away_player = away_player.json
     else:
         away_player = None
-    current_round = game.service.GetMaxPlayoffRound(user=current_user)
-    return render_template(
-        "game/main_screen.html",
-        club=club,
-        match=match,
-        players=players,
+
+    if match is not None:
+        match = match.json
+
+    return jsonify(
         away_player=away_player,
-        current_round=current_round,
-        selected_player_pk=selected_player_pk
+        players=[player.json for player in players],
+        match=match,
     )
 
 
@@ -206,13 +203,12 @@ class DdNextDayView(MethodView):
             )
         )
 
-        if request.json["selected_player"] is None:
+        if self._IfUserNeedsPlayer():
             flash("You have to select player to play next match.")
             abort(403)
-            # return redirect(url_for("game.MainScreen"))
 
         self._selected_player = request.json["selected_player"]
-        if current_user.current_day_n > current_user.season_last_day:
+        if game.service.IsNewRoundNeeded(current_user):
             remaining_d1, remaining_d2 = game.service.GetRemainingClubs(
                 current_user
             )
@@ -273,7 +269,12 @@ class DdNextDayView(MethodView):
 
     def ProcessMatch(self, user, match, autoplay=False):
         home_player, away_player = None, None
-        selected_player = game.service.GetPlayer(self._selected_player)
+
+        if self._selected_player is not None:
+            selected_player = game.service.GetPlayer(self._selected_player)
+        else:
+            selected_player = self._selected_player
+
         if match.home_team_pk == user.managed_club_pk and not autoplay:
             home_player = selected_player
             ai_players = game.service.GetClubPlayers(
@@ -331,6 +332,12 @@ class DdNextDayView(MethodView):
 
         self._players_to_update.append(home_player)
         self._players_to_update.append(away_player)
+
+    def _IfUserNeedsPlayer(self) -> bool:
+        return game.service.DoesUserNeedToSelectPlayer(
+            current_user,
+            request.json["selected_player"]
+        )
 
 game.add_url_rule("/next_day/", view_func=DdNextDayView.as_view('NextDay'))
 

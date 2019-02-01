@@ -43,7 +43,7 @@ class DdConfig:
 class DdDevelopmentConfig(DdConfig):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = "postgresql://duck:duck18@localhost/duck_dev"
-    SQLALCHEMY_ECHO = True
+    SQLALCHEMY_ECHO = False
 
 
 class DdTestingConfig(DdConfig):

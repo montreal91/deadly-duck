@@ -161,10 +161,12 @@ class DdGameService(object):
             accounts.append(acc)
         self._dao_club_financial_account.SaveAccounts(accounts=accounts)
 
-    def DoesUserNeedToSelectPlayer(self, user):
-        selected_player = self.GetSelectedPlayerForNextMatch(user.pk)
+    def DoesUserNeedToSelectPlayer(
+        self, user: DdUser, selected_player: int
+    ) -> bool:
+        """Checks if user needs to select player for next match."""
         current_match = self.GetCurrentMatch(user)
-        return current_match and not selected_player
+        return current_match and selected_player is None
 
     def GetClub(self, club_pk):
         return self._dao_club.GetClub(club_pk)
@@ -264,7 +266,7 @@ class DdGameService(object):
     def GetNumberOfFinishedSeries(self):
         return self._dao_playoff_series.GetNumberOfFinishedSeries()
 
-    def GetPlayer(self, player_pk ):
+    def GetPlayer(self, player_pk):
         return self._dao_player.GetPlayer(player_pk)
 
     def GetPlayoffSeries(self, series_pk=0):
@@ -281,9 +283,6 @@ class DdGameService(object):
             player_pk,
             season
         )
-
-    def GetRecentStandings(self, user):
-        return self._dao_match.GetRecentStandings(user)
 
     def GetRemainingClubs(self, user):
         div1standings, div2standings = self._GetClubsQualifiedToPlayoffs(
@@ -331,6 +330,11 @@ class DdGameService(object):
 
     def InsertClubs(self):
         self._dao_club.InsertClubs()
+
+    def IsNewRoundNeeded(self, user: DdUser) -> bool:
+        """Checks if a new playoff round needs to be created for given user."""
+        last = self._dao_match.GetLastMatchDay(user)
+        return user.current_day_n > last + 1
 
     def NewSeasonCondition(self, d1: List, d2=List) -> bool:
         condition1 = len(d1) == 1 and len(d2) == 0
