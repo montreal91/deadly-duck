@@ -30,6 +30,7 @@ from app.data.models import DdUser
 from app.game import game
 from app.game.league import DdLeague
 from app.game.match_processor import DdMatchProcessor
+from app.game.match_processor import LinearProbabilityFunction
 from configuration.config_game import club_names
 from configuration.config_game import DdTrainingIntensities
 from configuration.config_game import DdTrainingTypes
@@ -300,7 +301,7 @@ class DdNextDayView(MethodView):
             )
             home_player = max(home_ai, key=PlayerModelComparator)
             away_player = max(away_ai, key=PlayerModelComparator)
-        match_processor = DdMatchProcessor()
+        match_processor = DdMatchProcessor(LinearProbabilityFunction)
         result = match_processor.ProcessMatch(home_player, away_player, 2)
         match.home_sets_n = result.home_sets
         match.away_sets_n = result.away_sets

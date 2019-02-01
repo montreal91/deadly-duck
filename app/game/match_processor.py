@@ -1,8 +1,10 @@
 
 from collections import namedtuple
+from copy import deepcopy
 from decimal import Decimal
 from enum import Enum
 from random import randint
+from typing import Callable
 
 from configuration.config_game import sets_to_win
 from stat_tools import LoadedToss
@@ -59,7 +61,9 @@ class DdMatchResult(object):
         This setter should be used only to deal exceptional match result.
         """
         assert value >= 0, "Number of sets should be greater than 0."
-        assert value <= sets_to_win, "Number of sets should be lesser than %r." % sets_to_win
+        assert value <= sets_to_win, (
+            "Number of sets should be lesser than %r." % sets_to_win
+        )
         self._away_sets = int(value)
 
     @property
@@ -84,7 +88,9 @@ class DdMatchResult(object):
         This setter should be used only to deal exceptional match result.
         """
         assert value >= 0, "Number of sets should be greater than 0."
-        assert value <= sets_to_win, "Number of sets should be lesser than %r." % sets_to_win
+        assert value <= sets_to_win, (
+            "Number of sets should be lesser than %r." % sets_to_win
+        )
         self._home_sets = int(value)
 
     @property
@@ -122,11 +128,21 @@ class DdMatchResult(object):
 
 
 class DdMatchProcessor(object):
-    def __init__(self):
+    """This class incapsulates inner logic of a tennis match."""
+    _probability_function: Callable[[float, float], float]
+    _res: DdMatchResult
+
+    def __init__(self, probability_function: Callable[[float, float], float]):
+        self._probability_function = probability_function
         self._res = DdMatchResult()
 
-    def ProcessMatch(self, home_player, away_player, sets_to_win=2):
-        while not self._IsMatchOver(self._res.home_sets, self._res.away_sets, sets_to_win):
+    def ProcessMatch(
+        self, home_player, away_player, sets_to_win=2
+    ) -> DdMatchResult:
+        """Processes match and returns the results."""
+        while not self._IsMatchOver(
+            self._res.home_sets, self._res.away_sets, sets_to_win
+        ):
             set_result = self._ProcessSet(
                 home_player,
                 away_player
@@ -150,7 +166,7 @@ class DdMatchProcessor(object):
                 self._res.away_sets = 0
                 break
 
-        return self._res
+        return deepcopy(self._res)
 
     def _CalculateActualSkill(self, player, actual_stamina=0):
         stamina_factor = actual_stamina / player.max_stamina
@@ -189,8 +205,12 @@ class DdMatchProcessor(object):
                 away_player,
                 lost_stamina=self._res.away_stamina_lost
             )
-            home_actual_skill = self._CalculateActualSkill(home_player, home_stamina)
-            away_actual_skill = self._CalculateActualSkill(away_player, away_stamina)
+            home_actual_skill = self._CalculateActualSkill(
+                home_player, home_stamina
+            )
+            away_actual_skill = self._CalculateActualSkill(
+                away_player, away_stamina
+            )
 
             if home_actual_skill == 0:
                 return DdSetResult(
@@ -205,13 +225,15 @@ class DdMatchProcessor(object):
                     set_status=DdSetStatuses.AWAY_RETIRED
                 )
 
-            total_skill = home_actual_skill + away_actual_skill
-            home_prob = home_actual_skill / total_skill
-            toss = LoadedToss(home_prob)
+            toss = LoadedToss(self._probability_function(
+                home_actual_skill, away_actual_skill
+            ))
+
             if toss:
                 home_games += 1
             else:
                 away_games += 1
+
             self._res.AddHomeStaminaLost(self._CalculateStaminaLostInGame())
             self._res.AddAwayStaminaLost(self._CalculateStaminaLostInGame())
 
@@ -220,3 +242,25 @@ class DdMatchProcessor(object):
             away_games=away_games,
             set_status=DdSetStatuses.REGULAR,
         )
+
+def NaiveProbabilityFunction(home_skill: float, away_skill: float) -> float:
+    total_skill = home_skill + away_skill
+    return home_skill / total_skill
+
+
+def LinearProbabilityFunction(home_skill: float, away_skill: float) -> float:
+    """Probability of winnig a game by home player.
+
+    This function grows linearly on [-50, 50] interval depending on the
+    difference between home and away skills. It takes values from
+    0.05 to 0.95 at the ends of the interval and 0.5 in the middle.
+    """
+    delta = home_skill - away_skill
+
+    if -50 <= delta <= 50:
+        return round(0.009 * delta + 0.5, 2)
+    elif delta < -50:
+        return 0.05
+    elif delta > 0.95:
+        return 0.95
+    return 0
