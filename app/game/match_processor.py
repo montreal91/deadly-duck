@@ -183,7 +183,7 @@ class DdMatchProcessor(object):
             return actual_stamina
 
     def _CalculateStaminaLostInGame(self):
-        return 4
+        return 2
 
     def _IsSetOver(self, hgames, agames):
         c1 = hgames >= 6 and hgames - agames >= 2

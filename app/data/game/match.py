@@ -4,6 +4,7 @@ import json
 from collections import namedtuple
 from typing import List
 from typing import NamedTuple
+from typing import Optional
 
 from sqlalchemy import and_
 from sqlalchemy import text
@@ -78,6 +79,8 @@ class DdMatch(db.Model):
     )
     season_n = db.Column(db.Integer, default=0, index=True)
     day_n = db.Column(db.Integer, default=0, index=True)
+
+    # TODO(montreal91) Remove this redundant comumn.
     context_json = db.Column(db.Text)
     status_en = db.Column(
         postgresql.ENUM(
@@ -105,6 +108,15 @@ class DdMatch(db.Model):
     home_player = db.relationship("DdPlayer", foreign_keys=[home_player_pk])
     away_player = db.relationship("DdPlayer", foreign_keys=[away_player_pk])
 
+    @property
+    def winner_pk(self) -> Optional[int]:
+        """If match is finished, returns a pk of the winner."""
+        if self.status_en != DdMatchStatuses.finished:
+            return None
+        if self.home_sets_n > self.away_sets_n:
+            return self.home_team_pk
+        return self.away_team_pk
+
     def SetAbortedStatus(self):
         self.status_en = DdMatchStatuses.aborted
 
@@ -124,13 +136,13 @@ class DdMatch(db.Model):
 
 class DdDaoMatch(object):
     def CreateNewMatch(
-        self,
-        user_pk=0,
-        season=0,
-        day=0,
-        home_team_pk=0,
-        away_team_pk=0,
-    ):
+            self,
+            user_pk=0,
+            season=0,
+            day=0,
+            home_team_pk=0,
+            away_team_pk=0,
+    ) -> DdMatch:
         match = DdMatch()
         match.home_team_pk = home_team_pk
         match.away_team_pk = away_team_pk
@@ -149,7 +161,9 @@ class DdDaoMatch(object):
         match.SetPlannedStatus()
         return match
 
-    def CreateNewMatchForSeries(self, series=None, day=0, top_home=True):
+    def CreateNewMatchForSeries(
+            self, series=None, day=0, top_home=True
+        ) -> DdMatch:
         match = DdMatch()
         if top_home:
             match.home_team_pk = series.top_seed_pk

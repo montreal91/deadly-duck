@@ -89,12 +89,12 @@ class DdGameService(object):
 
 
     def CreateNewMatch(
-        self,
-        user_pk=0,
-        season=0,
-        day=0,
-        home_team_pk=0,
-        away_team_pk=0,
+            self,
+            user_pk=0,
+            season=0,
+            day=0,
+            home_team_pk=0,
+            away_team_pk=0,
     ):
         return self._dao_match.CreateNewMatch(
             user_pk=user_pk,
@@ -105,12 +105,12 @@ class DdGameService(object):
         )
 
     def CreateNewPlayoffRound(
-        self,
-        user=None,
-        div1_list=[],
-        div2_list=[],
-        current_round=0,
-        final=False
+            self,
+            user=None,
+            div1_list=[],
+            div2_list=[],
+            current_round=0,
+            final=False
     ):
         assert len(div1_list) == len(div2_list)
         length = len(div1_list)
@@ -175,7 +175,7 @@ class DdGameService(object):
         self._dao_club_financial_account.SaveAccounts(accounts=accounts)
 
     def DoesUserNeedToSelectPlayer(
-        self, user: DdUser, selected_player: int
+            self, user: DdUser, selected_player: int
     ) -> bool:
         """Checks if user needs to select player for next match."""
         current_match = self.GetCurrentMatch(user)
@@ -243,7 +243,7 @@ class DdGameService(object):
             user_pk, club_pk
         )
 
-    def GetFreeAgents(self, user_pk ):
+    def GetFreeAgents(self, user_pk):
         return self._dao_player.GetFreeAgents(user_pk)
 
     def GetLeagueStandings(self, user_pk=0, season=0):
@@ -257,6 +257,7 @@ class DdGameService(object):
 
     # TODO: move it to some DAO.
     # Service should not have direct access to database.
+    # Because it causes cyclic imports!
     def GetGlobalRatings(self):
         return db.engine.execute(
             text(GLOBAL_USER_RATING_SQL).params(
@@ -332,13 +333,6 @@ class DdGameService(object):
                 )
         return div1standings, div2standings
 
-    def GetSelectedPlayerForNextMatch(self, user_pk):
-        key = DdGameCacheKeys.SELECTED_PLAYER.value.format(
-            user_pk=user_pk
-        )
-        return cache.Get(key)
-
-
     def GetTodayMatches(self, user):
         return self._dao_match.GetTodayMatches(user)
 
@@ -350,7 +344,7 @@ class DdGameService(object):
         last = self._dao_match.GetLastMatchDay(user)
         return user.current_day_n > last + 1
 
-    def NewSeasonCondition(self, d1: List, d2=List) -> bool:
+    def NewSeasonCondition(self, d1: List, d2: List) -> bool:
         condition1 = len(d1) == 1 and len(d2) == 0
         condition2 = len(d2) == 1 and len(d1) == 0
         return condition1 or condition2
@@ -465,7 +459,7 @@ class DdGameService(object):
         self._dao_playoff_series.SavePlayoffSeriesList(series_list=series_list)
 
 
-    def SaveRosters(self, rosters={}):
+    def SaveRosters(self, rosters):
         self._dao_player.SaveRosters(rosters)
 
 
@@ -480,12 +474,6 @@ class DdGameService(object):
             training_intensity
         )
         cache.SetKey(key=key, value=training_session)
-
-    def SetPlayerForNextMatch(self, user_pk=0, player_pk=0):
-        key = DdGameCacheKeys.SELECTED_PLAYER.value.format(
-            user_pk=user_pk,
-        )
-        cache.SetKey(key=key, value=player_pk)
 
     def StartNextSeason(self, user_pk):
         players = self._dao_player.GetAllActivePlayers(user_pk=user_pk)
@@ -503,12 +491,6 @@ class DdGameService(object):
             )
             players += new_players
         self.SavePlayers(players=players)
-
-    def UnsetPlayerForNextMatch(self, user_pk=0):
-        key = DdGameCacheKeys.SELECTED_PLAYER.value.format(
-            user_pk=user_pk
-        )
-        cache.DeleteKey(key)
 
     def UpdateAccountsAfterMatch(self, matches: List):
         accounts = []
@@ -561,10 +543,7 @@ class DdGameService(object):
         self._dao_match.SaveMatches(new_matches)
 
     def _CreateNewcomersForClub(
-        self,
-        user_pk: int,
-        club_pk: int,
-        number: int
+            self, user_pk: int, club_pk: int, number: int
     ) -> List[DdPlayer]:
         players = []
         first_names, last_names = DdPlayer.GetNames()
@@ -637,7 +616,7 @@ class DdGameService(object):
     def _ProcessTrainingSessionForPlayer(self, player):
         player.AddExperience(DdGameplayConstants.EXPERIENCE_PER_TRAINING.value)
 
-    def _CreateNewcomersForClub(self, user_pk, club_pk, number ):
+    def _CreateNewcomersForClub(self, user_pk, club_pk, number):
         players = []
         first_names, last_names = DdPlayer.GetNames()
         for i in range(number):
