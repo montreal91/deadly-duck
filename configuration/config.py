@@ -50,6 +50,7 @@ class DdTestingConfig(DdConfig):
     TESTING = True
     OAUTH_CREDENTIALS_FILE = ""
     SQLALCHEMY_DATABASE_URI = "postgresql://duck:duck18@localhost/duck_test"
+    SQLALCHEMY_ECHO = False
 
 
 class DdProductionConfig(DdConfig):

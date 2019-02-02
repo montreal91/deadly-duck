@@ -238,7 +238,7 @@ class DdNextDayView(MethodView):
                 flash(new_round_string.format(round=poff_round + 1))
                 return jsonify(new_href=url_for("game.MainScreen"))
             elif (game.service.NewSeasonCondition(
-                    d1=remaining_d1, d2=remaining_d2
+                d1=remaining_d1, d2=remaining_d2
             )):
                 game.service.SaveClubRecords(user=current_user)
                 game.service.StartNextSeason(user_pk=current_user.pk)
@@ -258,7 +258,6 @@ class DdNextDayView(MethodView):
         )
         game.service.SaveMatches(today_matches)
         current_user.current_day_n += 1
-        game.service.UnsetPlayerForNextMatch(current_user.pk)
         db.session.add(current_user)
         db.session.commit()
 
@@ -391,6 +390,8 @@ game.add_url_rule("/playoffs/", view_func=DdPlayoffs.as_view("Playoffs"))
 @login_required
 def PlayoffSeriesDetails(series_pk):
     series = game.service.GetPlayoffSeries(series_pk=series_pk)
+    import ipdb
+    ipdb.set_trace(context=7)
     series.matches.sort(key=MatchChronologicalComparator)
     return render_template("game/playoff_series_details.html", series=series)
 
