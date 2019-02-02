@@ -24,6 +24,7 @@ class DdPlayoffSeries(db.Model):
     low_seed_pk = db.Column(db.ForeignKey("clubs.club_id_n"), index=True)
     user_pk = db.Column(db.ForeignKey("users.pk"), index=True)
 
+    #TODO(montreal91): Remove these two fields because they are redundant
     top_seed_victories_n = db.Column(db.Integer, default=0, nullable=False)
     low_seed_victories_n = db.Column(db.Integer, default=0, nullable=False)
 
@@ -55,7 +56,9 @@ class DdPlayoffSeries(db.Model):
         }
 
     def GetLowSeedMatchesWon(self, sets_to_win=0):
-        return sum(self._GetSetsLowSpeedWon(m) == sets_to_win for m in self.matches)
+        return sum(
+            self._GetSetsLowSpeedWon(m) == sets_to_win for m in self.matches
+        )
 
     def GetLooserPk(self, sets_to_win=0, matches_to_win=0):
         top = self.GetTopSeedMatchesWon(sets_to_win=sets_to_win)

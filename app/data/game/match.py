@@ -2,6 +2,9 @@
 import json
 
 from collections import namedtuple
+from typing import List
+from typing import NamedTuple
+from typing import Optional
 
 from sqlalchemy import and_
 from sqlalchemy import text
@@ -10,8 +13,10 @@ from sqlalchemy.dialects import postgresql
 from app import db
 from app.custom_queries import CURRENT_MATCH_SQL
 from app.custom_queries import DAY_RESULTS_SQL
+from app.custom_queries import MAX_DAY_IN_SEASON_SQL
 from app.custom_queries import STANDINGS_FOR_DIVISION_SQL
 from app.custom_queries import STANDINGS_SQL
+from app.data.main.user import DdUser
 
 
 class DdMatchStatuses:
@@ -20,22 +25,27 @@ class DdMatchStatuses:
     aborted = "aborted"
 
 
-DdMatchSnapshot = namedtuple(
-    "DdMathcSnapshot",
-    [
-        "pk",
-        "home_team",
-        "home_team_pk",
-        "away_team",
-        "away_team_pk",
-        "home_player",
-        "away_player",
-        "home_skill",
-        "away_skill",
-        "full_score"
-    ],
-    rename=True
-)
+class DdMatchSnapshot(NamedTuple):
+    """Lightweight passive data class for DdMatch model."""
+    pk: int
+    home_team: str
+    home_team_pk: int
+    away_team: str
+    away_team_pk: int
+    home_player: str
+    away_player: str
+    home_skill: int
+    away_skill: int
+    full_score: str
+
+    @property
+    def json(self):
+        """Returns a dictionary with json-serializable data."""
+        res = {}
+        for field in self._fields:
+            res[field] = getattr(self, field)
+        return res
+
 
 DdStandingsRowSnapshot = namedtuple(
     "DdStandingsRowSnapshot",
@@ -51,15 +61,26 @@ DdStandingsRowSnapshot = namedtuple(
 
 
 class DdMatch(db.Model):
+    """Database model for one tennis match."""
     __tablename__ = "matches"
     match_pk_n = db.Column(db.Integer, primary_key=True, index=True)
-    home_team_pk = db.Column(db.Integer, db.ForeignKey("clubs.club_id_n"), index=True)
-    away_team_pk = db.Column(db.Integer, db.ForeignKey("clubs.club_id_n"), index=True)
+    home_team_pk = db.Column(
+        db.Integer, db.ForeignKey("clubs.club_id_n"), index=True
+    )
+    away_team_pk = db.Column(
+        db.Integer, db.ForeignKey("clubs.club_id_n"), index=True
+    )
     user_pk = db.Column(db.Integer, db.ForeignKey("users.pk"), index=True)
-    home_player_pk = db.Column(db.Integer, db.ForeignKey("players.pk_n"), nullable=True, index=True)
-    away_player_pk = db.Column(db.Integer, db.ForeignKey("players.pk_n"), nullable=True, index=True)
+    home_player_pk = db.Column(
+        db.Integer, db.ForeignKey("players.pk_n"), nullable=True, index=True
+    )
+    away_player_pk = db.Column(
+        db.Integer, db.ForeignKey("players.pk_n"), nullable=True, index=True
+    )
     season_n = db.Column(db.Integer, default=0, index=True)
     day_n = db.Column(db.Integer, default=0, index=True)
+
+    # TODO(montreal91) Remove this redundant comumn.
     context_json = db.Column(db.Text)
     status_en = db.Column(
         postgresql.ENUM(
@@ -72,7 +93,9 @@ class DdMatch(db.Model):
         default=DdMatchStatuses.planned,
     )
 
-    playoff_series_pk = db.Column(db.Integer, db.ForeignKey("playoff_series.pk"))
+    playoff_series_pk = db.Column(
+        db.Integer, db.ForeignKey("playoff_series.pk")
+    )
 
     home_sets_n = db.Column(db.Integer, default=0)
     away_sets_n = db.Column(db.Integer, default=0)
@@ -86,12 +109,13 @@ class DdMatch(db.Model):
     away_player = db.relationship("DdPlayer", foreign_keys=[away_player_pk])
 
     @property
-    def context(self):
-        return json.loads(self.context_json)
-
-    @context.setter
-    def context(self, value):
-        self.context_json = str(json.dumps(value))
+    def winner_pk(self) -> Optional[int]:
+        """If match is finished, returns a pk of the winner."""
+        if self.status_en != DdMatchStatuses.finished:
+            return None
+        if self.home_sets_n > self.away_sets_n:
+            return self.home_team_pk
+        return self.away_team_pk
 
     def SetAbortedStatus(self):
         self.status_en = DdMatchStatuses.aborted
@@ -112,13 +136,13 @@ class DdMatch(db.Model):
 
 class DdDaoMatch(object):
     def CreateNewMatch(
-        self,
-        user_pk=0,
-        season=0,
-        day=0,
-        home_team_pk=0,
-        away_team_pk=0,
-    ):
+            self,
+            user_pk=0,
+            season=0,
+            day=0,
+            home_team_pk=0,
+            away_team_pk=0,
+    ) -> DdMatch:
         match = DdMatch()
         match.home_team_pk = home_team_pk
         match.away_team_pk = away_team_pk
@@ -137,7 +161,9 @@ class DdDaoMatch(object):
         match.SetPlannedStatus()
         return match
 
-    def CreateNewMatchForSeries(self, series=None, day=0, top_home=True):
+    def CreateNewMatchForSeries(
+            self, series=None, day=0, top_home=True
+        ) -> DdMatch:
         match = DdMatch()
         if top_home:
             match.home_team_pk = series.top_seed_pk
@@ -203,10 +229,10 @@ class DdDaoMatch(object):
 
     def GetDivisionStandings(self, user_pk=0, season=0, division=0):
         table = db.engine.execute(
-            STANDINGS_FOR_DIVISION_SQL.format(
-                season,
-                user_pk,
-                division
+            text(STANDINGS_FOR_DIVISION_SQL).params(
+                season=season,
+                user=user_pk,
+                division=division,
             )
         ).fetchall()
         return [
@@ -219,13 +245,17 @@ class DdDaoMatch(object):
             )
             for row in table
         ]
+
+    def GetLastMatchDay(self, user: DdUser) -> int:
+        """Returns last day in season for given user."""
+        query_res = db.engine.execute(text(MAX_DAY_IN_SEASON_SQL).params(
+            user=user.pk, season=user.current_season_n
+        )).first()
+        return query_res[0]
 
     def GetLeagueStandings(self, user_pk=0, season=0):
         table = db.engine.execute(
-            STANDINGS_SQL.format(
-                season,
-                user_pk
-            )
+            text(STANDINGS_SQL).params(season=season, user=user_pk)
         ).fetchall()
         return [
             DdStandingsRowSnapshot(
@@ -238,18 +268,17 @@ class DdDaoMatch(object):
             for row in table
         ]
 
-    def GetRecentStandings(self, user):
-        table = db.engine.execute(
-            STANDINGS_SQL.format(
-                user.current_season_n,
-                user.pk
-            )
-        ).fetchall()
+    def GetRecentStandings(self, user: DdUser):
+        table = db.engine.execute(text(STANDINGS_SQL).params(
+            season=user.current_season_n, user=user.pk
+        )).fetchall()
         return [row[0] for row in reversed(table)]
 
 
-    def GetNumberOfFinishedMatches(self):
-        return DdMatch.query.filter_by(status_en=DdMatchStatuses.finished).count()
+    def GetNumberOfFinishedMatches(self) -> int:
+        return DdMatch.query.filter_by(
+            status_en=DdMatchStatuses.finished
+        ).count()
 
     def GetTodayMatches(self, user):
         return DdMatch.query.filter(
@@ -261,14 +290,14 @@ class DdDaoMatch(object):
             )
         ).all()
 
-    def SaveMatch(self, match=None):
+    def SaveMatch(self, match: DdMatch):
         db.session.add(match)
         db.session.commit()
 
-    def SaveMatches(self, matches=[]):
+    def SaveMatches(self, matches: List[DdMatch]):
         db.session.add_all(matches)
         db.session.commit()
 
 
-def MatchChronologicalComparator(match):
+def MatchChronologicalComparator(match: DdMatch) -> DdMatch:
     return match.day_n

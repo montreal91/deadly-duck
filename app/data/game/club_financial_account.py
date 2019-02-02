@@ -41,6 +41,6 @@ class DdDaoClubFinancialAccount(object):
         db.session.add(account)
         db.session.commit()
 
-    def SaveAccounts(self, accounts=[]):
+    def SaveAccounts(self, accounts):
         db.session.add_all(accounts)
         db.session.commit()

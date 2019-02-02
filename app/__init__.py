@@ -34,9 +34,9 @@ def CreateApp(config_name):
         datefmt="%d.%m.%Y %H:%M:%S"
     )
     app = Flask(__name__)
-    app.config.from_object(config[ config_name ])
+    app.config.from_object(config[config_name])
     app.config["OAUTH_CREDENTIALS"] = DdConfig.GetOauthCredentials()
-    config[ config_name ].InitApp(app)
+    config[config_name].InitApp(app)
 
     bootstrap.init_app(app)
     mail.init_app(app)

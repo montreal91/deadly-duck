@@ -11,6 +11,10 @@ import json
 
 import requests
 
+from typing import Any
+from typing import Dict
+from typing import Optional
+
 from flask import current_app
 from flask import redirect
 from flask import request
@@ -19,8 +23,8 @@ from flask import url_for
 from rauth import OAuth2Service
 
 
-class DdOAuthSignIn(object):
-    providers = None
+class DdOAuthSignIn:
+    providers: Optional[Dict[str, Any]] = None
 
     def __init__(self, provider_name: str) -> None:
         self.provider_name = provider_name
@@ -105,10 +109,10 @@ class DdGoogleSignIn(DdOAuthSignIn):
         ).json()
 
         return (
-            "google${}".format(me["id"] ),
+            "google${}".format(me["id"]),
             "{initial}{family_name}".format(
-                initial=me.get("given_name" )[0].lower(),
-                family_name=me.get("family_name" ).lower()
+                initial=me.get("given_name")[0].lower(),
+                family_name=me.get("family_name").lower()
             ),
             None
         )
@@ -148,11 +152,11 @@ class DdVkSignIn(DdOAuthSignIn):
         }
         me = requests.get(
             self.service.access_token_url,
-            cookies=dict(request.cookies ),
+            cookies=dict(request.cookies),
             params=payload
         ).json()
         return (
-            "vk${0:d}".format(me["user_id"] ),
-            me.get("email" ).split("@" )[0],
-            me.get("email" )
+            "vk${0:d}".format(me["user_id"]),
+            me.get("email").split("@")[0],
+            me.get("email")
         )
