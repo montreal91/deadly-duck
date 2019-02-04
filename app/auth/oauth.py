@@ -1,6 +1,5 @@
 
-"""
-This file contains OAuth-related middleware.
+"""This file contains OAuth-related middleware.
 
 Created on Aug 25, 2018
 
