@@ -3,24 +3,10 @@ from unittest import TestCase
 
 from flask import current_app
 
-from app import CreateApp
-from app import db
+from flask_test_base import FlaskBaseTestCase
 
 
-class BasicsTestCase(TestCase):
-    def setUp(self):
-        self.app = CreateApp("testing")
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        db.create_all()
-
-
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
-
-
+class BasicsTestCase(FlaskBaseTestCase):
     def test_app_exists(self):
         self.assertFalse(current_app is None)
 

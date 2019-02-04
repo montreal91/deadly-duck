@@ -5,3 +5,6 @@ Created on Jun 26, 2017
 
 File contains all application-specific exceptions.
 '''
+
+class BadUserInputException(Exception):
+    """Exception thrown with user input."""

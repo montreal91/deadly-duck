@@ -1,5 +1,6 @@
 
-"""
+"""Crunching gameplay numbers.
+
 Created on on 13 Sep 2018
 
 @author: montreal91
@@ -15,6 +16,8 @@ from configuration.config_game import DdGameplayConstants
 
 
 class RegularTournamentTestCase(TestCase):
+    """Test case class for crunching gameplay numbers."""
+
     def setUp(self):
         self._club1 = []
         self._club2 = []
@@ -41,6 +44,7 @@ class RegularTournamentTestCase(TestCase):
             self._club2.append(p2)
 
     def test_default(self):
+        """Test tournament without exhaustion."""
         print()
         self._run_one_season(
             matches_to_play=44,
@@ -58,6 +62,7 @@ class RegularTournamentTestCase(TestCase):
             self._print_player(player)
 
     def test_exhausted(self):
+        """Test tournament with exhaustion."""
         print()
 
         self._run_one_season(
@@ -109,11 +114,11 @@ class RegularTournamentTestCase(TestCase):
             player.RecoverStamina(recover_function(player))
 
     def _run_one_season(
-        self,
-        matches_to_play: int,
-        recovery_day: int,
-        exhaustion_per_set,
-        recovery_function,
+            self,
+            matches_to_play: int,
+            recovery_day: int,
+            exhaustion_per_set,
+            recovery_function,
     ):
         day = 0
 
@@ -170,6 +175,7 @@ class RegularTournamentTestCase(TestCase):
 
 def current_recovery(player: DdPlayer) -> int:
     return DdGameplayConstants.STAMINA_RECOVERY_PER_DAY.value
+
 
 def exhausted_recovery(player: DdPlayer) -> int:
     base = player.max_stamina
