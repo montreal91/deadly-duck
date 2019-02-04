@@ -11,49 +11,25 @@ from app.custom_queries import SERIES_IN_ONE_ROUND_IN_ONE_DIVISION_SQL
 from configuration.config_game import DdLeagueConfig
 
 
-class DdPlayoffSeriesStatuses:
-    PLANNED = 0
-    IN_PROGRESS = 1
-    FINISHED = 2
-
-
 class DdPlayoffSeries(db.Model):
     __tablename__ = "playoff_series"
-    pk = db.Column(db.Integer, primary_key=True, index=True)
-    top_seed_pk = db.Column(db.ForeignKey("clubs.club_id_n"), index=True)
-    low_seed_pk = db.Column(db.ForeignKey("clubs.club_id_n"), index=True)
-    user_pk = db.Column(db.ForeignKey("users.pk"), index=True)
+    pk = db.Column(db.Integer, primary_key=True)
+    top_seed_pk = db.Column(db.ForeignKey("clubs.pk"))
+    low_seed_pk = db.Column(db.ForeignKey("clubs.pk"))
+    career_pk = db.Column(
+        db.ForeignKey("careers.pk"), index=True, nullable=False
+    )
 
-    #TODO(montreal91): Remove these two fields because they are redundant
-    top_seed_victories_n = db.Column(db.Integer, default=0, nullable=False)
-    low_seed_victories_n = db.Column(db.Integer, default=0, nullable=False)
-
-    season_n = db.Column(db.Integer, default=0, nullable=False, index=True)
-    round_n = db.Column(db.Integer, default=0, nullable=False, index=True)
+    season_n = db.Column(db.Integer, default=0, nullable=False)
+    round_n = db.Column(db.Integer, default=0, nullable=False)
     is_finished = db.Column(db.Boolean, default=False, nullable=False)
 
-    matches = db.relationship("DdMatch", backref="playoff_series")
+    # matches = db.relationship("DdMatch", backref="playoff_series")
 
     top_seed = db.relationship("DdClub", foreign_keys=[top_seed_pk])
     low_seed = db.relationship("DdClub", foreign_keys=[low_seed_pk])
 
-    @property
-    def dictionary(self):
-        top_seed = {
-            "club_name": self.top_seed.club_name_c,
-            "matches": self.top_seed_victories_n,
-        }
-
-        low_seed = {
-            "club_name": self.low_seed.club_name_c,
-            "matches": self.low_seed_victories_n,
-        }
-        return {
-            "top_seed": top_seed,
-            "low_seed": low_seed,
-            "pk": self.pk,
-            "url": url_for("game.PlayoffSeriesDetails", series_pk=self.pk)
-        }
+    max_matches_n = db.Column(db.Integer, default=7)
 
     def GetLowSeedMatchesWon(self, sets_to_win=0):
         return sum(
@@ -118,10 +94,11 @@ class DdPlayoffSeries(db.Model):
         )
 
 class DdDaoPlayoffSeries(object):
-    def CreatePlayoffSeries(self, top_seed_pk=0, low_seed_pk=0, round_n=0, user=None):
-        """
-        Creates new playoff series.
-        Does not save it in the db.
+    def CreatePlayoffSeries(
+            self, top_seed_pk=0, low_seed_pk=0, round_n=0, user=None
+    ):
+        """Creates new playoff series. Does not save it in the db.
+
         Returns created series.
         """
         series = DdPlayoffSeries()
@@ -183,18 +160,3 @@ class DdDaoPlayoffSeries(object):
             )
         ).all()
         return div1, div2
-
-    def SavePlayoffSeries(self, pos=None):
-        pos.is_finished = pos.IsFinished(
-            matches_to_win=DdLeagueConfig.MATCHES_TO_WIN,
-        )
-        db.session.add(pos)
-        db.session.commit()
-
-    def SavePlayoffSeriesList(self, series_list=[]):
-        for srs in series_list:
-            srs.is_finished = srs.IsFinished(
-                matches_to_win=DdLeagueConfig.MATCHES_TO_WIN,
-            )
-        db.session.add_all(series_list)
-        db.session.commit()

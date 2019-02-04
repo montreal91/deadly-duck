@@ -45,7 +45,7 @@ ORDER BY skills.current_maximum_n DESC
 
 # Valid as long as only one league exists
 CLUB_PKS_SQL = """
-SELECT  club_id_n
+SELECT  pk
 FROM    clubs
 """
 

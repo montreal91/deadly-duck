@@ -8,8 +8,8 @@ from app import CreateApp
 from app import db
 from app import cache
 from app.data.models import DdPost
+from app.data.game.career import DdCareer
 from app.data.game.club import DdClub
-from app.data.game.club_record import DdClubRecord
 from app.data.game.game_service import DdGameService
 from app.data.game.match import DdMatch
 from app.data.game.player import DdPlayer

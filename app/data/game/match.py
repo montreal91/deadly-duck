@@ -63,25 +63,22 @@ DdStandingsRowSnapshot = namedtuple(
 class DdMatch(db.Model):
     """Database model for one tennis match."""
     __tablename__ = "matches"
-    match_pk_n = db.Column(db.Integer, primary_key=True, index=True)
-    home_team_pk = db.Column(
-        db.Integer, db.ForeignKey("clubs.club_id_n"), index=True
+    pk = db.Column(db.Integer, primary_key=True)
+    home_team_pk = db.Column(db.Integer, db.ForeignKey("clubs.pk"))
+    away_team_pk = db.Column(db.Integer, db.ForeignKey("clubs.pk"))
+    career_pk = db.Column(
+        db.Integer, db.ForeignKey("careers.pk"), index=True, nullable=False
     )
-    away_team_pk = db.Column(
-        db.Integer, db.ForeignKey("clubs.club_id_n"), index=True
-    )
-    user_pk = db.Column(db.Integer, db.ForeignKey("users.pk"), index=True)
+
     home_player_pk = db.Column(
-        db.Integer, db.ForeignKey("players.pk_n"), nullable=True, index=True
+        db.Integer, db.ForeignKey("players.pk"), nullable=True,
     )
     away_player_pk = db.Column(
-        db.Integer, db.ForeignKey("players.pk_n"), nullable=True, index=True
+        db.Integer, db.ForeignKey("players.pk"), nullable=True,
     )
-    season_n = db.Column(db.Integer, default=0, index=True)
-    day_n = db.Column(db.Integer, default=0, index=True)
+    season_n = db.Column(db.Integer, default=0)
+    day_n = db.Column(db.Integer, default=0)
 
-    # TODO(montreal91) Remove this redundant comumn.
-    context_json = db.Column(db.Text)
     status_en = db.Column(
         postgresql.ENUM(
             DdMatchStatuses.planned,
@@ -95,6 +92,9 @@ class DdMatch(db.Model):
 
     playoff_series_pk = db.Column(
         db.Integer, db.ForeignKey("playoff_series.pk")
+    )
+    playoff_series = db.relationship(
+        "DdPlayoffSeries", foreign_keys=[playoff_series_pk], backref="matches"
     )
 
     home_sets_n = db.Column(db.Integer, default=0)

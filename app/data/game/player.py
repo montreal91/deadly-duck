@@ -19,7 +19,7 @@ from configuration.config_game import DdPlayerSkills
 
 class DdPlayer(db.Model):
     __tablename__ = "players"
-    pk_n = db.Column(db.Integer, primary_key=True)
+    pk = db.Column(db.Integer, primary_key=True)
     first_name_c = db.Column(db.String(64), nullable=False)
     second_name_c = db.Column(db.String(64))
     last_name_c = db.Column(db.String(64), nullable=False)
@@ -33,10 +33,9 @@ class DdPlayer(db.Model):
     age_n = db.Column(db.Integer, default=20)
     is_active = db.Column(db.Boolean, default=True)
 
-    user_pk = db.Column(db.Integer, db.ForeignKey("users.pk"))
-    club_pk = db.Column(db.Integer, db.ForeignKey("clubs.club_id_n"))
+    career_pk = db.Column(db.Integer, db.ForeignKey("careers.pk"))
 
-    user = db.relationship("DdUser", foreign_keys=[user_pk], lazy="subquery")
+    club_pk = db.Column(db.Integer, db.ForeignKey("clubs.pk"))
     club = db.relationship("DdClub", foreign_keys=[club_pk], lazy="subquery")
 
     @property
@@ -164,19 +163,17 @@ class DdPlayer(db.Model):
 
 
 class DdDaoPlayer(object):
-    """
-    Data Access Object for DdPlayer class
-    """
+    """Data Access Object for DdPlayer class."""
     def CreatePlayer(
-        self,
-        first_name="",
-        second_name="",
-        last_name="",
-        user_pk=0,
-        club_pk=None,
-        endurance=50,
-        technique=50,
-        age=10,
+            self,
+            first_name="",
+            second_name="",
+            last_name="",
+            user_pk=0,
+            club_pk=None,
+            endurance=50,
+            technique=50,
+            age=10,
     ):
         player = DdPlayer()
         player.first_name_c = first_name
@@ -252,25 +249,6 @@ class DdDaoPlayer(object):
                 away_team_pk=None
             ) for res in query_res
         ]
-
-    def SavePlayer(self, player):
-        db.session.add(player)
-        db.session.commit()
-
-    def SavePlayers(self, players):
-        db.session.add_all(players)
-        db.session.commit()
-
-    def SaveRosters(self, rosters):
-        players = []
-        for club_pk in rosters:
-            for plr in rosters[club_pk]:
-                player = DdPlayer.query.get(plr.pk)
-                player.club_pk = club_pk
-                player.is_drafted = True
-                players.append(player)
-        db.session.add_all(players)
-        db.session.commit()
 
 
 def PlayerModelComparator(player_model):

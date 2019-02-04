@@ -32,13 +32,8 @@ class DdUser(UserMixin, db.Model):
     avatar_hash = db.Column(db.String(32))
     posts = db.relationship("DdPost", backref="author", lazy="dynamic")
 
-    managed_club_pk = db.Column(db.Integer, db.ForeignKey("clubs.club_id_n"))
-    current_season_n = db.Column(db.Integer, default=1)
-    current_day_n = db.Column(db.Integer, default=0)
-
-
     def __init__(self, **kwargs):
-        super(DdUser, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         if self.role is None:
             if self.email == current_app.config["FLASKY_ADMIN"]:
                 self.role = DdRole.query.filter_by(permissions=0xff).first()

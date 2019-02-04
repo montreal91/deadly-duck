@@ -7,25 +7,14 @@ Created on Nov 29, 2016
 
 @author: montreal91
 """
-import logging
-
-from decimal import Decimal
 from random import choice
-from random import randint
 from typing import List
 
 from sqlalchemy import text
 
-from app import db
-from app import cache
+from app import db   # This import creates circular dependencies.
 from app.custom_queries import GLOBAL_USER_RATING_SQL
-from app.data.game.cache_keys import DdGameCacheKeys
 from app.data.game.club import DdDaoClub
-from app.data.game.club_financial_account import DdClubFinancialAccount
-from app.data.game.club_financial_account import DdDaoClubFinancialAccount
-from app.data.game.club_record import DdDaoClubRecord
-from app.data.game.club_record import PlayoffRecordComparator
-from app.data.game.club_record import RegularRecordComparator
 from app.data.game.match import DdDaoMatch
 from app.data.game.match import DdMatchStatuses
 from app.data.game.player import DdDaoPlayer
@@ -33,17 +22,12 @@ from app.data.game.player import DdPlayer
 from app.data.game.playoff_series import DdDaoPlayoffSeries
 from app.data.game.playoff_series import DdPlayoffSeries
 from app.data.main.user import DdUser
-
 from configuration.config_game import DdGameplayConstants
 from configuration.config_game import DdLeagueConfig
 from configuration.config_game import DdRatingsParamerers
-from configuration.config_game import DdTrainingTypes
-from configuration.config_game import club_names
-from configuration.config_game import INTENSIVITY_PERCENTAGES
-from app.data.game.training_session import DdTrainingSession
 
 
-class DdGameService(object):
+class DdGameService:
     """One class to rule them all. Or to incapsulate game logic indeed.
 
     Everything related to game logic have to reside here.
@@ -51,14 +35,9 @@ class DdGameService(object):
     """
     def __init__(self):
         self._dao_club = DdDaoClub()
-        self._dao_club_financial_account = DdDaoClubFinancialAccount()
-        self._dao_club_record = DdDaoClubRecord()
         self._dao_match = DdDaoMatch()
         self._dao_player = DdDaoPlayer()
         self._dao_playoff_series = DdDaoPlayoffSeries()
-
-    def AddFunds(self, user_pk=0, club_pk=0, funds=0.0):
-        self._dao_club_financial_account.AddFunds(user_pk, club_pk, funds)
 
     def AgeUpAllActivePlayers(self, user_pk):
         players = self._dao_player.GetAllActivePlayers(user_pk)
@@ -66,7 +45,7 @@ class DdGameService(object):
             player.AgeUp()
         self._dao_player.SavePlayers(players)
 
-    def CreateInitialPlayersForUser(self, user_pk: int):
+    def CreateInitialPlayersForUser(self, user_pk: int) -> List[DdPlayer]:
         """Creates default set of users at the beginning of the career."""
         first_names, last_names = DdPlayer.GetNames()
         clubs = self._dao_club.GetAllClubs()
@@ -85,8 +64,7 @@ class DdGameService(object):
                     age=DdGameplayConstants.STARTING_AGE.value + i
                 )
                 players.append(player)
-        self.SavePlayers(players)
-
+        return players
 
     def CreateNewMatch(
             self,
@@ -163,17 +141,6 @@ class DdGameService(object):
             first_day=user.current_day_n + DdLeagueConfig.GAP_DAYS
         )
 
-    def CreateStartingAccounts(self, user):
-        accounts = []
-        clubs = self._dao_club.GetAllClubs()
-        for club in clubs:
-            acc = DdClubFinancialAccount()
-            acc.club_pk = club.club_id_n
-            acc.user_pk = user.pk
-            acc.money_nn = 500.0
-            accounts.append(acc)
-        self._dao_club_financial_account.SaveAccounts(accounts=accounts)
-
     def DoesUserNeedToSelectPlayer(
             self, user: DdUser, selected_player: int
     ) -> bool:
@@ -196,34 +163,11 @@ class DdGameService(object):
     def GetAllPlayoffSeries(self, user_pk, season):
         return self._dao_playoff_series.GetAllPlayoffSeries(user_pk, season)
 
-    def GetBestClubRecord(self, user=None, club_pk=0):
-        playoff_records = self._dao_club_record.GetPlayoffRecords(
-            club_pk=club_pk,
-            user=user
-        )
-        if len(playoff_records) != 0:
-            return max(playoff_records, key=PlayoffRecordComparator)
-
-        regular_records = self._dao_club_record.GetRegularRecords(
-            club_pk=club_pk,
-            user=user
-        )
-        if len(regular_records) != 0:
-            return max(regular_records, key=RegularRecordComparator)
-        else:
-            return None
-
     def GetClubPlayers(self, user_pk=0, club_pk=0):
         return self._dao_player.GetClubPlayers(user_pk=user_pk, club_pk=club_pk)
 
     def GetClubPlayersPks(self, user_pk=0, club_pk=0):
         return self._dao_player.GetClubPlayersPks(user_pk, club_pk)
-
-    def GetClubRecordsForUser(self, club_pk=0, user=None):
-        return self._dao_club_record.GetClubRecordsForUser(
-            club_pk=club_pk,
-            user=user
-        )
 
     def GetCurrentMatch(self, user):
         return self._dao_match.GetCurrentMatch(user)
@@ -236,11 +180,6 @@ class DdGameService(object):
             user_pk=user_pk,
             season=season,
             division=division
-        )
-
-    def GetFinancialAccount(self, user_pk=0, club_pk=0):
-        return self._dao_club_financial_account.GetFinancialAccount(
-            user_pk, club_pk
         )
 
     def GetFreeAgents(self, user_pk):
@@ -371,41 +310,6 @@ class DdGameService(object):
             )
         self.SavePlayers(players_to_update)
 
-    def ProcessTrainingSession(self, user_pk: int) -> None:
-        """
-        Processes training sessions for players, which user decided to train.
-        NOTE: Saves changes to database.
-        :param user_pk:
-        """
-        key = DdGameCacheKeys.TRAINING_SESSION.value.format(user_pk=user_pk)
-        training_session = cache.Get(key)
-        if training_session is None:
-            return
-
-        players_to_update = []
-        t_sessions = training_session.training_sessions
-        for player_pk in t_sessions:
-            player = self.GetPlayer(player_pk)
-            self._ProcessTrainingSessionForPlayer(
-                player=player,
-                session=t_sessions[player_pk]
-            )
-            players_to_update.append(player)
-        self.SavePlayers(players_to_update)
-        cache.DeleteKey(key)
-
-
-    def SaveAccount(self, account):
-        self._dao_club_financial_account.SaveAccount(account)
-
-    def SaveClubRecords(self, user=None):
-        clubs = self._dao_club.GetAllClubs()
-        records = []
-        for club in clubs:
-            rec = self._MakeClubRecord(club_pk=club.club_id_n, user=user)
-            records.append(rec)
-        self._dao_club_record.SaveClubRecords(club_records=records)
-
     def SaveMatch(self, match=None):
         self._dao_match.SaveMatch(match=match)
 
@@ -462,19 +366,6 @@ class DdGameService(object):
     def SaveRosters(self, rosters):
         self._dao_player.SaveRosters(rosters)
 
-
-    def SetPlayerForTraining(self, user_pk, player_pk, training_type, training_intensity):
-        key = DdGameCacheKeys.TRAINING_SESSION.value.format(user_pk=user_pk)
-        training_session = cache.Get(key)
-        if training_session is None:
-            training_session = DdTrainingSession()
-        training_session.AddPlayerTraining(
-            player_pk,
-            training_type,
-            training_intensity
-        )
-        cache.SetKey(key=key, value=training_session)
-
     def StartNextSeason(self, user_pk):
         players = self._dao_player.GetAllActivePlayers(user_pk=user_pk)
         for player in players:
@@ -492,42 +383,8 @@ class DdGameService(object):
             players += new_players
         self.SavePlayers(players=players)
 
-    def UpdateAccountsAfterMatch(self, matches: List):
-        accounts = []
-        for match in matches:
-            home_account = self._dao_club_financial_account.GetFinancialAccount(
-                match.user_pk,
-                match.home_team_pk
-            )
-            money = self._MatchIncome(match.home_sets_n) - match.home_player.match_salary
-            home_account.money_nn += Decimal(money)
-            accounts.append(home_account)
-
-            away_account = self._dao_club_financial_account.GetFinancialAccount(
-                match.user_pk,
-                match.away_team_pk
-            )
-            money = self._MatchIncome(match.away_sets_n) - match.away_player.match_salary
-            away_account.money_nn += Decimal(money)
-            accounts.append(away_account)
-        self._dao_club_financial_account.SaveAccounts(accounts)
-
-    def UpdateAccountsDaily(self, user):
-        clubs = self._dao_club.GetAllClubs()
-        accounts = []
-        for club in clubs:
-            account = self._dao_club_financial_account.GetFinancialAccount(
-                user_pk=user.pk,
-                club_pk=club.club_id_n
-            )
-            club_players = self._dao_player.GetClubPlayers(
-                user_pk=user.pk,
-                club_pk=club.club_id_n
-            )
-            pay = sum(plr.passive_salary for plr in club_players)
-            account.money_nn -= Decimal(pay)
-            accounts.append(account)
-        self._dao_club_financial_account.SaveAccounts(accounts=accounts)
+    def StartNewCareer(self, user_pk: int, managed_club_pk: int):
+        pass
 
     def _CreateMatchesForSeriesList(self, series_list: List, first_day: int):
         new_matches = []
@@ -569,40 +426,10 @@ class DdGameService(object):
         div2standings = div2standings[:DdLeagueConfig.DIV_CLUBS_IN_PLAYOFFS]
         return div1standings, div2standings
 
-    def _MakeClubRecord(self, club_pk=0, user=None):
-        logging.debug(
-            "Making club record for club {club_pk:d} of user {user_pk:d}".format(
-                club_pk=club_pk,
-                user_pk=user.pk
-            )
-        )
-        standings = self._dao_match.GetLeagueStandings(
-            user_pk=user.pk,
-            season=user.current_season_n
-        )
-
-        club_record = [rec for rec in standings if rec.club_pk == club_pk]
-        if len(club_record) != 1:
-            raise ValueError("Standings data is incorrect")
-
-        club_record = club_record[0]
-        club_position = standings.index(club_record) + 1
-        club_points = club_record.sets_won
-        final_playoff_series = self._dao_playoff_series.GetFinalPlayoffSeriesForClubInSeason(
-            club_pk=club_pk,
-            user=user
-        )
-        return self._dao_club_record.CreateClubRecord(
-            club_pk=club_pk,
-            position=club_position,
-            points=club_points,
-            user=user,
-            playoff_series=final_playoff_series
-        )
-
     def _MatchIncome(self, sets=0):
-        """
-        Placeholder function
+        """Placeholder function.
+
+        Financial side of the game is yet to be developed.
         """
         if sets == 2:
             return 1000

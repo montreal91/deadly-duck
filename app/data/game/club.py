@@ -1,4 +1,6 @@
 
+from typing import List
+
 from sqlalchemy import text
 
 from app import db
@@ -8,7 +10,7 @@ from configuration.config_game import club_names
 
 class DdClub(db.Model):
     __tablename__ = "clubs"
-    club_id_n = db.Column(db.Integer, primary_key=True)
+    pk = db.Column(db.Integer, primary_key=True)
     club_name_c = db.Column(db.String(64))
     division_n = db.Column(db.Integer)
 
@@ -26,9 +28,9 @@ class DdDaoClub(object):
     def GetClub(self, club_pk):
         return DdClub.query.get_or_404(club_pk)
 
-    def GetListOfClubPrimaryKeys(self):
+    def GetListOfClubPrimaryKeys(self) -> List[int]:
         qres = db.engine.execute(text(CLUB_PKS_SQL)).fetchall()
-        return [row["club_id_n"] for row in qres]
+        return tuple(row['pk'] for row in qres)
 
     def InsertClubs(self):
         new_clubs = []

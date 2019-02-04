@@ -28,6 +28,9 @@
       <ul class="nav navbar-nav">
         <li><a href="{{ url_for('main.Index') }}">Home</a></li>
         {% if current_user.is_authenticated %}
+        <li><a href="{{url_for('game.TitleScreen')}}">
+          Game
+        </a></li>
         <li><a href="{{ url_for('main.User', username=current_user.username) }}">Profile</a></li>
         <li>
           <a href="{{ url_for('main.Friends') }}">

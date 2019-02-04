@@ -16,9 +16,9 @@
     {% endif %}
   </h1>
 </div>
-  
+
 <div class="col-md-8">
-  
+
 {% if current_user.is_authenticated %}
   <p>
     Welcome to the Deadly Duck, the browser-based tennis club manager.<br>
@@ -37,11 +37,10 @@
   <hr>
 </div>
 <div class="col-md-4">
-  {% if current_user.managed_club_pk %}
-    <a href="{{ url_for('game.MainScreen')}}" class="btn btn-default btn-block btn-lg" role="button">Continue Career</a>
-  {% else %}
-    <a href="{{ url_for('game.StartNewCareer') }}" class="btn btn-default btn-block btn-lg" role="button">Start New Career</a>
-  {% endif %}
+  <a href="{{ url_for('game.TitleScreen')}}"
+  class="btn btn-default btn-block btn-lg" role="button">
+    Play
+  </a>
 </div>
 
 {% else %}
