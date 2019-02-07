@@ -11,6 +11,9 @@ from typing import List
 
 from app import db
 
+def AbortChanges():
+    """Rolls back the current session."""
+    db.session.rollback()
 
 def SaveObject(obj: Any):
     """Saves one object within one transaction."""

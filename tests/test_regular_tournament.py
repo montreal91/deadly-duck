@@ -87,7 +87,7 @@ class RegularTournamentTestCase(TestCase):
             "Age:{age:2d}| "
             "Tech: {tech:3d}| "
             "Endr: {endr:3d}| "
-            "Exh: {exh:2d}| "
+            "Exh: {exh:3d}| "
             "Exp: {exp:4d}| "
             "Match: {match:2d}| "
             "Sets: {sets:2d}| "
@@ -143,9 +143,7 @@ class RegularTournamentTestCase(TestCase):
 
 
             p1.AddExperience(home_experience)
-            p1.LevelUpAuto()
             p2.AddExperience(away_experience)
-            p2.LevelUpAuto()
 
             p1.RemoveStaminaLostInMatch(res.home_stamina_lost)
             p2.RemoveStaminaLostInMatch(res.away_stamina_lost)

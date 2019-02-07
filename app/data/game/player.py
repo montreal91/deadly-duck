@@ -5,6 +5,8 @@ import math
 from decimal import Decimal
 from random import randint
 from typing import Dict
+from typing import List
+from typing import Tuple
 
 from sqlalchemy import and_
 from sqlalchemy import text
@@ -18,6 +20,10 @@ from configuration.config_game import DdPlayerSkills
 
 
 class DdPlayer(db.Model):
+    """Model that stores all player-related data in the database.
+
+    Also contains all direct player-related logic.
+    """
     __tablename__ = "players"
     pk = db.Column(db.Integer, primary_key=True)
     first_name_c = db.Column(db.String(64), nullable=False)
@@ -39,7 +45,7 @@ class DdPlayer(db.Model):
     club = db.relationship("DdClub", foreign_keys=[club_pk], lazy="subquery")
 
     @property
-    def actual_technique(self):
+    def actual_technique(self) -> float:
         stamina_factor = self.current_stamina_n / self.max_stamina
         return round(self.technique_n * stamina_factor / 10, 1)
 
@@ -68,17 +74,17 @@ class DdPlayer(db.Model):
 
 
     @property
-    def level(self):
-        skill_points = self.technique_n + self.endurance_n
-        skill_points -= DdGameplayConstants.SKILL_BASE.value * 2
-        return int(skill_points / DdGameplayConstants.SKILL_GROWTH_PER_LEVEL.value)
+    def level(self) -> int:
+        """Current level of the player."""
+        level = 0
+        while _LevelExp(level) < self.experience_n:
+            level += 1
+        return level - 1
 
     # 'exp' stands for experience
     @property
     def next_level_exp(self):
-        next_level = self.level + 1
-        lvl_sum = next_level / 2 * (next_level + 1)
-        return int(lvl_sum * DdGameplayConstants.LEVEL_EXPERIENCE_COEFFICIENT.value)
+        return _LevelExp(self.level + 1)
 
     @property
     def match_salary(self):
@@ -104,8 +110,23 @@ class DdPlayer(db.Model):
     def technique(self):
         return self.technique_n / 10
 
-    def AddExperience(self, experience):
+    def AddExperience(self, experience: int):
+        """Adds new experience.
+
+        If necessary, levels up player.
+        """
+        old_level = self.level
         self.experience_n += experience
+        new_level = self.level
+
+        skill_delta = DdGameplayConstants.SKILL_GROWTH_PER_LEVEL.value
+        while old_level < new_level:
+            old_level += 1
+            toss = randint(0, 1)
+            if toss:
+                self.technique_n += skill_delta
+            else:
+                self.endurance_n += skill_delta
 
     def AfterSeasonRest(self):
         self.exhaustion_n = 0
@@ -115,15 +136,6 @@ class DdPlayer(db.Model):
         self.age_n += 1
         if self.age_n >= DdGameplayConstants.RETIREMENT_AGE.value:
             self.is_active = False
-
-
-    def LevelUpAuto(self):
-        while self.experience_n >= self.next_level_exp:
-            toss = randint(0, 1)
-            if toss:
-                self.technique_n += DdGameplayConstants.SKILL_GROWTH_PER_LEVEL.value
-            else:
-                self.endurance_n += DdGameplayConstants.SKILL_GROWTH_PER_LEVEL.value
 
     def RecoverStamina(self, recovered_stamina=0):
         self.current_stamina_n += recovered_stamina
@@ -147,12 +159,6 @@ class DdPlayer(db.Model):
     def CalculateSalary(skill=0, age=0):
         return 100
 
-    @staticmethod
-    def GetNames():
-        with open("configuration/names.json") as datafile:
-            all_names = json.load(datafile)
-        return all_names["names"], all_names["surnames"]
-
     def __repr__(self):
         return "<Player {0:d} {1}. {2}. {3}>".format(
             self.pk_n,
@@ -162,10 +168,21 @@ class DdPlayer(db.Model):
         )
 
 
-class DdDaoPlayer(object):
+class DdDaoPlayer:
     """Data Access Object for DdPlayer class."""
+    def __init__(self):
+        self._first_names = None
+        self._last_names = None
+
+    @property
+    def names(self) -> Tuple[List[str], List[str]]:
+        """Couple of lists of strings for first and last names."""
+        if self._first_names is None:
+            self._first_names, self._last_names = _LoadNames()
+        return self._first_names, self._last_names
+
+    @staticmethod
     def CreatePlayer(
-            self,
             first_name="",
             second_name="",
             last_name="",
@@ -174,7 +191,7 @@ class DdDaoPlayer(object):
             endurance=50,
             technique=50,
             age=10,
-    ):
+    ) -> DdPlayer:
         player = DdPlayer()
         player.first_name_c = first_name
         player.second_name_c = second_name
@@ -186,6 +203,25 @@ class DdDaoPlayer(object):
         player.current_stamina_n = endurance
         player.age_n = age
         return player
+
+    def CreateInitialClubPlayers(
+            self, career_pk: int, club_pk: int
+        ) -> List[DdPlayer]:
+        """Creates default set of users at the beginning of the career."""
+        first_names, last_names = self._names
+        players = []
+        for i in range(DdGameplayConstants.MAX_PLAYERS_IN_CLUB.value):
+            player = self._dao_player.CreatePlayer(
+                first_name=choice(first_names),
+                second_name=choice(first_names),
+                last_name=choice(last_names),
+                user_pk=user_pk,
+                club_pk=club.club_id_n,
+                age=DdGameplayConstants.STARTING_AGE.value + i
+            )
+            player.AddExperience(_LevelExp(i * 2))
+            players.append(player)
+        return players
 
     def GetAllActivePlayers(self, user_pk=0):
         return DdPlayer.query.filter(
@@ -227,6 +263,7 @@ class DdDaoPlayer(object):
     def GetPlayer(self, player_pk):
         return DdPlayer.query.get(player_pk)
 
+    # TODO(montreal91): Move to DdDaoMatch
     def GetPlayerRecentMatches(self, player_pk, season):
         query_res = db.engine.execute(
             RECENT_PLAYER_MATCHES_SQL.format(
@@ -252,4 +289,20 @@ class DdDaoPlayer(object):
 
 
 def PlayerModelComparator(player_model):
+    """Function used to compare two players."""
     return player_model.actual_technique * 1.2 + player_model.endurance
+
+
+def _LevelExp(n: int) -> int:
+    """Total experience required to gain a level.
+
+    Formula is based on the sum of arithmetic progression.
+    """
+    ec = DdGameplayConstants.EXPERIENCE_COEFFICIENT.value
+    return int((n * (n + 1) / 2) * ec)
+
+def _LoadNames() -> Tuple[List[str], List[str]]:
+    """Utility function that loads names from the file on the disk."""
+    with open("configuration/names.json") as datafile:
+        all_names = json.load(datafile)
+    return all_names["names"], all_names["surnames"]

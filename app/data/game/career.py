@@ -15,3 +15,13 @@ class DdCareer(db.Model):
 
     season_n = db.Column(db.Integer, default=0)
     day_n = db.Column(db.Integer, default=0)
+
+
+class DdDaoCareer:
+    @staticmethod
+    def CreateNewCareer(user_pk: int, managed_club_pk: int) -> DdCareer:
+        """Creates new default career."""
+        career = DdCareer(user_pk=user_pk, managed_club_pk=managed_club_pk)
+        career.season_n = 0
+        career.day_n = 0
+        return career

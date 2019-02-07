@@ -15,7 +15,6 @@ from app.exceptions import BadUserInputException
 from flask_test_base import FlaskBaseTestCase
 
 
-import ipdb
 class GameServiceTestCase(FlaskBaseTestCase):
     """Game logic test cases."""
 
@@ -31,14 +30,12 @@ class GameServiceTestCase(FlaskBaseTestCase):
         """Correct creation of the new career."""
 
         club_pks = self._dao_club.GetListOfClubPrimaryKeys()
-        # ipdb.set_trace()
         self._service.StartNewCareer(
             user_pk=self.user_pk, managed_club_pk=club_pks[0]
         )
         self._service.StartNewCareer(
             user_pk=self.user_pk, managed_club_pk=club_pks[-1]
         )
-
         careers = DdCareer.query.all()
         self.assertEquals(len(careers), 2)
 
@@ -62,7 +59,8 @@ class GameServiceTestCase(FlaskBaseTestCase):
         self.assertEqual(career2.season_n, 0)
         self.assertEqual(career2.day_n, 0)
 
-        # TODO(montreal91): Check created players
+        # Check that no players are created
+        self.assertEqual(DdPlayer.query.count(), 0)
 
         # Check that there are no matches
         self.assertEqual(DdMatch.query.count(), 0)
