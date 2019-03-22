@@ -11,9 +11,11 @@ from random import choice
 from typing import List
 
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 
 from app import db   # This import creates circular dependencies.
 from app.custom_queries import GLOBAL_USER_RATING_SQL
+from app.data.game.career import DdDaoCareer
 from app.data.game.club import DdDaoClub
 from app.data.game.match import DdDaoMatch
 from app.data.game.match import DdMatchStatuses
@@ -21,7 +23,11 @@ from app.data.game.player import DdDaoPlayer
 from app.data.game.player import DdPlayer
 from app.data.game.playoff_series import DdDaoPlayoffSeries
 from app.data.game.playoff_series import DdPlayoffSeries
+from app.data.game.state_saver import AbortChanges
+from app.data.game.state_saver import SaveObject
+from app.data.game.state_saver import SaveObjects
 from app.data.main.user import DdUser
+from app.exceptions import BadUserInputException
 from configuration.config_game import DdGameplayConstants
 from configuration.config_game import DdLeagueConfig
 from configuration.config_game import DdRatingsParamerers
@@ -44,27 +50,6 @@ class DdGameService:
         for player in players:
             player.AgeUp()
         self._dao_player.SavePlayers(players)
-
-    def CreateInitialPlayersForUser(self, user_pk: int) -> List[DdPlayer]:
-        """Creates default set of users at the beginning of the career."""
-        first_names, last_names = DdPlayer.GetNames()
-        clubs = self._dao_club.GetAllClubs()
-        players = []
-        for club in clubs:
-            skill = DdGameplayConstants.SKILL_BASE.value
-            for i in range(DdGameplayConstants.MAX_PLAYERS_IN_CLUB.value):
-                player = self._dao_player.CreatePlayer(
-                    first_name=choice(first_names),
-                    second_name=choice(first_names),
-                    last_name=choice(last_names),
-                    user_pk=user_pk,
-                    club_pk=club.club_id_n,
-                    technique=skill,
-                    endurance=skill,
-                    age=DdGameplayConstants.STARTING_AGE.value + i
-                )
-                players.append(player)
-        return players
 
     def CreateNewMatch(
             self,
@@ -384,7 +369,22 @@ class DdGameService:
         self.SavePlayers(players=players)
 
     def StartNewCareer(self, user_pk: int, managed_club_pk: int):
-        pass
+        """Starts new career.
+
+        If user_pk is invalid user key or if managed_club_pk is invalid
+        club key, raises ``BadUserInputException``.
+        """
+        #TODO(montreal91) refactor it with use of context manager
+        try:
+            career = DdDaoCareer.CreateNewCareer(
+                user_pk=user_pk,
+                managed_club_pk=managed_club_pk
+            )
+            SaveObject(career)
+        except IntegrityError:
+            AbortChanges()
+            raise BadUserInputException
+
 
     def _CreateMatchesForSeriesList(self, series_list: List, first_day: int):
         new_matches = []
@@ -443,19 +443,3 @@ class DdGameService:
     def _ProcessTrainingSessionForPlayer(self, player):
         player.AddExperience(DdGameplayConstants.EXPERIENCE_PER_TRAINING.value)
 
-    def _CreateNewcomersForClub(self, user_pk, club_pk, number):
-        players = []
-        first_names, last_names = DdPlayer.GetNames()
-        for i in range(number):
-            player = self._dao_player.CreatePlayer(
-                first_name=choice(first_names),
-                second_name=choice(first_names),
-                last_name=choice(last_names),
-                user_pk=user_pk,
-                club_pk=club_pk,
-                technique=DdGameplayConstants.SKILL_BASE.value,
-                endurance=DdGameplayConstants.SKILL_BASE.value,
-                age=DdGameplayConstants.STARTING_AGE.value
-            )
-            players.append(player)
-        return players

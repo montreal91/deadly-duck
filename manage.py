@@ -1,6 +1,7 @@
 
 import os
 
+# from flask import shell_context_processor
 from flask_migrate import Migrate
 from flask_migrate import MigrateCommand
 
@@ -41,8 +42,12 @@ def MakeShellContext():
     )
 
 
+app.shell_context_processor(MakeShellContext)
+
+
 @app.cli.command()
 def test():
+    """Performs all tests."""
     import unittest
     tests = unittest.TestLoader().discover("tests")
     unittest.TextTestRunner(verbosity=2).run(tests)
@@ -50,6 +55,7 @@ def test():
 
 @app.cli.command()
 def initapp():
+    """Inserts roles and clubs into database."""
     service = DdGameService()
     DdRole.InsertRoles()
     service.InsertClubs()
