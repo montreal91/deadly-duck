@@ -1,7 +1,6 @@
 
 import os
 
-# from flask import shell_context_processor
 from flask_migrate import Migrate
 from flask_migrate import MigrateCommand
 
@@ -30,7 +29,6 @@ def MakeShellContext():
         db=db,
         cache=cache,
         DdClub=DdClub,
-        DdClubRecord=DdClubRecord,
         DdMatch=DdMatch,
         DdPermission=DdPermission,
         DdPlayer=DdPlayer,
@@ -38,7 +36,6 @@ def MakeShellContext():
         DdPost=DdPost,
         DdRole=DdRole,
         DdUser=DdUser,
-        ConfirmUser=ConfirmUser
     )
 
 

@@ -5,6 +5,9 @@ Created on Feb 02, 2019
 
 @author: montreal91
 """
+from typing import Any
+from typing import Dict
+
 from flask import current_app
 from flask import flash
 from flask import jsonify
@@ -13,10 +16,12 @@ from flask import render_template
 from flask import request
 from flask import url_for
 from flask.views import MethodView
+from flask.wrappers import Response
 from flask_login import current_user
 from flask_login import login_required
 
 from app import db
+from app.data.game.club import DdClub
 from app.data.game.match import MatchChronologicalComparator
 from app.data.game.player import DdPlayer
 from app.data.game.player import PlayerModelComparator
@@ -24,21 +29,22 @@ from app.data.models import DdUser
 from app.game import game
 from configuration.config_game import club_names
 
-
+import ipdb
 @game.route("/api/clubs/", methods=["POST"])
 @login_required
-def Clubs():
+def Clubs() -> Response:
+    def ComposeClub(club: DdClub) -> Dict[str, Any]:
+        return dict(pk=club.pk, club_name=club.club_name_c)
+
+    ipdb.set_trace(context=7)
     return jsonify(clubs=[
-        {"pk": 1, "club_name": "Auckland Aces"},
-        {"pk": 2, "club_name": "Brisbane Broncos"},
-        {"pk": 9, "club_name": "Adelaide Falcons"},
-        {"pk": 10, "club_name": "Bunbury Ravens"},
+        ComposeClub(club) for club in game.service.GetAllClubs()
     ])
 
 
 @game.route("/main/")
 @login_required
-def MainScreen():
+def MainScreen() -> str:
     """Renders main screen."""
     if current_user.managed_club_pk is None:
         return redirect(url_for("main.Index"))
@@ -53,7 +59,7 @@ def MainScreen():
 
 @game.route("/api/main_screen_context/", methods=["POST"])
 @login_required
-def MainScreenContext():
+def MainScreenContext() -> Response:
     """Ajax view that responses with context data for main screen."""
     players = game.service.GetClubPlayers(
         user_pk=current_user.pk,
@@ -83,6 +89,6 @@ def MainScreenContext():
 
 @game.route("/title_screen/")
 @login_required
-def TitleScreen():
-    """Renders title string."""
+def TitleScreen() -> str:
+    """Renders title screen."""
     return render_template("game/title_screen.html")

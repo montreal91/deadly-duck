@@ -91,6 +91,9 @@ class GameServiceTestCase(FlaskBaseTestCase):
             )
         self._abscence_check()
 
+    def test_start_new_season(self):
+        """Checks for correct creation of the new season."""
+
     def _abscence_check(self):
         # Make sure that no new careers are created
         self.assertEqual(DdMatch.query.count(), 0)

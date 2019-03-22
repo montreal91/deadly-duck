@@ -45,19 +45,19 @@ class DdGameService:
         self._dao_player = DdDaoPlayer()
         self._dao_playoff_series = DdDaoPlayoffSeries()
 
-    def AgeUpAllActivePlayers(self, user_pk):
+    def AgeUpAllActivePlayers(self, user_pk) -> List[DdPlayer]:
         players = self._dao_player.GetAllActivePlayers(user_pk)
         for player in players:
             player.AgeUp()
         self._dao_player.SavePlayers(players)
 
     def CreateNewMatch(
-            self,
-            user_pk=0,
-            season=0,
-            day=0,
-            home_team_pk=0,
-            away_team_pk=0,
+        self,
+        user_pk=0,
+        season=0,
+        day=0,
+        home_team_pk=0,
+        away_team_pk=0,
     ):
         return self._dao_match.CreateNewMatch(
             user_pk=user_pk,
@@ -68,12 +68,12 @@ class DdGameService:
         )
 
     def CreateNewPlayoffRound(
-            self,
-            user=None,
-            div1_list=[],
-            div2_list=[],
-            current_round=0,
-            final=False
+        self,
+        user=None,
+        div1_list=[],
+        div2_list=[],
+        current_round=0,
+        final=False
     ):
         assert len(div1_list) == len(div2_list)
         length = len(div1_list)
@@ -374,7 +374,8 @@ class DdGameService:
         If user_pk is invalid user key or if managed_club_pk is invalid
         club key, raises ``BadUserInputException``.
         """
-        #TODO(montreal91) refactor it with use of context manager
+        # TODO(montreal91) refactor it with use of context manager
+        # TODO(montreal91) think if initial lists of players should be crated
         try:
             career = DdDaoCareer.CreateNewCareer(
                 user_pk=user_pk,
@@ -400,7 +401,7 @@ class DdGameService:
         self._dao_match.SaveMatches(new_matches)
 
     def _CreateNewcomersForClub(
-            self, user_pk: int, club_pk: int, number: int
+        self, user_pk: int, club_pk: int, number: int
     ) -> List[DdPlayer]:
         players = []
         first_names, last_names = DdPlayer.GetNames()
