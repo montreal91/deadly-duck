@@ -3,9 +3,11 @@ import json
 import math
 
 from decimal import Decimal
+from random import choice
 from random import randint
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 from sqlalchemy import and_
@@ -79,7 +81,7 @@ class DdPlayer(db.Model):
         level = 0
         while _LevelExp(level) < self.experience_n:
             level += 1
-        return level - 1
+        return level
 
     # 'exp' stands for experience
     @property
@@ -177,37 +179,40 @@ class DdDaoPlayer:
     @property
     def names(self) -> Tuple[List[str], List[str]]:
         """Couple of lists of strings for first and last names."""
+
         if self._first_names is None:
             self._first_names, self._last_names = _LoadNames()
         return self._first_names, self._last_names
 
-    @staticmethod
     def CreatePlayer(
-            first_name="",
-            second_name="",
-            last_name="",
-            user_pk=0,
-            club_pk=None,
-            endurance=50,
-            technique=50,
-            age=10,
+        self, career_pk: int, club_pk: Optional[int], level: int, age: int,
     ) -> DdPlayer:
+        """
+        Creates a player object with given parameters.
+
+        Does not save anything in the database.
+        """
         player = DdPlayer()
-        player.first_name_c = first_name
-        player.second_name_c = second_name
-        player.last_name_c = last_name
-        player.user_pk = user_pk
-        player.club_pk = club_pk
-        player.endurance_n = endurance
-        player.technique_n = technique
-        player.current_stamina_n = endurance
+        player.first_name_c = choice(self.names[0])
+        player.second_name_c = choice(self.names[0])
+        player.last_name_c = choice(self.names[1])
         player.age_n = age
+        player.career_pk = career_pk
+        player.club_pk = club_pk
+
+        skill_base = DdGameplayConstants.SKILL_BASE.value
+        player.endurance_n = skill_base
+        player.technique_n = skill_base
+        player.exhaustion_n = 0
+        player.experience_n = 0
+        player.AddExperience(_LevelExp(level))
+        player.current_stamina_n = player.max_stamina
         return player
 
     def CreateInitialClubPlayers(
-            self, career_pk: int, club_pk: int
-        ) -> List[DdPlayer]:
-        """Creates default set of users at the beginning of the career."""
+        self, career_pk: int, club_pk: int
+    ) -> List[DdPlayer]:
+        """Creates default list of users at the beginning of the career."""
         first_names, last_names = self._names
         players = []
         for i in range(DdGameplayConstants.MAX_PLAYERS_IN_CLUB.value):
