@@ -63,6 +63,7 @@ confidence=
 # --disable=W"
 disable=
     # disabled by me,
+    bad-continuation,
     # locally-disabled,
     # missing-docstring,
     # fixme,

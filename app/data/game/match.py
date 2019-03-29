@@ -127,54 +127,31 @@ class DdMatch(db.Model):
         self.status_en = DdMatchStatuses.planned
 
     def __repr__(self):
-        return "<Match #{0:d} {1:d} vs {2:d}>".format(
+        return "<Match #{0:d} {1:d} vs {2:d} ({3:s})>".format(
             self.match_pk_n,
             self.home_team_pk,
-            self.away_team_pk
+            self.away_team_pk,
+            self.status_en
         )
 
 
 class DdDaoMatch(object):
+    @staticmethod
     def CreateNewMatch(
-        self,
-        user_pk=0,
-        season=0,
-        day=0,
-        home_team_pk=0,
-        away_team_pk=0,
+        career_pk: int,
+        season: int,
+        day: int,
+        home_team_pk: int,
+        away_team_pk: int,
+        series_pk: Optional[int] = None
     ) -> DdMatch:
         match = DdMatch()
         match.home_team_pk = home_team_pk
         match.away_team_pk = away_team_pk
-        match.user_pk = user_pk
+        match.career_pk = career_pk
         match.season_n = season
         match.day_n = day
-        context = {}
-        context["home_club"] = None
-        context["away_club"] = None
-        context["home_player_name"] = None
-        context["away_player_name"] = None
-        context["home_skill"] = None
-        context["away_skill"] = None
-        match.context = context
         match.playoff_series_pk = None
-        match.SetPlannedStatus()
-        return match
-
-    def CreateNewMatchForSeries(
-            self, series=None, day=0, top_home=True
-        ) -> DdMatch:
-        match = DdMatch()
-        if top_home:
-            match.home_team_pk = series.top_seed_pk
-            match.away_team_pk = series.low_seed_pk
-        else:
-            match.home_team_pk = series.low_seed_pk
-            match.away_team_pk = series.top_seed_pk
-        match.user_pk = series.user_pk
-        match.season_n = series.season_n
-        match.day_n = day
-        match.playoff_series_pk = series.pk
         match.SetPlannedStatus()
         return match
 
@@ -248,6 +225,7 @@ class DdDaoMatch(object):
 
     def GetLastMatchDay(self, user: DdUser) -> int:
         """Returns last day in season for given user."""
+
         query_res = db.engine.execute(text(MAX_DAY_IN_SEASON_SQL).params(
             user=user.pk, season=user.current_season_n
         )).first()
@@ -289,14 +267,6 @@ class DdDaoMatch(object):
                 DdMatch.status_en == DdMatchStatuses.planned
             )
         ).all()
-
-    def SaveMatch(self, match: DdMatch):
-        db.session.add(match)
-        db.session.commit()
-
-    def SaveMatches(self, matches: List[DdMatch]):
-        db.session.add_all(matches)
-        db.session.commit()
 
 
 def MatchChronologicalComparator(match: DdMatch) -> DdMatch:

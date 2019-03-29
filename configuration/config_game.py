@@ -50,6 +50,7 @@ class DdLeagueConfig:
     SETS_TO_WIN = 2
     MATCHES_TO_WIN = 4
     GAP_DAYS = 2
+    REST_DAY = 3
     SERIES_TOP_HOME_PATTERN = (True, True, False, False, True, False, True)
 
 

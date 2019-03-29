@@ -127,7 +127,7 @@ class DdMatchResult(object):
         self._full_score += s
 
 
-class DdMatchProcessor(object):
+class DdMatchProcessor:
     """This class incapsulates inner logic of a tennis match."""
     _probability_function: Callable[[float, float], float]
     _res: DdMatchResult

@@ -8,10 +8,15 @@ Created on Nov 29, 2016
 @author: montreal91
 """
 
+from copy import copy
+from copy import deepcopy
 from functools import wraps
 from random import choice
+from random import shuffle
+from typing import Any
 from typing import Callable
 from typing import List
+from typing import Tuple
 
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -19,6 +24,7 @@ from sqlalchemy.exc import IntegrityError
 from app import db   # This import creates circular dependencies.
 from app.custom_queries import GLOBAL_USER_RATING_SQL
 from app.data.game.career import DdDaoCareer
+from app.data.game.club import DdClub
 from app.data.game.club import DdDaoClub
 from app.data.game.match import DdDaoMatch
 from app.data.game.match import DdMatch
@@ -35,6 +41,9 @@ from app.exceptions import BadUserInputException
 from configuration.config_game import DdGameplayConstants
 from configuration.config_game import DdLeagueConfig
 from configuration.config_game import DdRatingsParamerers
+
+
+ScheduleDay = List[Tuple[int, int]]
 
 
 def Atomic(fun: Callable) -> Callable:
@@ -59,22 +68,6 @@ class DdGameService:
         self._dao_match = DdDaoMatch()
         self._dao_player = DdDaoPlayer()
         self._dao_playoff_series = DdDaoPlayoffSeries()
-
-    def CreateNewMatch(
-        self,
-        user_pk=0,
-        season=0,
-        day=0,
-        home_team_pk=0,
-        away_team_pk=0,
-    ):
-        return self._dao_match.CreateNewMatch(
-            user_pk=user_pk,
-            season=season,
-            day=day,
-            home_team_pk=home_team_pk,
-            away_team_pk=away_team_pk
-        )
 
     def CreateNewPlayoffRound(
         self,
@@ -258,8 +251,12 @@ class DdGameService:
             elif l_pk in div2standings:
                 div2standings.pop(div2standings.index(l_pk))
             else:
+                errorstring = (
+                    "Club #{0:d} has lost in playoff series #{1:d} "
+                    "but not even qualified to playoffs."
+                )
                 raise ValueError(
-                    "Club #{0:d} has lost in playoff series #{1:d} but not even qualified to playoffs.".format(
+                    errorstring.format(
                         l_pk,
                         series.pk
                     )
@@ -284,7 +281,8 @@ class DdGameService:
 
     def ProcessDailyRecovery(self, user_pk: int, played_players: List):
         """
-        Restores stamina for active players of given user 'at the end of the day'.
+        Restores stamina for active players of given user 'at the end of the day'
+
         Important: saves changes to database.
         :param user_pk: primary key of user, whose players need to be recovered.
         :param played_players: list of players who was playing matches this day.
@@ -303,34 +301,6 @@ class DdGameService:
                 DdGameplayConstants.STAMINA_RECOVERY_PER_DAY.value
             )
         self.SavePlayers(players_to_update)
-
-    def SaveMatches(self, matches: List):
-        series_to_update = []
-        for match in matches:
-            series = match.playoff_series
-            if series is None:
-                # In case if it is not a playoffs match
-                continue
-            if series.top_seed_pk == match.home_team_pk:
-                if match.home_sets_n > match.away_sets_n:
-                    series.top_seed_victories_n += 1
-                elif match.home_sets_n < match.away_sets_n:
-                    series.low_seed_victories_n += 1
-                else:
-                    raise ValueError("Match score is incorrect. \n (Draw is impossible).")
-            elif series.top_seed_pk == match.away_team_pk:
-                if match.home_sets_n > match.away_sets_n:
-                    series.low_seed_victories_n += 1
-                elif match.home_sets_n < match.away_sets_n:
-                    series.top_seed_victories_n += 1
-                else:
-                    raise ValueError("Match score is incorrect. \n (Draw is impossible).")
-            else:
-                raise ValueError
-
-            series_to_update.append(series)
-        self.SavePlayoffSeriesList(series_to_update)
-        self._dao_match.SaveMatches(matches=matches)
 
     def SavePlayoffSeriesList(self, series_list: List):
         matches_to_abort = []
@@ -353,8 +323,6 @@ class DdGameService:
         If user_pk is invalid user key or if managed_club_pk is invalid
         club key, raises ``BadUserInputException``.
         """
-        # TODO(montreal91) refactor it with use of context manager
-        # TODO(montreal91) think if initial lists of players should be crated
 
         career = DdDaoCareer.CreateNewCareer(
             user_pk=user_pk,
@@ -364,12 +332,14 @@ class DdGameService:
 
     @Atomic
     def StartNextSeason(self, career_pk: int):
+        """Starts next season."""
+
         career = DdDaoCareer.GetCareer(career_pk)
         if career is None:
             raise BadUserInputException
 
         clubs = self._dao_club.GetAllClubs()
-        objects = []
+        objects: List[Any] = []
 
         # Manage players
         if career.season_n == 0:
@@ -395,10 +365,16 @@ class DdGameService:
             objects.extend(new_players)
 
         career.season_n += 1
-        # Manage matches
+
+        objects.extend(self._CreateMatchesForRegularSeason(
+            clubs=clubs,
+            career_pk=career.pk,
+            season=career.season_n
+        ))
 
         objects.append(career)
         SaveObjects(objects)
+
 
     def _CreateMatchesForSeriesList(
         self, series_list: List, first_day: int
@@ -416,8 +392,16 @@ class DdGameService:
         self._dao_match.SaveMatches(new_matches)
 
     def _GetClubsQualifiedToPlayoffs(self, user: DdUser):
-        div1standings = [row.club_pk for row in self.GetDivisionStandings(user_pk=user.pk, season=user.current_season_n, division=1)]
-        div2standings = [row.club_pk for row in self.GetDivisionStandings(user_pk=user.pk, season=user.current_season_n, division=2)]
+        div1standings = [
+            row.club_pk for row in self.GetDivisionStandings(
+                user_pk=user.pk, season=user.current_season_n, division=1
+            )
+        ]
+        div2standings = [
+            row.club_pk for row in self.GetDivisionStandings(
+                user_pk=user.pk, season=user.current_season_n, division=2
+            )
+        ]
 
         div1standings = div1standings[:DdLeagueConfig.DIV_CLUBS_IN_PLAYOFFS]
         div2standings = div2standings[:DdLeagueConfig.DIV_CLUBS_IN_PLAYOFFS]
@@ -437,6 +421,83 @@ class DdGameService:
         else:
             raise ValueError("Incorrect number of sets.")
 
-    def _ProcessTrainingSessionForPlayer(self, player):
-        player.AddExperience(DdGameplayConstants.EXPERIENCE_PER_TRAINING.value)
+    @staticmethod
+    def _CreateMatchesForRegularSeason(
+        clubs: List[DdClub], career_pk: int, season: int
+    ) -> List[DdMatch]:
+        div1 = [club.pk for club in clubs if club.division_n == 1]
+        div2 = [club.pk for club in clubs if club.division_n == 2]
+        shuffle(div1)
+        shuffle(div2)
 
+        common = []
+        for i in range(len(div1)):
+            common.append(div1[i])
+            common.append(div2[i])
+
+        schedule = _MakeFullSchedule(common)
+        shuffle(schedule)
+
+        day = DdLeagueConfig.GAP_DAYS
+        res: List[DdMatch] = []
+
+        for d in schedule:
+            day += 1
+            if day % DdLeagueConfig.REST_DAY == 0:
+                day += 1
+
+            for pair in d:
+                res.append(DdDaoMatch.CreateNewMatch(
+                    career_pk=career_pk,
+                    season=season,
+                    day=day,
+                    home_team_pk=pair[0],
+                    away_team_pk=pair[1]
+                ))
+        return res
+
+
+def _MakeBasicSchedule(pk_list: List[int]) -> List[ScheduleDay]:
+    def MakePairs(lst: List[int]) -> ScheduleDay:
+        n = len(lst) - 1
+        return [(lst[i], lst[n-i]) for i in range(len(lst) // 2)]
+
+    def Shift(lst, n):
+        if n == 0:
+            return copy(lst)
+        return [lst[0]] + lst[-n:] + lst[1:-n]
+
+    def ShiftGen(lst):
+        for i in range(len(lst) - 1):
+            yield Shift(lst, i)
+
+    return [MakePairs(l) for l in ShiftGen(pk_list)]
+
+
+def _MakeFullSchedule(pk_list: List[int]) -> List[ScheduleDay]:
+    def MirrorDay(matches: ScheduleDay) -> ScheduleDay:
+        return [(m[1], m[0]) for m in matches]
+
+    def CopyDay(matches: ScheduleDay) -> ScheduleDay:
+        return copy(matches)
+
+    def ComposeDays(matches: Tuple[int, int], n: int) -> ScheduleDay:
+        res = []
+        for i in range(n // 2):
+            res.append(CopyDay(matches))
+        for i in range(n // 2):
+            res.append(MirrorDay(matches))
+        return res
+
+    basic_schedule = _MakeBasicSchedule(pk_list)
+
+    res = []
+    in_div = DdLeagueConfig.INDIV_MATCHES
+    ex_div = DdLeagueConfig.EXDIV_MATCHES
+
+    for i in range(len(basic_schedule)):
+        if i % 2 == 0:
+            res.extend(ComposeDays(basic_schedule[i], ex_div))
+        else:
+            res.extend(ComposeDays(basic_schedule[i], in_div))
+    return res

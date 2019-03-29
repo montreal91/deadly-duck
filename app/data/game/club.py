@@ -1,5 +1,6 @@
 
 from typing import List
+from typing import Tuple
 
 from sqlalchemy import text
 
@@ -28,7 +29,7 @@ class DdDaoClub(object):
     def GetClub(self, club_pk):
         return DdClub.query.get_or_404(club_pk)
 
-    def GetListOfClubPrimaryKeys(self) -> List[int]:
+    def GetListOfClubPrimaryKeys(self) -> Tuple[int, ...]:
         qres = db.engine.execute(text(CLUB_PKS_SQL)).fetchall()
         return tuple(row['pk'] for row in qres)
 

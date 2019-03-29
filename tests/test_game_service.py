@@ -5,6 +5,7 @@ Created Feb 03, 2019
 
 @author montreal91
 """
+import random
 
 from app.data.game.career import DdCareer
 from app.data.game.club import DdDaoClub
@@ -129,6 +130,8 @@ class GameServiceTestCase(FlaskBaseTestCase):
                 self.assertEqual(
                     players[i].current_stamina_n, players[i].max_stamina
                 )
+
+        self.assertEqual(DdMatch.query.count(), 44 * 8)
 
     def _abscence_check(self):
         # Make sure that no new careers are created
