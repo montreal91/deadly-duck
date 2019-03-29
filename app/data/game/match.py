@@ -136,12 +136,12 @@ class DdMatch(db.Model):
 
 class DdDaoMatch(object):
     def CreateNewMatch(
-            self,
-            user_pk=0,
-            season=0,
-            day=0,
-            home_team_pk=0,
-            away_team_pk=0,
+        self,
+        user_pk=0,
+        season=0,
+        day=0,
+        home_team_pk=0,
+        away_team_pk=0,
     ) -> DdMatch:
         match = DdMatch()
         match.home_team_pk = home_team_pk
@@ -203,7 +203,7 @@ class DdDaoMatch(object):
         else:
             return None
 
-    def GetDayResults(self, user_pk, season, day):
+    def GetDayResults(self, user_pk, season, day) -> List[DdMatchSnapshot]:
         query_res = db.engine.execute(
             text(DAY_RESULTS_SQL).params(
                 userpk=user_pk,

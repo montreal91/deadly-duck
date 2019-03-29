@@ -5,6 +5,7 @@ import math
 from decimal import Decimal
 from random import choice
 from random import randint
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -57,10 +58,14 @@ class DdPlayer(db.Model):
 
     @property
     def full_name(self):
-        return self.first_name_c + " " + self.second_name_c + " " + self.last_name_c
+        return "{} {} {}".format(
+            self.first_name_c,
+            self.second_name_c,
+            self.last_name_c
+        )
 
     @property
-    def json(self) -> Dict:
+    def json(self) -> Dict[str, Any]:
         """Returns a dictionary with json-serializable data."""
         return dict(
             pk=self.pk_n,
@@ -85,23 +90,23 @@ class DdPlayer(db.Model):
 
     # 'exp' stands for experience
     @property
-    def next_level_exp(self):
+    def next_level_exp(self) -> int:
         return _LevelExp(self.level + 1)
 
     @property
-    def match_salary(self):
+    def match_salary(self) -> float:
         return DdPlayer.CalculateSalary(
             skill=self.technique.current_maximum_n,
             age=self.age_n
         )
 
     @property
-    def max_stamina(self):
+    def max_stamina(self) -> int:
         return self.endurance_n * DdPlayerSkills.ENDURANCE_FACTOR
 
 
     @property
-    def passive_salary(self):
+    def passive_salary(self) -> float:
         res = DdPlayer.CalculateSalary(
             skill=self.technique.current_maximum_n,
             age=self.age_n
@@ -109,7 +114,7 @@ class DdPlayer(db.Model):
         return round(res / 2, 2)
 
     @property
-    def technique(self):
+    def technique(self) -> float:
         return self.technique_n / 10
 
     def AddExperience(self, experience: int):
@@ -139,29 +144,29 @@ class DdPlayer(db.Model):
         if self.age_n >= DdGameplayConstants.RETIREMENT_AGE.value:
             self.is_active = False
 
-    def RecoverStamina(self, recovered_stamina=0):
+    def RecoverStamina(self, recovered_stamina: int):
         self.current_stamina_n += recovered_stamina
         if self.current_stamina_n > self.max_stamina:
             self.current_stamina_n = self.max_stamina
 
-    def RemoveStaminaLostInMatch(self, lost_stamina=0):
+    def RemoveStaminaLostInMatch(self, lost_stamina: int):
         self.current_stamina_n -= lost_stamina
 
     @staticmethod
-    def CalculateNewExperience(sets_won, opponent):
+    def CalculateNewExperience(sets_won: int, opponent: "DdPlayer") -> int:
         base = DdGameplayConstants.EXPERIENCE_COEFFICIENT.value * sets_won
         factor = DdGameplayConstants.EXPERIENCE_LEVEL_FACTOR.value
         factor *= opponent.level
         factor /= 100 # 100%
         factor += 1
-        return round(base * factor)
+        return int(round(base * factor))
 
 
     @staticmethod
-    def CalculateSalary(skill=0, age=0):
-        return 100
+    def CalculateSalary(skill: int, age: int) -> float:
+        return 100.0
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Player {0:d} {1}. {2}. {3}>".format(
             self.pk_n,
             self.first_name_c[0],
@@ -191,7 +196,9 @@ class DdDaoPlayer:
         Creates a player object with given parameters.
 
         Does not save anything in the database.
+        Consider this method to be private.
         """
+
         player = DdPlayer()
         player.first_name_c = choice(self.names[0])
         player.second_name_c = choice(self.names[0])
@@ -213,33 +220,30 @@ class DdDaoPlayer:
         self, career_pk: int, club_pk: int
     ) -> List[DdPlayer]:
         """Creates default list of users at the beginning of the career."""
-        first_names, last_names = self._names
+
         players = []
         for i in range(DdGameplayConstants.MAX_PLAYERS_IN_CLUB.value):
-            player = self._dao_player.CreatePlayer(
-                first_name=choice(first_names),
-                second_name=choice(first_names),
-                last_name=choice(last_names),
-                user_pk=user_pk,
-                club_pk=club.club_id_n,
-                age=DdGameplayConstants.STARTING_AGE.value + i
+            player = self.CreatePlayer(
+                career_pk=career_pk,
+                club_pk=club_pk,
+                age=DdGameplayConstants.STARTING_AGE.value + i,
+                level=i
             )
-            player.AddExperience(_LevelExp(i * 2))
             players.append(player)
         return players
 
-    def GetAllActivePlayers(self, user_pk=0):
+    def GetAllActivePlayers(self, career_pk: int) -> List[DdPlayer]:
         return DdPlayer.query.filter(
             and_(
-                DdPlayer.user_pk == user_pk,
+                DdPlayer.career_pk == career_pk,
                 DdPlayer.is_active == True
             )
         ).all()
 
-    def GetClubPlayers(self, user_pk=0, club_pk=0):
+    def GetClubPlayers(self, career_pk: int, club_pk: int):
         qres = DdPlayer.query.filter(and_(
             DdPlayer.club_pk == club_pk,
-            DdPlayer.user_pk == user_pk,
+            DdPlayer.career_pk == career_pk,
             DdPlayer.is_active == True,
         ))
         return qres.all()

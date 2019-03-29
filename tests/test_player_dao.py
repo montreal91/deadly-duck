@@ -8,6 +8,7 @@ Created Mar 27, 2019
 """
 
 import random
+
 from app.data.game.player import DdDaoPlayer
 from tests.flask_test_base import FlaskBaseTestCase
 
@@ -66,3 +67,13 @@ class DdDaoPlayerTestCase(FlaskBaseTestCase):
         self.assertEqual(player.endurance_n, 95)
         self.assertEqual(player.max_stamina, 95)
         self.assertEqual(player.exhaustion_n, 0)
+
+    def test_create_initial_club_players(self):
+        """Checks for career initial player creation."""
+
+        players = self.dao.CreateInitialClubPlayers(career_pk=1, club_pk=2)
+
+        for i in range(len(players)):
+            self.assertEqual(players[i].career_pk, 1)
+            self.assertEqual(players[i].club_pk, 2)
+            self.assertEqual(players[i].level, i)

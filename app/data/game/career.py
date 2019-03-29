@@ -1,4 +1,6 @@
 
+from typing import Optional
+
 from app import db
 
 
@@ -21,7 +23,12 @@ class DdDaoCareer:
     @staticmethod
     def CreateNewCareer(user_pk: int, managed_club_pk: int) -> DdCareer:
         """Creates new default career."""
+
         career = DdCareer(user_pk=user_pk, managed_club_pk=managed_club_pk)
         career.season_n = 0
         career.day_n = 0
         return career
+
+    @staticmethod
+    def GetCareer(career_pk: int) -> Optional[DdCareer]:
+        return DdCareer.query.get(career_pk)

@@ -11,19 +11,24 @@ from app.data.game.club import DdDaoClub
 from app.data.game.game_service import DdGameService
 from app.data.game.match import DdMatch
 from app.data.game.player import DdPlayer
+from app.data.game.player import DdDaoPlayer
 from app.exceptions import BadUserInputException
+from configuration.config_game import DdGameplayConstants
 from flask_test_base import FlaskBaseTestCase
 
 
 class GameServiceTestCase(FlaskBaseTestCase):
     """Game logic test cases."""
 
-    _EXPECTED_PLAYERS_IN_CLUB = 5
+    _EXPECTED_PLAYERS_IN_CLUB = DdGameplayConstants.MAX_PLAYERS_IN_CLUB.value
+    _STARTING_AGE = DdGameplayConstants.STARTING_AGE.value
 
     def setUp(self):
         super().setUp()
         self._dao_club = DdDaoClub()
+        self._dao_player = DdDaoPlayer()
         self._service = DdGameService()
+
         self._service.InsertClubs()
 
     def test_start_new_career_positive(self):
@@ -92,7 +97,38 @@ class GameServiceTestCase(FlaskBaseTestCase):
         self._abscence_check()
 
     def test_start_new_season(self):
-        """Checks for correct creation of the new season."""
+        """
+        Checks for correct creation of the new season.
+
+        Positive case.
+        """
+
+        club_pks = self._dao_club.GetListOfClubPrimaryKeys()
+        self._service.StartNewCareer(
+            user_pk=self.user_pk, managed_club_pk=club_pks[0]
+        )
+        self.assertEqual(DdCareer.query.count(), 1)
+
+        career = DdCareer.query.filter_by(user_pk=self.user_pk).first()
+        self._service.StartNextSeason(career_pk=career.pk)
+
+        career = DdCareer.query.get(career.pk)
+        self.assertEqual(career.season_n, 1)
+
+        for pk in club_pks:
+            players = self._dao_player.GetClubPlayers(
+                career_pk=career.pk, club_pk=pk
+            )
+            players.sort(key=lambda p: p.level)
+            self.assertEqual(len(players), self._EXPECTED_PLAYERS_IN_CLUB)
+
+            for i in range(len(players)):
+                self.assertEqual(players[i].level, i)
+                self.assertEqual(players[i].age_n, self._STARTING_AGE + i)
+                self.assertEqual(players[i].exhaustion_n, 0)
+                self.assertEqual(
+                    players[i].current_stamina_n, players[i].max_stamina
+                )
 
     def _abscence_check(self):
         # Make sure that no new careers are created

@@ -7,7 +7,10 @@ Created on Nov 29, 2016
 
 @author: montreal91
 """
+
+from functools import wraps
 from random import choice
+from typing import Callable
 from typing import List
 
 from sqlalchemy import text
@@ -18,6 +21,7 @@ from app.custom_queries import GLOBAL_USER_RATING_SQL
 from app.data.game.career import DdDaoCareer
 from app.data.game.club import DdDaoClub
 from app.data.game.match import DdDaoMatch
+from app.data.game.match import DdMatch
 from app.data.game.match import DdMatchStatuses
 from app.data.game.player import DdDaoPlayer
 from app.data.game.player import DdPlayer
@@ -33,6 +37,17 @@ from configuration.config_game import DdLeagueConfig
 from configuration.config_game import DdRatingsParamerers
 
 
+def Atomic(fun: Callable) -> Callable:
+    @wraps(fun)
+    def wrapper(*args, **kwargs):
+        try:
+            fun(*args, **kwargs)
+        except IntegrityError:
+            AbortChanges()
+            raise BadUserInputException
+    return wrapper
+
+
 class DdGameService:
     """One class to rule them all. Or to incapsulate game logic indeed.
 
@@ -44,12 +59,6 @@ class DdGameService:
         self._dao_match = DdDaoMatch()
         self._dao_player = DdDaoPlayer()
         self._dao_playoff_series = DdDaoPlayoffSeries()
-
-    def AgeUpAllActivePlayers(self, user_pk) -> List[DdPlayer]:
-        players = self._dao_player.GetAllActivePlayers(user_pk)
-        for player in players:
-            player.AgeUp()
-        self._dao_player.SavePlayers(players)
 
     def CreateNewMatch(
         self,
@@ -127,7 +136,7 @@ class DdGameService:
         )
 
     def DoesUserNeedToSelectPlayer(
-            self, user: DdUser, selected_player: int
+        self, user: DdUser, selected_player: int
     ) -> bool:
         """Checks if user needs to select player for next match."""
         current_match = self.GetCurrentMatch(user)
@@ -176,7 +185,7 @@ class DdGameService:
             season=season
         )
 
-    def GetListOfClubPrimaryKeys(self):
+    def GetListOfClubPrimaryKeys(self) -> List[int]:
         return self._dao_club.GetListOfClubPrimaryKeys()
 
     # TODO: move it to some DAO.
@@ -295,9 +304,6 @@ class DdGameService:
             )
         self.SavePlayers(players_to_update)
 
-    def SaveMatch(self, match=None):
-        self._dao_match.SaveMatch(match=match)
-
     def SaveMatches(self, matches: List):
         series_to_update = []
         for match in matches:
@@ -326,17 +332,10 @@ class DdGameService:
         self.SavePlayoffSeriesList(series_to_update)
         self._dao_match.SaveMatches(matches=matches)
 
-
-    def SavePlayer(self, player):
-        self._dao_player.SavePlayer(player)
-
-    def SavePlayers(self, players):
-        self._dao_player.SavePlayers(players)
-
     def SavePlayoffSeriesList(self, series_list: List):
         matches_to_abort = []
         for series in series_list:
-            if not series.IsFinished(matches_to_win=DdLeagueConfig.MATCHES_TO_WIN):
+            if not series.IsFinished(DdLeagueConfig.MATCHES_TO_WIN):
                 continue
 
             for match in series.matches:
@@ -347,27 +346,7 @@ class DdGameService:
         self._dao_match.SaveMatches(matches=matches_to_abort)
         self._dao_playoff_series.SavePlayoffSeriesList(series_list=series_list)
 
-
-    def SaveRosters(self, rosters):
-        self._dao_player.SaveRosters(rosters)
-
-    def StartNextSeason(self, user_pk):
-        players = self._dao_player.GetAllActivePlayers(user_pk=user_pk)
-        for player in players:
-            player.AgeUp()
-            player.AfterSeasonRest()
-
-        clubs = self._dao_club.GetAllClubs()
-        for club in clubs:
-            active_players = [player for player in players if player.is_active and player.club_pk == club.club_id_n]
-            new_players = self._CreateNewcomersForClub(
-                user_pk=user_pk,
-                club_pk=club.club_id_n,
-                number=DdGameplayConstants.MAX_PLAYERS_IN_CLUB.value - len(active_players)
-            )
-            players += new_players
-        self.SavePlayers(players=players)
-
+    @Atomic
     def StartNewCareer(self, user_pk: int, managed_club_pk: int):
         """Starts new career.
 
@@ -376,18 +355,54 @@ class DdGameService:
         """
         # TODO(montreal91) refactor it with use of context manager
         # TODO(montreal91) think if initial lists of players should be crated
-        try:
-            career = DdDaoCareer.CreateNewCareer(
-                user_pk=user_pk,
-                managed_club_pk=managed_club_pk
-            )
-            SaveObject(career)
-        except IntegrityError:
-            AbortChanges()
+
+        career = DdDaoCareer.CreateNewCareer(
+            user_pk=user_pk,
+            managed_club_pk=managed_club_pk
+        )
+        SaveObject(career)
+
+    @Atomic
+    def StartNextSeason(self, career_pk: int):
+        career = DdDaoCareer.GetCareer(career_pk)
+        if career is None:
             raise BadUserInputException
 
+        clubs = self._dao_club.GetAllClubs()
+        objects = []
 
-    def _CreateMatchesForSeriesList(self, series_list: List, first_day: int):
+        # Manage players
+        if career.season_n == 0:
+            for club in clubs:
+                objects.extend(self._dao_player.CreateInitialClubPlayers(
+                    career_pk=career.pk, club_pk=club.pk
+                ))
+        else:
+            players = self._dao_player.GetAllActivePlayers(career_pk=career_pk)
+            new_players = []
+            for player in players:
+                player.AfterSeasonRest()
+                player.AgeUp()
+                if player.is_active == False:
+                    new_players.append(self._dao_player.CreatePlayer(
+                        age=DdGameplayConstants.STARTING_AGE.value,
+                        club_pk=player.club_pk,
+                        career_pk=player.career_pk,
+                        level=0,
+                    ))
+
+            objects.extend(players)
+            objects.extend(new_players)
+
+        career.season_n += 1
+        # Manage matches
+
+        objects.append(career)
+        SaveObjects(objects)
+
+    def _CreateMatchesForSeriesList(
+        self, series_list: List, first_day: int
+    ) -> List[DdMatch]:
         new_matches = []
         for series in series_list:
             shift = series_list.index(series) % 2
@@ -399,25 +414,6 @@ class DdGameService:
                 )
                 new_matches.append(match)
         self._dao_match.SaveMatches(new_matches)
-
-    def _CreateNewcomersForClub(
-        self, user_pk: int, club_pk: int, number: int
-    ) -> List[DdPlayer]:
-        players = []
-        first_names, last_names = DdPlayer.GetNames()
-        for i in range(number):
-            player = self._dao_player.CreatePlayer(
-                first_name=choice(first_names),
-                second_name=choice(first_names),
-                last_name=choice(last_names),
-                user_pk=user_pk,
-                club_pk=club_pk,
-                technique=DdGameplayConstants.SKILL_BASE.value,
-                endurance=DdGameplayConstants.SKILL_BASE.value,
-                age=DdGameplayConstants.STARTING_AGE.value
-            )
-            players.append(player)
-        return players
 
     def _GetClubsQualifiedToPlayoffs(self, user: DdUser):
         div1standings = [row.club_pk for row in self.GetDivisionStandings(user_pk=user.pk, season=user.current_season_n, division=1)]
