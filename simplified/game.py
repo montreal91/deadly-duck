@@ -10,6 +10,8 @@ import json
 from random import choice
 from typing import Any
 from typing import Dict
+from typing import List
+from typing import NamedTuple
 
 from configuration.config_game import DdGameplayConstants
 from simplified.club import DdClub
@@ -21,17 +23,24 @@ from simplified.player import DdPlayer
 from simplified.player import ExhaustedRecovery
 
 
+class DdGameParams(NamedTuple):
+    """Passive class to store game parameters"""
+
+    exhaustion_per_set: int
+    matches_to_play: int
+    recovery_day: int
+
+
 class DdGameDuck:
     """A class that incapsulates game logic."""
 
-    def __init__(self):
+    def __init__(self, params: DdGameParams):
         self._day = 0
-        self._recovery_day = 3
-        self._exhaustion_per_set = 4
+        self._params = params
         self._selected_player = False
         self._last_score = ""
         self._schedule = []
-        self._MakeSchedule(10)
+        self._MakeSchedule()
         self._results = []
         self._users_club = 0
 
@@ -67,7 +76,7 @@ class DdGameDuck:
 
         return self._day >= len(self._schedule)
 
-    def SelectPlayer(self, i):
+    def SelectPlayer(self, i: int):
         """Sets selected player for user."""
 
         assert 0 <= i < len(self._clubs[self._users_club].players)
@@ -81,6 +90,7 @@ class DdGameDuck:
         Proceeds to the next day if possible.
         All scheduled matches are performed.
         """
+
         if self._IsRecoveryDay():
             self._Recover(ExhaustedRecovery)
             self._day += 1
@@ -94,7 +104,7 @@ class DdGameDuck:
         self._day += 1
         return True
 
-    def _GetSchedule(self, club_pk):
+    def _GetClubSchedule(self, club_pk):
         for day in self._schedule:
             if day is None:
                 continue
@@ -105,7 +115,7 @@ class DdGameDuck:
                     yield match
 
     def _IsRecoveryDay(self):
-        return self._day % self._recovery_day == 0
+        return self._day % self._params.recovery_day == 0
 
     def _MakePlayer(self, age: int, experience: int) -> DdPlayer:
         player = DdPlayer(
@@ -121,12 +131,12 @@ class DdGameDuck:
         player.AfterSeasonRest()
         return player
 
-    def _MakeSchedule(self, matches_to_play):
+    def _MakeSchedule(self):
         day = -1
         done = 0
-        while done < matches_to_play:
+        while done < self._params.matches_to_play:
             day += 1
-            if day % self._recovery_day == 0:
+            if day % self._params.recovery_day == 0:
                 self._schedule.append(None)
                 continue
 
@@ -164,7 +174,7 @@ class DdGameDuck:
             p2.RemoveStaminaLostInMatch(res.away_stamina_lost)
 
             exhaustion = res.home_sets + res.away_sets
-            exhaustion *= self._exhaustion_per_set
+            exhaustion *= self._params.exhaustion_per_set
 
             p1.AddExhaustion(exhaustion)
             p2.AddExhaustion(exhaustion)
@@ -178,10 +188,10 @@ class DdGameDuck:
 
     @property
     def _remaining_matches(self):
-        return list(self._GetSchedule(self._users_club))
+        return list(self._GetClubSchedule(self._users_club))
 
     @property
-    def _standings(self):
+    def _standings(self) -> List[DdStandingsRowStruct]:
         results = [DdStandingsRowStruct(club.name) for club in self._clubs]
 
 

@@ -29,7 +29,7 @@ sets_to_win = 2
 
 
 class DdGameplayConstants(Enum):
-    EXHAUSTION_PER_GAME = 10
+    EXHAUSTION_PER_SET = 4
     EXHAUSTION_PER_TRAINING = 5
     EXPERIENCE_COEFFICIENT = 50
     EXPERIENCE_LEVEL_FACTOR = 5

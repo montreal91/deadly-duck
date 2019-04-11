@@ -5,14 +5,13 @@ Created Apr 09, 2019
 @author montreal91
 """
 
-import sys
-
 from simplified.game import DdGameDuck
+from simplified.game import DdGameParams
 
 
 class DdSimplifiedApp:
     def __init__(self):
-        self._game = DdGameDuck()
+        self._game = DdGameDuck(DdGameParams(4, 4, 3))
         self._actions = {}
         self._is_running = True
 
@@ -55,18 +54,21 @@ class DdSimplifiedApp:
     def __ActionList(self):
         for i in range(len(self._game.context["user_players"])):
             print(i, end=" ")
-            p = self._game.context["user_players"][i]
+            plr = self._game.context["user_players"][i]
             print(
                 "Technique: {0:3.1f}/{1:3.1f}".format(
-                    p.json["actual_technique"], p.json["technique"]
+                    plr.json["actual_technique"], plr.json["technique"]
                 ),
+                end=" ",
+            )
+            print(
+                "Stamina: {0:3.1f}".format(plr.json["current_stamina"]),
+                end=" ",
+            )
+            print(
+                "Exhaustion: {0:3.1f}".format(plr.json["exhaustion"]),
                 end=" "
             )
-            print(
-                "Stamina: {0:3.1f}".format(p.json["current_stamina"]), end=" ",
-            )
-            print(
-                "Exhaustion: {0:3.1f}".format(p.json["exhaustion"]), end=" ")
             print()
 
     def __ActionNext(self):
