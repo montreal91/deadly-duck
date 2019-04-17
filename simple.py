@@ -32,6 +32,8 @@ class DdSimplifiedApp:
         self._actions["list"] = self.__ActionList
         self._actions["n"] = self.__ActionNext
         self._actions["next"] = self.__ActionNext
+        self._actions["p"] = self.__ActionPractice
+        self._actions["practice"] = self.__ActionPractice
         self._actions["q"] = self.__ActionQuit
         self._actions["quit"] = self.__ActionQuit
         self._actions["rem"] = self.__ActionRemaining
@@ -52,7 +54,7 @@ class DdSimplifiedApp:
             if len(user_input) == 1:
                 self._actions[user_input[0]]()
             else:
-                self._actions[user_input[0]](user_input[1])
+                self._actions[user_input[0]](*user_input[1:])
         else:
             print("Your input is incorrect.")
 
@@ -60,6 +62,7 @@ class DdSimplifiedApp:
         for i in range(len(self._game.context["user_players"])):
             print(i, end=" ")
             plr = self._game.context["user_players"][i]
+            print("Age: {0:2d}".format(plr.json["age"]), end=" ")
             print(
                 "Technique: {0:3.1f}/{1:3.1f}".format(
                     plr.json["actual_technique"], plr.json["technique"]
@@ -83,13 +86,24 @@ class DdSimplifiedApp:
             return
         print(self._game.context["last_score"])
 
+    def __ActionPractice(self, p1="0", p2="1"):
+        if p1 == p2:
+            print("Player can't practice with oneself.")
+            return
+        try:
+            self._game.SetPractice(int(p1), int(p2))
+        except AssertionError:
+            print("Your input is incorrect (wrong index).")
+        except ValueError:
+            print("Please, input a correct integer.")
+
     def __ActionQuit(self):
         self._is_running = False
 
     def __ActionRemaining(self):
         print("Remaining matches:", self._game.context["remaining_matches"])
 
-    def __ActionSelect(self, index):
+    def __ActionSelect(self, index="0"):
         try:
             self._game.SelectPlayer(int(index))
         except AssertionError:
@@ -111,6 +125,7 @@ class DdSimplifiedApp:
                 sets=row.sets_won,
                 games=row.games_won,
             ))
+
 
 if __name__ == '__main__':
     app = DdSimplifiedApp()

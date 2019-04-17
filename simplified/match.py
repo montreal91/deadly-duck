@@ -7,9 +7,7 @@ Created Apr 09, 2019
 
 from collections import namedtuple
 from copy import deepcopy
-from decimal import Decimal
 from enum import Enum
-from random import randint
 from typing import Callable
 
 from configuration.config_game import sets_to_win
@@ -50,7 +48,6 @@ class DdMatchResult:
 
 
     def __repr__(self):
-        res = self._full_score
         string = "<{score}, stamina: {home_stamina:2d}:{away_stamina:2d}>"
         return string.format(
             score=self._full_score,

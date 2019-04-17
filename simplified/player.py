@@ -59,6 +59,10 @@ class DdPlayer:
         self._current_stamina = self.max_stamina
 
     @property
+    def age(self):
+        return self._age
+
+    @property
     def actual_technique(self) -> float:
         stamina_factor = self._current_stamina / self.max_stamina / 10
         return round(self._technique * stamina_factor, _PRECISION)
@@ -156,8 +160,6 @@ class DdPlayer:
         factor /= 100   # 100%
         factor += 1
         return int(round(base * factor))
-
-
 
 
 class DdPlayerFactory:

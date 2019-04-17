@@ -5,9 +5,6 @@ Created Apr 09, 2019
 @author montreal91
 """
 
-import json
-
-from random import choice
 from typing import Any
 from typing import Dict
 from typing import List
@@ -16,6 +13,7 @@ from typing import NamedTuple
 from configuration.config_game import DdGameplayConstants
 from simplified.club import DdClub
 from simplified.match import DdMatchProcessor
+from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
 from simplified.match import DdStandingsRowStruct
 from simplified.match import LinearProbabilityFunction
@@ -33,21 +31,19 @@ class DdGameParams(NamedTuple):
 
 
 class DdGameDuck:
-    """A class that incapsulates game logic."""
+    """A class that incapsulates the game logic."""
 
     def __init__(self, params: DdGameParams):
         self._day = 0
-        self._params = params
-        self._selected_player = False
+        self._history = []
         self._last_score = ""
-        self._schedule = []
-        self._MakeSchedule()
-        self._results = []
-        self._users_club = 0
+        self._params = params
         self._player_factory = DdPlayerFactory()
-
-        with open("configuration/names.json", "r") as names_file:
-            self._names = json.load(names_file)
+        self._results = []
+        self._schedule = []
+        self._season = 1
+        self._selected_player = False
+        self._users_club = 0
 
         self._clubs = []
         self._clubs.append(DdClub(name="Auckland Aces"))
@@ -62,6 +58,7 @@ class DdGameDuck:
             self._clubs[1].AddPlayer(
                 self._player_factory.CreatePlayer(age=age, level=i*2)
             )
+        self._MakeSchedule()
 
     @property
     def context(self) -> Dict[str, Any]:
@@ -89,6 +86,9 @@ class DdGameDuck:
         self._clubs[self._users_club].SelectPlayer(i)
         self._selected_player = True
 
+    def SetPractice(self, i1: int, i2: int):
+        self._clubs[self._users_club].SetPractice(i1, i2)
+
     def Update(self):
         """
         Updates game state.
@@ -97,17 +97,15 @@ class DdGameDuck:
         All scheduled matches are performed.
         """
 
-        if self._IsRecoveryDay():
-            self._Recover(ExhaustedRecovery)
-            self._day += 1
-            return True
-
-        if self._selected_player is False:
+        if self._selected_player is False and not self._IsRecoveryDay():
             return False
 
         self._PlayOneDay()
         self._selected_player = False
         self._day += 1
+
+        if self.season_over:
+            self._NextSeason()
         return True
 
     def _GetClubSchedule(self, club_pk):
@@ -134,6 +132,30 @@ class DdGameDuck:
 
             self._schedule.append((DdScheduledMatchStruct(0, 1),))
             done += 1
+        self._schedule.append(None)
+
+    def _NextSeason(self):
+        max_players_in_club = DdGameplayConstants.MAX_PLAYERS_IN_CLUB.value
+        for club in self._clubs:
+            for player in club.players:
+                player.AgeUp()
+                player.AfterSeasonRest()
+            club.ExpelRetiredPlayers()
+
+            while len(club.players) < max_players_in_club:
+                club.AddPlayer(self._player_factory.CreatePlayer(
+                    age=DdGameplayConstants.STARTING_AGE.value,
+                    level=0,
+                ))
+
+        self._day = 0
+        self._season += 1
+
+        self._history.append(self._standings)
+        self._results = []
+        self._last_score = ""
+        self._schedule = []
+        self._MakeSchedule()
 
     def _Recover(self, recover_function):
         for club in self._clubs:
@@ -141,42 +163,35 @@ class DdGameDuck:
                 player.RecoverStamina(recover_function(player))
 
     def _PlayOneDay(self):
+        for match in self._practice_matches:
+            self._ProcessMatch(match[0], match[1], practice=True)
+
+        for club in self._clubs:
+            club.UnsetPractice()
+
         day = self._schedule[self._day]
         if day is None:
             return
 
         day_results = []
         for match in day:
-            p1 = self._clubs[match.home_pk].selected_player
-            p2 = self._clubs[match.away_pk].selected_player
+            res = self._ProcessMatch(
+                self._clubs[match.home_pk].selected_player,
+                self._clubs[match.away_pk].selected_player,
+            )
+            match.is_played = True
 
-            mp = DdMatchProcessor(LinearProbabilityFunction)
-            res = mp.ProcessMatch(p1, p2)
             res.home_pk = match.home_pk
             res.away_pk = match.away_pk
             day_results.append(res)
 
-            home_experience = DdPlayer.CalculateNewExperience(res.home_sets, p2)
-            away_experience = DdPlayer.CalculateNewExperience(res.away_sets, p1)
-
-
-            p1.AddExperience(home_experience)
-            p2.AddExperience(away_experience)
-            p1.RemoveStaminaLostInMatch(res.home_stamina_lost)
-            p2.RemoveStaminaLostInMatch(res.away_stamina_lost)
-
-            exhaustion = res.home_sets + res.away_sets
-            exhaustion *= self._params.exhaustion_per_set
-
-            p1.AddExhaustion(exhaustion)
-            p2.AddExhaustion(exhaustion)
-
-            self._Recover(ExhaustedRecovery)
-
-            self._last_score = res.full_score
-            match.is_played = True
-
         self._results.append(day_results)
+
+    @property
+    def _practice_matches(self):
+        for club in self._clubs:
+            if club.practice_match is not None:
+                yield club.practice_match
 
     @property
     def _remaining_matches(self):
@@ -185,7 +200,6 @@ class DdGameDuck:
     @property
     def _standings(self) -> List[DdStandingsRowStruct]:
         results = [DdStandingsRowStruct(club.name) for club in self._clubs]
-
 
         for day in self._results:
             for match in day:
@@ -196,3 +210,30 @@ class DdGameDuck:
                 results[match.away_pk].games_won += match.away_games
 
         return results
+
+    def _ProcessMatch(
+        self, plr1: DdPlayer, plr2: DdPlayerFactory, practice: bool = False
+    ) -> DdMatchResult:
+        mp = DdMatchProcessor(LinearProbabilityFunction)
+        res = mp.ProcessMatch(plr1, plr2, 1 if practice else 2)
+
+        home_experience = DdPlayer.CalculateNewExperience(res.home_sets, plr2)
+        away_experience = DdPlayer.CalculateNewExperience(res.away_sets, plr1)
+
+
+        plr1.AddExperience(home_experience)
+        plr2.AddExperience(away_experience)
+        plr1.RemoveStaminaLostInMatch(res.home_stamina_lost)
+        plr2.RemoveStaminaLostInMatch(res.away_stamina_lost)
+
+        exhaustion = res.home_sets + res.away_sets
+        exhaustion *= self._params.exhaustion_per_set
+
+        plr1.AddExhaustion(exhaustion)
+        plr2.AddExhaustion(exhaustion)
+
+        self._Recover(ExhaustedRecovery)
+
+        self._last_score = res.full_score
+
+        return res
