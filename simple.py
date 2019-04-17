@@ -11,7 +11,7 @@ from simplified.game import DdGameParams
 
 class DdSimplifiedApp:
     def __init__(self):
-        self._game = DdGameDuck(DdGameParams(4, 4, 3))
+        self._game = DdGameDuck(DdGameParams(2, 44, 3))
         self._actions = {}
         self._is_running = True
 
@@ -28,11 +28,16 @@ class DdSimplifiedApp:
             self._actions["standings"]()
 
     def _InitActions(self):
+        self._actions["l"] = self.__ActionList
         self._actions["list"] = self.__ActionList
+        self._actions["n"] = self.__ActionNext
         self._actions["next"] = self.__ActionNext
+        self._actions["q"] = self.__ActionQuit
         self._actions["quit"] = self.__ActionQuit
         self._actions["rem"] = self.__ActionRemaining
+        self._actions["s"] = self.__ActionSelect
         self._actions["select"] = self.__ActionSelect
+        self._actions["st"] = self.__ActionStandings
         self._actions["standings"] = self.__ActionStandings
 
     def _PrintMain(self):

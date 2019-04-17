@@ -5,10 +5,15 @@ Created Apr 09, 2019
 @author montreal91
 """
 
+import json
+
+from random import choice
 from random import randint
 
 from typing import Any
 from typing import Dict
+from typing import List
+from typing import Tuple
 
 from configuration.config_game import DdPlayerSkills
 from configuration.config_game import DdGameplayConstants
@@ -153,6 +158,36 @@ class DdPlayer:
         return int(round(base * factor))
 
 
+
+
+class DdPlayerFactory:
+    _first_names: List[str]
+    _last_names: List[str]
+
+    def __init__(self):
+        self._first_names, self._last_names = _LoadNames()
+
+    def CreatePlayer(self, level: int, age: int) -> DdPlayer:
+        """
+        Creates a player object of given age and level.
+        """
+        skill_base = DdGameplayConstants.SKILL_BASE.value
+
+        player = DdPlayer(
+            age=age,
+            first_name=choice(self._first_names),
+            second_name=choice(self._first_names),
+            last_name=choice(self._last_names),
+            technique=skill_base,
+            endurance=skill_base,
+        )
+
+        player.AddExperience(_LevelExp(level))
+        player.AfterSeasonRest()
+
+        return player
+
+
 def ExhaustedRecovery(player: DdPlayer) -> int:
     """Player recovery function that involves exhaustion."""
 
@@ -173,3 +208,10 @@ def _LevelExp(n: int) -> int:
     """
     ec = DdGameplayConstants.EXPERIENCE_COEFFICIENT.value
     return int((n * (n + 1) / 2) * ec)
+
+
+def _LoadNames() -> Tuple[List[str], List[str]]:
+    """Utility function that loads names from the file on the disk."""
+    with open("configuration/names.json") as datafile:
+        all_names = json.load(datafile)
+    return all_names["names"], all_names["surnames"]

@@ -20,6 +20,7 @@ from simplified.match import DdScheduledMatchStruct
 from simplified.match import DdStandingsRowStruct
 from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
+from simplified.player import DdPlayerFactory
 from simplified.player import ExhaustedRecovery
 
 
@@ -43,6 +44,7 @@ class DdGameDuck:
         self._MakeSchedule()
         self._results = []
         self._users_club = 0
+        self._player_factory = DdPlayerFactory()
 
         with open("configuration/names.json", "r") as names_file:
             self._names = json.load(names_file)
@@ -54,8 +56,12 @@ class DdGameDuck:
         for i in range(5):
             age = DdGameplayConstants.STARTING_AGE.value + i
 
-            self._clubs[0].AddPlayer(self._MakePlayer(age, i * 200))
-            self._clubs[1].AddPlayer(self._MakePlayer(age, i * 200))
+            self._clubs[0].AddPlayer(
+                self._player_factory.CreatePlayer(age=age, level=i*2)
+            )
+            self._clubs[1].AddPlayer(
+                self._player_factory.CreatePlayer(age=age, level=i*2)
+            )
 
     @property
     def context(self) -> Dict[str, Any]:
@@ -116,20 +122,6 @@ class DdGameDuck:
 
     def _IsRecoveryDay(self):
         return self._day % self._params.recovery_day == 0
-
-    def _MakePlayer(self, age: int, experience: int) -> DdPlayer:
-        player = DdPlayer(
-            first_name=choice(self._names["names"]),
-            second_name=choice(self._names["names"]),
-            last_name=choice(self._names["surnames"]),
-            technique=DdGameplayConstants.SKILL_BASE.value,
-            endurance=DdGameplayConstants.SKILL_BASE.value,
-            age=age,
-        )
-
-        player.AddExperience(experience)
-        player.AfterSeasonRest()
-        return player
 
     def _MakeSchedule(self):
         day = -1
