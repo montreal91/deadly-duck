@@ -36,36 +36,27 @@ class DdMatchResult:
     """A class with results of a single match."""
 
     def __init__(self):
-        self._full_score = ""
-        self._home_pk = None
-        self._away_pk = None
-        self._home_sets = 0
+        self.home_pk = None
+        self.away_pk = None
+        self.home_games = 0
+        self.away_games = 0
+        self.home_exp = 0
+        self.away_exp = 0
+        self.home_stamina_lost = 0
+        self.away_stamina_lost = 0
+
         self._away_sets = 0
-        self._home_games = 0
-        self._away_games = 0
-        self._home_stamina_lost = 0
-        self._away_stamina_lost = 0
+        self._home_sets = 0
+        self._full_score = ""
 
 
     def __repr__(self):
         string = "<{score}, stamina: {home_stamina:2d}:{away_stamina:2d}>"
         return string.format(
             score=self._full_score,
-            home_stamina=self._home_stamina_lost,
-            away_stamina=self._away_stamina_lost,
+            home_stamina=self.home_stamina_lost,
+            away_stamina=self.away_stamina_lost,
         )
-
-    @property
-    def away_games(self):
-        return self._away_games
-
-    @property
-    def away_pk(self):
-        return self._away_pk
-
-    @away_pk.setter
-    def away_pk(self, val: int):
-        self._away_pk = val
 
     @property
     def away_sets(self):
@@ -83,24 +74,8 @@ class DdMatchResult:
         self._away_sets = int(value)
 
     @property
-    def away_stamina_lost(self):
-        return self._away_stamina_lost
-
-    @property
     def full_score(self):
         return self._full_score
-
-    @property
-    def home_games(self):
-        return self._home_games
-
-    @property
-    def home_pk(self):
-        return self._home_pk
-
-    @home_pk.setter
-    def home_pk(self, val):
-        self._home_pk = val
 
     @property
     def home_sets(self):
@@ -116,28 +91,6 @@ class DdMatchResult:
             "Number of sets should be lesser than %r." % sets_to_win
         )
         self._home_sets = int(value)
-
-    @property
-    def home_stamina_lost(self):
-        return self._home_stamina_lost
-
-    def AddHomeGames(self, val):
-        self._home_games += val
-
-    def AddHomeSets(self, val):
-        self._home_sets += val
-
-    def AddHomeStaminaLost(self, val):
-        self._home_stamina_lost += val
-
-    def AddAwayGames(self, val):
-        self._away_games += val
-
-    def AddAwaySets(self, val):
-        self._away_sets += val
-
-    def AddAwayStaminaLost(self, val):
-        self._away_stamina_lost += val
 
     def AppendSetToFullScore(self, set_result):
         s = "{0:d}:{1:d}".format(set_result.home_games, set_result.away_games)
@@ -172,15 +125,15 @@ class DdMatchProcessor:
                 home_player,
                 away_player
             )
-            self._res.AddHomeGames(set_result.home_games)
-            self._res.AddAwayGames(set_result.away_games)
+            self._res.home_games += set_result.home_games
+            self._res.away_games += set_result.away_games
             self._res.AppendSetToFullScore(
                 set_result
             )
             if set_result.home_games > set_result.away_games:
-                self._res.AddHomeSets(1)
+                self._res.home_sets += 1
             else:
-                self._res.AddAwaySets(1)
+                self._res.away_sets += 1
 
             if set_result.set_status == DdSetStatuses.HOME_RETIRED:
                 self._res.away_sets = sets_to_win
@@ -255,8 +208,8 @@ class DdMatchProcessor:
             else:
                 away_games += 1
 
-            self._res.AddHomeStaminaLost(self._CalculateStaminaLostInGame())
-            self._res.AddAwayStaminaLost(self._CalculateStaminaLostInGame())
+            self._res.home_stamina_lost += self._CalculateStaminaLostInGame()
+            self._res.away_stamina_lost += self._CalculateStaminaLostInGame()
 
         return DdSetResult(
             home_games=home_games,

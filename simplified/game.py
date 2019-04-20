@@ -36,7 +36,6 @@ class DdGameDuck:
     def __init__(self, params: DdGameParams):
         self._day = 0
         self._history = []
-        self._last_score = ""
         self._params = params
         self._player_factory = DdPlayerFactory()
         self._results = []
@@ -67,11 +66,13 @@ class DdGameDuck:
         return dict(
             day=self._day,
             is_recovery_day=self._IsRecoveryDay(),
-            last_score=self._last_score,
+            clubs=[club.name for club in self._clubs],
+            last_results=self._last_results,
             opponent=self._opponent,
             remaining_matches=len(self._remaining_matches),
             standings=self._standings,
             user_players=self._clubs[self._users_club].players,
+            users_club=self._users_club,
         )
 
     @property
@@ -195,6 +196,17 @@ class DdGameDuck:
         self._results.append(day_results)
 
     @property
+    def _last_results(self):
+        if not self._results:
+            return []
+
+        results = self._results[-1]
+        for m in self._results[-1]:
+            if m.home_pk == self._users_club or m.away_pk == self._users_club:
+                return m
+        raise ValueError("Required result does not exist.")
+
+    @property
     def _opponent(self):
         if self._IsRecoveryDay():
             return None
@@ -239,12 +251,11 @@ class DdGameDuck:
         mp = DdMatchProcessor(LinearProbabilityFunction)
         res = mp.ProcessMatch(plr1, plr2, 1 if practice else 2)
 
-        home_experience = DdPlayer.CalculateNewExperience(res.home_sets, plr2)
-        away_experience = DdPlayer.CalculateNewExperience(res.away_sets, plr1)
+        res.home_exp = DdPlayer.CalculateNewExperience(res.home_sets, plr2)
+        res.away_exp = DdPlayer.CalculateNewExperience(res.away_sets, plr1)
 
-
-        plr1.AddExperience(home_experience)
-        plr2.AddExperience(away_experience)
+        plr1.AddExperience(res.home_exp)
+        plr2.AddExperience(res.away_exp)
         plr1.RemoveStaminaLostInMatch(res.home_stamina_lost)
         plr2.RemoveStaminaLostInMatch(res.away_stamina_lost)
 

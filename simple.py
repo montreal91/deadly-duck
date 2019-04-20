@@ -40,6 +40,7 @@ class DdSimplifiedApp:
         self._actions["q"] = self.__ActionQuit
         self._actions["quit"] = self.__ActionQuit
         self._actions["rem"] = self.__ActionRemaining
+        self._actions["res"] = self.__ActionResults
         self._actions["s"] = self.__ActionSelect
         self._actions["select"] = self.__ActionSelect
         self._actions["st"] = self.__ActionStandings
@@ -83,11 +84,14 @@ class DdSimplifiedApp:
             print()
 
     def __ActionNext(self):
+        recovery = self._game.context["is_recovery_day"]
         res = self._game.Update()
         if not res:
             print("You have to select a player.")
             return
-        print(self._game.context["last_score"])
+
+        if not recovery:
+            self.__ActionResults()
 
     def __ActionOpponent(self):
         opponent: DdPlayer = self._game.context["opponent"]
@@ -120,6 +124,21 @@ class DdSimplifiedApp:
 
     def __ActionRemaining(self):
         print("Remaining matches:", self._game.context["remaining_matches"])
+
+    def __ActionResults(self):
+        clubs = self._game.context["clubs"]
+        res = self._game.context["last_results"]
+        print("{0:s} vs {1:s}\n{2:s}".format(
+                clubs[res.home_pk],
+                clubs[res.away_pk],
+                res.full_score,
+            ))
+        print("Your player has gained", end=" ")
+        if self._game.context["users_club"] == res.home_pk:
+            print(res.home_exp, end=" ")
+        else:
+            print(res.away_exp, end=" ")
+        print("exp.")
 
     def __ActionSelect(self, index="0"):
         try:
