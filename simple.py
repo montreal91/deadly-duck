@@ -7,6 +7,7 @@ Created Apr 09, 2019
 
 from simplified.game import DdGameDuck
 from simplified.game import DdGameParams
+from simplified.player import DdPlayer
 
 
 class DdSimplifiedApp:
@@ -32,6 +33,8 @@ class DdSimplifiedApp:
         self._actions["list"] = self.__ActionList
         self._actions["n"] = self.__ActionNext
         self._actions["next"] = self.__ActionNext
+        self._actions["o"] = self.__ActionOpponent
+        self._actions["opponent"] = self.__ActionOpponent
         self._actions["p"] = self.__ActionPractice
         self._actions["practice"] = self.__ActionPractice
         self._actions["q"] = self.__ActionQuit
@@ -85,6 +88,21 @@ class DdSimplifiedApp:
             print("You have to select a player.")
             return
         print(self._game.context["last_score"])
+
+    def __ActionOpponent(self):
+        opponent: DdPlayer = self._game.context["opponent"]
+        if opponent is None:
+            if self._game.context["is_recovery_day"]:
+                print("No opponents today.")
+            else:
+                print("You are away.")
+                print("The away team names its player first.")
+            return
+
+        print(opponent.initials, f"[{opponent.level}]\n")
+        print(f"Technique:  {opponent.actual_technique}")
+        print(f"Endurance:  {opponent.current_stamina}")
+        print(f"Exhaustion: {opponent.exhaustion}")
 
     def __ActionPractice(self, p1="0", p2="1"):
         if p1 == p2:

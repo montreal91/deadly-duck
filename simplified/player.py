@@ -80,6 +80,16 @@ class DdPlayer:
         return self._exhaustion
 
     @property
+    def initials(self) -> str:
+        """Returns the name of the player in form of 'J. K. Rowling'."""
+
+        return "{0:s}. {1:s}. {2:s}".format(
+            self._first_name[0],
+            self._second_name[0],
+            self._last_name
+        )
+
+    @property
     def json(self) -> Dict[str, Any]:
         return dict(
             first_name=self._first_name,

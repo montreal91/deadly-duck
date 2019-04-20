@@ -68,6 +68,7 @@ class DdGameDuck:
             day=self._day,
             is_recovery_day=self._IsRecoveryDay(),
             last_score=self._last_score,
+            opponent=self._opponent,
             remaining_matches=len(self._remaining_matches),
             standings=self._standings,
             user_players=self._clubs[self._users_club].players,
@@ -87,6 +88,8 @@ class DdGameDuck:
         self._selected_player = True
 
     def SetPractice(self, i1: int, i2: int):
+        """Sets a practice match between two selected players."""
+
         self._clubs[self._users_club].SetPractice(i1, i2)
 
     def Update(self):
@@ -130,7 +133,10 @@ class DdGameDuck:
                 self._schedule.append(None)
                 continue
 
-            self._schedule.append((DdScheduledMatchStruct(0, 1),))
+            if done % 2 == 0:
+                self._schedule.append((DdScheduledMatchStruct(0, 1),))
+            else:
+                self._schedule.append((DdScheduledMatchStruct(1, 0),))
             done += 1
         self._schedule.append(None)
 
@@ -147,6 +153,7 @@ class DdGameDuck:
                     age=DdGameplayConstants.STARTING_AGE.value,
                     level=0,
                 ))
+            club.SortPlayers()
 
         self._day = 0
         self._season += 1
@@ -186,6 +193,21 @@ class DdGameDuck:
             day_results.append(res)
 
         self._results.append(day_results)
+
+    @property
+    def _opponent(self):
+        if self._IsRecoveryDay():
+            return None
+
+        def ScheduleFilter(pair: DdScheduledMatchStruct):
+            return pair.home_pk == self._users_club
+
+        schedule = self._schedule[self._day]
+        planned_match = [pair for pair in schedule if ScheduleFilter(pair)]
+
+        if planned_match:
+            return self._clubs[planned_match[0].away_pk].selected_player
+        return None
 
     @property
     def _practice_matches(self):

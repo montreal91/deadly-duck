@@ -82,6 +82,15 @@ class DdClub:
         assert 0 <= i2 < len(self._players)
         self._practice_match = (i1, i2)
 
+    def SortPlayers(self):
+        """
+        Obviously, sorts players.
+
+        Added for convenience.
+        """
+
+        self._players.sort(key=lambda p: p.age)
+
     def UnsetPractice(self):
         """Unselects players for the practice match."""
 
