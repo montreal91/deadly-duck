@@ -56,3 +56,13 @@ def initapp():
     service = DdGameService()
     DdRole.InsertRoles()
     service.InsertClubs()
+
+
+if __name__ == '__main__':
+    from simplified.web_server import app as dd_app
+    from simplified.web_server import game_server
+    from simplified.web_server import socket
+
+    socket.run(dd_app)
+
+    game_server.join()

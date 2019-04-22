@@ -1,0 +1,40 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DDuck</title>
+  <script
+    type="text/javascript"
+    src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js">
+  </script>
+</head>
+<body>
+
+<div id="dd-app">
+  <span v-text="message"></span>
+  <button v-on:click="StartNewGame">Start New Game</button>
+  <hr>
+  <div v-if="context.day !== undefined">
+    Day: <span v-text="context.day"></span>
+    <ol>
+      <li v-for="p in context.user_players">
+        <player v-bind:player="p"></player>
+      </li>
+    </ol>
+    <button v-on:click="NextDay">Next day</button>
+  </div>
+</div>
+
+<script type="text/x-template" id="dd-template-players">
+  {% include "includes/players.html" %}
+</script>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue"></script>
+
+<script type="text/javascript" src="{{ url_for('static', filename='main.js')}}">
+</script>
+
+
+</body>
+</html>

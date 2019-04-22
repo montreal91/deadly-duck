@@ -8,7 +8,9 @@ Created Apr 09, 2019
 from collections import namedtuple
 from copy import deepcopy
 from enum import Enum
+from typing import Any
 from typing import Callable
+from typing import Dict
 
 from configuration.config_game import sets_to_win
 from stat_tools import LoadedToss
@@ -226,6 +228,15 @@ class DdScheduledMatchStruct:
         self.away_pk = away_pk
         self.is_played = False
 
+    @property
+    def json(self):
+        return dict(
+            home_pk=self.home_pk,
+            away_pk=self.away_pk,
+            is_played=self.is_played,
+        )
+
+
 
 class DdStandingsRowStruct:
     """Passive class for a row in standings."""
@@ -235,6 +246,15 @@ class DdStandingsRowStruct:
         self.matches_won = 0
         self.sets_won = 0
         self.games_won = 0
+
+    @property
+    def json(self) -> Dict[str, Any]:
+        return dict(
+            club_name=self.club_name,
+            matches_won=self.matches_won,
+            sets_won=self.sets_won,
+            games_won=self.games_won,
+        )
 
 
 def NaiveProbabilityFunction(home_skill: float, away_skill: float) -> float:
