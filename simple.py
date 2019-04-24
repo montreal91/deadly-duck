@@ -11,6 +11,8 @@ from simplified.player import DdPlayer
 
 
 class DdSimplifiedApp:
+    """Simple client for a game that runs in the console."""
+
     def __init__(self):
         self._game = DdGameDuck(DdGameParams(2, 44, 3))
         self._actions = {}
@@ -19,6 +21,8 @@ class DdSimplifiedApp:
         self._InitActions()
 
     def Run(self):
+        """Runs game."""
+
         while self._is_running and not self._game.season_over:
             self._PrintMain()
             self._ProcessInput()
@@ -69,16 +73,17 @@ class DdSimplifiedApp:
             print("Age: {0:2d}".format(plr.json["age"]), end=" ")
             print(
                 "Technique: {0:3.1f}/{1:3.1f}".format(
-                    plr.json["actual_technique"], plr.json["technique"]
+                    round(plr.json["actual_technique"] / 10, 1),
+                    round(plr.json["technique"] / 10, 1)
                 ),
                 end=" ",
             )
             print(
-                "Stamina: {0:3.1f}".format(plr.json["current_stamina"]),
+                "Stamina: {0:3d}".format(plr.json["current_stamina"]),
                 end=" ",
             )
             print(
-                "Exhaustion: {0:3.1f}".format(plr.json["exhaustion"]),
+                "Exhaustion: {0:3d}".format(plr.json["exhaustion"]),
                 end=" "
             )
             print()
@@ -103,10 +108,7 @@ class DdSimplifiedApp:
                 print("The away team names its player first.")
             return
 
-        print(opponent.initials, f"[{opponent.level}]\n")
-        print(f"Technique:  {opponent.actual_technique}")
-        print(f"Endurance:  {opponent.current_stamina}")
-        print(f"Exhaustion: {opponent.exhaustion}")
+        _PrintPlayer(opponent, False)
 
     def __ActionPractice(self, p1="0", p2="1"):
         if p1 == p2:
@@ -162,6 +164,25 @@ class DdSimplifiedApp:
                 sets=row.sets_won,
                 games=row.games_won,
             ))
+
+
+def _PrintPlayer(player: DdPlayer, own=False):
+    string = (
+        "{initials:s} [{level:d}]\n"
+        "Technique:  {actual_technique:3.1f} / {technique:3.1f}\n"
+        "Endurance:  {endurance:3.1f}\n"
+        "Exhaustion: {exhaustion:d}\n"
+    )
+    print(string.format(
+        initials=player.initials,
+        level=player.level,
+        actual_technique=round(player.actual_technique / 10, 1),
+        technique=round(player.technique / 10, 1),
+        endurance=player.endurance,
+        exhaustion=player.exhaustion,
+    ))
+    if own:
+        print(f"Exp: {player.experience} / {player.next_level_exp}")
 
 
 if __name__ == '__main__':

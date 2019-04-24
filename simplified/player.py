@@ -64,7 +64,7 @@ class DdPlayer:
 
     @property
     def actual_technique(self) -> float:
-        stamina_factor = self._current_stamina / self.max_stamina / 10
+        stamina_factor = self._current_stamina / self.max_stamina
         return round(self._technique * stamina_factor, _PRECISION)
 
     @property
@@ -123,7 +123,7 @@ class DdPlayer:
 
     @property
     def technique(self):
-        return round(self._technique / 10, _PRECISION)
+        return self._technique
 
     def AddExhaustion(self, value: int):
         """Adds Exhaustion."""
