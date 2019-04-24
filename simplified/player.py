@@ -22,6 +22,8 @@ from configuration.config_game import DdGameplayConstants
 _ENDURANCE_FACTOR = DdPlayerSkills.ENDURANCE_FACTOR
 _PRECISION = 1
 
+_EXHAUSTION_BOUNDS = tuple(range(0, 400, 20))
+
 
 class DdPlayer:
     """A class that describes a tennis player."""
@@ -78,6 +80,15 @@ class DdPlayer:
     @property
     def exhaustion(self) -> int:
         return self._exhaustion
+
+    @property
+    def days_to_recover(self) -> int:
+        """Number of days to fully recover."""
+
+        i = 0
+        while self._exhaustion >= _EXHAUSTION_BOUNDS[i]:
+            i += 1
+        return i
 
     @property
     def initials(self) -> str:
@@ -201,11 +212,23 @@ class DdPlayerFactory:
 
 
 def ExhaustedRecovery(player: DdPlayer) -> int:
-    """Player recovery function that involves exhaustion."""
+    """Player recovery function that involves exhaustion.
+
+    Naive exhaustion.
+    """
 
     base = player.max_stamina
     res = base * (100 - player.exhaustion) / 100
     return int(round(res))
+
+
+def ExhaustedLinearRecovery(player: DdPlayer) -> int:
+    """Player recovery function that involves exhaustion.
+
+    Linear exhaustion, i.e. dependency of days to fully recover from exhaustion
+    is linear.
+    """
+    return int(round(player.max_stamina / player.days_to_recover))
 
 
 def PlayerModelComparator(player_model):

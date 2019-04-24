@@ -17,11 +17,16 @@ from simplified.player import PlayerModelComparator
 class DdClub:
     """A club in the tournament."""
 
+    _name: str
+    _players: List[DdPlayer]
+    _practice_match: Optional[Tuple[int, int]]
+    _selected_player: Optional[int]
+
     def __init__(self, name: str):
         self._name = name
         self._players = []
-        self._selected_player = None
         self._practice_match = None
+        self._selected_player = None
 
     @property
     def name(self) -> str:
@@ -69,7 +74,7 @@ class DdClub:
 
         self._players.pop(index)
 
-    def SelectPlayer(self, index: int):
+    def SelectPlayer(self, index: Optional[int]):
         """Selects player for the next match."""
 
         self._selected_player = index

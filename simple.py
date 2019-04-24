@@ -8,11 +8,12 @@ Created Apr 09, 2019
 from simplified.game import DdGameDuck
 from simplified.game import DdGameParams
 from simplified.player import DdPlayer
+from simplified.player import ExhaustedLinearRecovery
 
 
 class DdSimplifiedApp:
     def __init__(self):
-        self._game = DdGameDuck(DdGameParams(2, 44, 3))
+        self._game = DdGameDuck(DdGameParams(2, 44, 4, ExhaustedLinearRecovery))
         self._actions = {}
         self._is_running = True
 
@@ -104,7 +105,7 @@ class DdSimplifiedApp:
             return
 
         print(opponent.initials, f"[{opponent.level}]\n")
-        print(f"Technique:  {opponent.actual_technique}")
+        print(f"Technique:  {opponent.actual_technique} / {opponent.technique}")
         print(f"Endurance:  {opponent.current_stamina}")
         print(f"Exhaustion: {opponent.exhaustion}")
 
@@ -127,18 +128,21 @@ class DdSimplifiedApp:
 
     def __ActionResults(self):
         clubs = self._game.context["clubs"]
-        res = self._game.context["last_results"]
-        print("{0:s} vs {1:s}\n{2:s}".format(
-                clubs[res.home_pk],
-                clubs[res.away_pk],
-                res.full_score,
-            ))
-        print("Your player has gained", end=" ")
-        if self._game.context["users_club"] == res.home_pk:
-            print(res.home_exp, end=" ")
-        else:
-            print(res.away_exp, end=" ")
-        print("exp.")
+        uk = self._game.context["users_club"]
+        for res in self._game.context["last_results"]:
+            print("{0:s} vs {1:s}\n{2:s}".format(
+                    clubs[res.home_pk],
+                    clubs[res.away_pk],
+                    res.full_score,
+                ))
+            exp = None
+            if res.home_pk == uk:
+                exp = res.home_exp
+            elif res.away_pk == uk:
+                exp = res.away_exp
+
+            if exp is not None:
+                print("Gained exp:", exp)
 
     def __ActionSelect(self, index="0"):
         try:

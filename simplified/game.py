@@ -6,9 +6,11 @@ Created Apr 09, 2019
 """
 
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import NamedTuple
+from typing import Optional
 
 from configuration.config_game import DdGameplayConstants
 from simplified.club import DdClub
@@ -19,7 +21,6 @@ from simplified.match import DdStandingsRowStruct
 from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerFactory
-from simplified.player import ExhaustedRecovery
 
 
 class DdGameParams(NamedTuple):
@@ -28,6 +29,7 @@ class DdGameParams(NamedTuple):
     exhaustion_per_set: int
     matches_to_play: int
     recovery_day: int
+    recovery_function: Callable[[DdPlayer], int]
 
 
 class DdGameDuck:
@@ -122,8 +124,8 @@ class DdGameDuck:
                 if match.home_pk == club_pk or match.away_pk == club_pk:
                     yield match
 
-    def _IsRecoveryDay(self):
-        return self._day % self._params.recovery_day == 0
+    def _IsRecoveryDay(self) -> bool:
+        return self._schedule[self._day] is None
 
     def _MakeSchedule(self):
         day = -1
@@ -165,10 +167,10 @@ class DdGameDuck:
         self._schedule = []
         self._MakeSchedule()
 
-    def _Recover(self, recover_function):
+    def _Recover(self):
         for club in self._clubs:
             for player in club.players:
-                player.RecoverStamina(recover_function(player))
+                player.RecoverStamina(self._params.recovery_function(player))
 
     def _PlayOneDay(self):
         for match in self._practice_matches:
@@ -179,6 +181,7 @@ class DdGameDuck:
 
         day = self._schedule[self._day]
         if day is None:
+            self._Recover()
             return
 
         day_results = []
@@ -194,20 +197,17 @@ class DdGameDuck:
             day_results.append(res)
 
         self._results.append(day_results)
+        self._Recover()
 
     @property
-    def _last_results(self):
+    def _last_results(self) -> List[DdMatchResult]:
         if not self._results:
             return []
 
-        results = self._results[-1]
-        for m in self._results[-1]:
-            if m.home_pk == self._users_club or m.away_pk == self._users_club:
-                return m
-        raise ValueError("Required result does not exist.")
+        return self._results[-1]
 
     @property
-    def _opponent(self):
+    def _opponent(self) -> Optional[DdPlayer]:
         if self._IsRecoveryDay():
             return None
 
@@ -215,6 +215,10 @@ class DdGameDuck:
             return pair.home_pk == self._users_club
 
         schedule = self._schedule[self._day]
+
+        # Just in case
+        if schedule is None:
+            return None
         planned_match = [pair for pair in schedule if ScheduleFilter(pair)]
 
         if planned_match:
@@ -246,7 +250,7 @@ class DdGameDuck:
         return results
 
     def _ProcessMatch(
-        self, plr1: DdPlayer, plr2: DdPlayerFactory, practice: bool = False
+        self, plr1: DdPlayer, plr2: DdPlayer, practice: bool = False
     ) -> DdMatchResult:
         mp = DdMatchProcessor(LinearProbabilityFunction)
         res = mp.ProcessMatch(plr1, plr2, 1 if practice else 2)
@@ -265,7 +269,7 @@ class DdGameDuck:
         plr1.AddExhaustion(exhaustion)
         plr2.AddExhaustion(exhaustion)
 
-        self._Recover(ExhaustedRecovery)
+        # self._Recover()
 
         self._last_score = res.full_score
 
