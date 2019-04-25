@@ -18,7 +18,6 @@ from simplified.match import DdMatchProcessor
 from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
 from simplified.match import DdStandingsRowStruct
-from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerFactory
 
@@ -26,8 +25,10 @@ from simplified.player import DdPlayerFactory
 class DdGameParams(NamedTuple):
     """Passive class to store game parameters"""
 
+    exhaustion_function: Callable[[int], int]
     exhaustion_per_set: int
     matches_to_play: int
+    probability_function: Callable[[float, float], float]
     recovery_day: int
     recovery_function: Callable[[DdPlayer], int]
 
@@ -184,7 +185,11 @@ class DdGameDuck:
 
     def _PlayOneDay(self):
         for match in self._practice_matches:
-            self._ProcessMatch(match[0], match[1], practice=True)
+            self._match_processor.ProcessMatch(
+                home_player=match[0],
+                away_player=match[1],
+                sets_to_win=1
+            )
 
         for club in self._clubs:
             club.UnsetPractice()
@@ -196,9 +201,10 @@ class DdGameDuck:
 
         day_results = []
         for match in day:
-            res = self._ProcessMatch(
+            res = self._match_processor.ProcessMatch(
                 self._clubs[match.home_pk].selected_player,
                 self._clubs[match.away_pk].selected_player,
+                sets_to_win=2,
             )
             match.is_played = True
 
@@ -215,6 +221,16 @@ class DdGameDuck:
             return []
 
         return self._results[-1]
+
+    @property
+    def _match_processor(self) -> DdMatchProcessor:
+        def ExhaustionFunction(sets: int) -> int:
+            base = self._params.exhaustion_function(sets)
+            return base * self._params.exhaustion_per_set
+        return DdMatchProcessor(
+            exhaustion_function=ExhaustionFunction,
+            probability_function=self._params.probability_function
+        )
 
     @property
     def _opponent(self) -> Optional[DdPlayer]:
@@ -258,25 +274,3 @@ class DdGameDuck:
                 results[match.away_pk].games_won += match.away_games
 
         return results
-
-    def _ProcessMatch(
-        self, plr1: DdPlayer, plr2: DdPlayer, practice: bool = False
-    ) -> DdMatchResult:
-        mp = DdMatchProcessor(LinearProbabilityFunction)
-        res = mp.ProcessMatch(plr1, plr2, 1 if practice else 2)
-
-        res.home_exp = DdPlayer.CalculateNewExperience(res.home_sets, plr2)
-        res.away_exp = DdPlayer.CalculateNewExperience(res.away_sets, plr1)
-
-        plr1.AddExperience(res.home_exp)
-        plr2.AddExperience(res.away_exp)
-        plr1.RemoveStaminaLostInMatch(res.home_stamina_lost)
-        plr2.RemoveStaminaLostInMatch(res.away_stamina_lost)
-
-        exhaustion = res.home_sets + res.away_sets
-        exhaustion *= self._params.exhaustion_per_set
-
-        plr1.AddExhaustion(exhaustion)
-        plr2.AddExhaustion(exhaustion)
-
-        return res

@@ -7,6 +7,8 @@ Created Apr 09, 2019
 
 from simplified.game import DdGameDuck
 from simplified.game import DdGameParams
+from simplified.match import CalculateConstExhaustion
+from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
 from simplified.player import ExhaustedLinearRecovery
 
@@ -15,7 +17,14 @@ class DdSimplifiedApp:
     """Simple client for a game that runs in the console."""
 
     def __init__(self):
-        self._game = DdGameDuck(DdGameParams(2, 44, 4, ExhaustedLinearRecovery))
+        self._game = DdGameDuck(DdGameParams(
+            exhaustion_function=CalculateConstExhaustion,
+            exhaustion_per_set=2,
+            matches_to_play=44,
+            probability_function=LinearProbabilityFunction,
+            recovery_day=4,
+            recovery_function=ExhaustedLinearRecovery,
+        ))
         self._actions = {}
         self._is_running = True
 
