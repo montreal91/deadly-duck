@@ -7,6 +7,8 @@ Created Apr 09, 2019
 
 from simplified.game import DdGameDuck
 from simplified.game import DdGameParams
+from simplified.match import CalculateConstExhaustion
+from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
 from simplified.player import ExhaustedLinearRecovery
 
@@ -15,7 +17,15 @@ class DdSimplifiedApp:
     """Simple client for a game that runs in the console."""
 
     def __init__(self):
-        self._game = DdGameDuck(DdGameParams(2, 44, 4, ExhaustedLinearRecovery))
+        self._game = DdGameDuck(DdGameParams(
+            exdiv_matches=2,
+            exhaustion_function=CalculateConstExhaustion,
+            exhaustion_per_set=2,
+            indiv_matches=2,
+            probability_function=LinearProbabilityFunction,
+            recovery_day=4,
+            recovery_function=ExhaustedLinearRecovery,
+        ))
         self._actions = {}
         self._is_running = True
 
@@ -109,7 +119,8 @@ class DdSimplifiedApp:
                 print("The away team names its player first.")
             return
 
-        _PrintPlayer(opponent, False)
+        print(opponent[0])
+        _PrintPlayer(opponent[1], False)
 
     def __ActionPractice(self, p1="0", p2="1"):
         if p1 == p2:
@@ -145,6 +156,7 @@ class DdSimplifiedApp:
 
             if exp is not None:
                 print("Gained exp:", exp)
+            print()
 
     def __ActionSelect(self, index="0"):
         try:
@@ -155,8 +167,16 @@ class DdSimplifiedApp:
             print("Please, input a correct integer.")
 
     def __ActionStandings(self):
+        import time
+        t1 = time.time()
+        context = self._game.context
+        t2 = time.time()
+
+        print(f"Time to calculate context: {t2 - t1:.4f}")
+        print("_" * 80)
+
         standings = sorted(
-            self._game.context["standings"],
+            context["standings"],
             key=lambda x: (x.sets_won, x.games_won),
             reverse=True
         )

@@ -5,35 +5,55 @@ Created Apr 09, 2019
 @author montreal91
 """
 
+from random import shuffle
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Generator
 from typing import List
 from typing import NamedTuple
 from typing import Optional
+from typing import Tuple
 
+from configuration.config_game import club_names
 from configuration.config_game import DdGameplayConstants
 from simplified.club import DdClub
 from simplified.match import DdMatchProcessor
 from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
 from simplified.match import DdStandingsRowStruct
-from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerFactory
+
+
+ScheduleDay = List[DdScheduledMatchStruct]
 
 
 class DdGameParams(NamedTuple):
     """Passive class to store game parameters"""
 
+    exdiv_matches: int
+    exhaustion_function: Callable[[int], int]
     exhaustion_per_set: int
-    matches_to_play: int
+    indiv_matches: int
+    probability_function: Callable[[float, float], float]
     recovery_day: int
     recovery_function: Callable[[DdPlayer], int]
 
 
 class DdGameDuck:
     """A class that incapsulates the game logic."""
+
+    _clubs: List[DdClub]
+    _day: int
+    _history: List[List[DdStandingsRowStruct]]
+    _params: DdGameParams
+    _player_factory: DdPlayerFactory
+    _results: List[List[DdMatchResult]]
+    _schedule: List[Optional[List[DdScheduledMatchStruct]]]
+    _season: int
+    _selected_player: bool
+    _users_club: int
 
     def __init__(self, params: DdGameParams):
         self._day = 0
@@ -47,18 +67,9 @@ class DdGameDuck:
         self._users_club = 0
 
         self._clubs = []
-        self._clubs.append(DdClub(name="Auckland Aces"))
-        self._clubs.append(DdClub(name="Western Fury"))
 
-        for i in range(5):
-            age = DdGameplayConstants.STARTING_AGE.value + i
-
-            self._clubs[0].AddPlayer(
-                self._player_factory.CreatePlayer(age=age, level=i*2)
-            )
-            self._clubs[1].AddPlayer(
-                self._player_factory.CreatePlayer(age=age, level=i*2)
-            )
+        for club_name in club_names[1] + club_names[2]:
+            self._AddClub(club_name=club_name)
         self._MakeSchedule()
 
     @property
@@ -114,6 +125,17 @@ class DdGameDuck:
             self._NextSeason()
         return True
 
+    def _AddClub(self, club_name: str):
+        club = DdClub(name=club_name)
+        max_players = 5
+        for i in range(max_players):
+            age = DdGameplayConstants.STARTING_AGE.value + i
+
+            club.AddPlayer(
+                self._player_factory.CreatePlayer(age=age, level=i*2)
+            )
+        self._clubs.append(club)
+
     def _GetClubSchedule(self, club_pk):
         for day in self._schedule:
             if day is None:
@@ -127,20 +149,55 @@ class DdGameDuck:
     def _IsRecoveryDay(self) -> bool:
         return self._schedule[self._day] is None
 
+    def _MakeFullSchedule(self, pk_list: List[int]):
+        def MirrorDay(matches: List[DdScheduledMatchStruct]):
+            return [
+                DdScheduledMatchStruct(m.away_pk, m.home_pk) for m in matches
+            ]
+
+        def CopyDay(matches):
+            return [
+                DdScheduledMatchStruct(m.home_pk, m.away_pk) for m in matches
+            ]
+
+        def ComposeDays(matches: List[DdScheduledMatchStruct], n: int):
+            res = []
+            for i in range(n // 2):
+                res.append(CopyDay(matches))
+            for i in range(n // 2):
+                res.append(MirrorDay(matches))
+            return res
+
+        basic_schedule = _MakeBasicSchedule(pk_list)
+
+        res: List[ScheduleDay] = []
+        in_div = self._params.indiv_matches
+        ex_div = self._params.exdiv_matches
+
+        for i in range(len(basic_schedule)):
+            if i % 2 == 0:
+                res.extend(ComposeDays(basic_schedule[i], ex_div))
+            else:
+                res.extend(ComposeDays(basic_schedule[i], in_div))
+        return res
+
     def _MakeSchedule(self):
+        pk_list = list(range(len(self._clubs)))
+        shuffle(pk_list)
+        days = self._MakeFullSchedule(pk_list)
+        shuffle(days)
+
         day = -1
         done = 0
-        while done < self._params.matches_to_play:
+        while done < len(days):
             day += 1
             if day % self._params.recovery_day == 0:
                 self._schedule.append(None)
                 continue
 
-            if done % 2 == 0:
-                self._schedule.append((DdScheduledMatchStruct(0, 1),))
-            else:
-                self._schedule.append((DdScheduledMatchStruct(1, 0),))
+            self._schedule.append(days[done])
             done += 1
+
         self._schedule.append(None)
 
     def _NextSeason(self):
@@ -163,7 +220,6 @@ class DdGameDuck:
 
         self._history.append(self._standings)
         self._results = []
-        self._last_score = ""
         self._schedule = []
         self._MakeSchedule()
 
@@ -174,7 +230,11 @@ class DdGameDuck:
 
     def _PlayOneDay(self):
         for match in self._practice_matches:
-            self._ProcessMatch(match[0], match[1], practice=True)
+            self._match_processor.ProcessMatch(
+                home_player=match[0],
+                away_player=match[1],
+                sets_to_win=1
+            )
 
         for club in self._clubs:
             club.UnsetPractice()
@@ -186,9 +246,10 @@ class DdGameDuck:
 
         day_results = []
         for match in day:
-            res = self._ProcessMatch(
+            res = self._match_processor.ProcessMatch(
                 self._clubs[match.home_pk].selected_player,
                 self._clubs[match.away_pk].selected_player,
+                sets_to_win=2,
             )
             match.is_played = True
 
@@ -207,7 +268,17 @@ class DdGameDuck:
         return self._results[-1]
 
     @property
-    def _opponent(self) -> Optional[DdPlayer]:
+    def _match_processor(self) -> DdMatchProcessor:
+        def ExhaustionFunction(sets: int) -> int:
+            base = self._params.exhaustion_function(sets)
+            return base * self._params.exhaustion_per_set
+        return DdMatchProcessor(
+            exhaustion_function=ExhaustionFunction,
+            probability_function=self._params.probability_function
+        )
+
+    @property
+    def _opponent(self) -> Optional[Tuple[str, DdPlayer]]:
         if self._IsRecoveryDay():
             return None
 
@@ -222,7 +293,11 @@ class DdGameDuck:
         planned_match = [pair for pair in schedule if ScheduleFilter(pair)]
 
         if planned_match:
-            return self._clubs[planned_match[0].away_pk].selected_player
+            opponent_club = self._clubs[planned_match[0].away_pk]
+            return (
+                opponent_club.name,
+                opponent_club.selected_player
+            )
         return None
 
     @property
@@ -249,28 +324,19 @@ class DdGameDuck:
 
         return results
 
-    def _ProcessMatch(
-        self, plr1: DdPlayer, plr2: DdPlayer, practice: bool = False
-    ) -> DdMatchResult:
-        mp = DdMatchProcessor(LinearProbabilityFunction)
-        res = mp.ProcessMatch(plr1, plr2, 1 if practice else 2)
+def _MakeBasicSchedule(pk_list: List[int]):
+    def MakePairs(lst: List[int]) -> ScheduleDay:
+        n = len(lst) - 1
+        mid = len(lst) // 2
+        return [DdScheduledMatchStruct(lst[i], lst[n-i]) for i in range(mid)]
 
-        res.home_exp = DdPlayer.CalculateNewExperience(res.home_sets, plr2)
-        res.away_exp = DdPlayer.CalculateNewExperience(res.away_sets, plr1)
+    def Shift(lst: List[int], n: int) -> List[int]:
+        if n == 0:
+            return list(lst)
+        return [lst[0]] + lst[-n:] + lst[1:-n]
 
-        plr1.AddExperience(res.home_exp)
-        plr2.AddExperience(res.away_exp)
-        plr1.RemoveStaminaLostInMatch(res.home_stamina_lost)
-        plr2.RemoveStaminaLostInMatch(res.away_stamina_lost)
+    def ShiftGen(lst: List[int]) -> Generator[List[int], None, None]:
+        for i in range(len(lst) - 1):
+            yield Shift(lst, i)
 
-        exhaustion = res.home_sets + res.away_sets
-        exhaustion *= self._params.exhaustion_per_set
-
-        plr1.AddExhaustion(exhaustion)
-        plr2.AddExhaustion(exhaustion)
-
-        # self._Recover()
-
-        self._last_score = res.full_score
-
-        return res
+    return [MakePairs(l) for l in ShiftGen(pk_list)]

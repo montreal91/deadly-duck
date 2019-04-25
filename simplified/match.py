@@ -13,6 +13,7 @@ from typing import Callable
 from typing import Dict
 
 from configuration.config_game import sets_to_win
+from simplified.player import DdPlayer
 from stat_tools import LoadedToss
 
 
@@ -109,10 +110,16 @@ class DdMatchResult:
 class DdMatchProcessor:
     """This class incapsulates inner logic of a tennis match."""
 
+    _exhaustion_function: Callable[[int], int]
     _probability_function: Callable[[float, float], float]
     _res: DdMatchResult
 
-    def __init__(self, probability_function: Callable[[float, float], float]):
+    def __init__(
+        self,
+        exhaustion_function: Callable[[int], int],
+        probability_function: Callable[[float, float], float]
+    ):
+        self._exhaustion_function = exhaustion_function
         self._probability_function = probability_function
         self._res = DdMatchResult()
 
@@ -145,6 +152,26 @@ class DdMatchProcessor:
                 self._res.home_sets = sets_to_win
                 self._res.away_sets = 0
                 break
+
+        self._res.home_exp = DdPlayer.CalculateNewExperience(
+            self._res.home_sets, away_player
+        )
+        self._res.away_exp = DdPlayer.CalculateNewExperience(
+            self._res.away_sets, home_player
+        )
+
+        home_player.AddExperience(self._res.home_exp)
+        away_player.AddExperience(self._res.away_exp)
+
+        home_player.RemoveStaminaLostInMatch(self._res.home_stamina_lost)
+        away_player.RemoveStaminaLostInMatch(self._res.away_stamina_lost)
+
+        exhaustion = self._exhaustion_function(
+            self._res.home_sets + self._res.away_sets
+        )
+
+        home_player.AddExhaustion(exhaustion)
+        away_player.AddExhaustion(exhaustion)
 
         return deepcopy(self._res)
 
@@ -228,6 +255,9 @@ class DdScheduledMatchStruct:
         self.away_pk = away_pk
         self.is_played = False
 
+    def __repr__(self):
+        return f"<{self.home_pk} - {self.away_pk}>"
+
     @property
     def json(self):
         return dict(
@@ -255,6 +285,12 @@ class DdStandingsRowStruct:
             sets_won=self.sets_won,
             games_won=self.games_won,
         )
+
+def CalculateConstExhaustion(sets: int) -> int:
+    return sets
+
+def CalculateLinearExhaustion(sets: int) -> int:
+    return sum(range(sets + 1))
 
 
 def NaiveProbabilityFunction(home_skill: float, away_skill: float) -> float:

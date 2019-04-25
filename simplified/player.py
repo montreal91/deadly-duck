@@ -74,6 +74,15 @@ class DdPlayer:
         return self._current_stamina
 
     @property
+    def days_to_recover(self) -> int:
+        """Number of days to fully recover."""
+
+        i = 0
+        while self._exhaustion >= _EXHAUSTION_BOUNDS[i]:
+            i += 1
+        return i
+
+    @property
     def endurance(self) -> float:
         return round(self._endurance / 10, _PRECISION)
 
@@ -82,13 +91,11 @@ class DdPlayer:
         return self._exhaustion
 
     @property
-    def days_to_recover(self) -> int:
-        """Number of days to fully recover."""
+    def experience(self) -> int:
+        """Player's current experience."""
 
-        i = 0
-        while self._exhaustion >= _EXHAUSTION_BOUNDS[i]:
-            i += 1
-        return i
+        return self._experience
+
 
     @property
     def initials(self) -> str:
