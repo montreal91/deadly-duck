@@ -167,8 +167,16 @@ class DdSimplifiedApp:
             print("Please, input a correct integer.")
 
     def __ActionStandings(self):
+        import time
+        t1 = time.time()
+        context = self._game.context
+        t2 = time.time()
+
+        print(f"Time to calculate context: {t2 - t1:.4f}")
+        print("_" * 80)
+
         standings = sorted(
-            self._game.context["standings"],
+            context["standings"],
             key=lambda x: (x.sets_won, x.games_won),
             reverse=True
         )
