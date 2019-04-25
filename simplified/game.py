@@ -35,6 +35,17 @@ class DdGameParams(NamedTuple):
 class DdGameDuck:
     """A class that incapsulates the game logic."""
 
+    _clubs: List[DdClub]
+    _day: int
+    _history: List[List[DdStandingsRowStruct]]
+    _params: DdGameParams
+    _player_factory: DdPlayerFactory
+    _results: List[List[DdMatchResult]]
+    _schedule: List[Optional[List[DdScheduledMatchStruct]]]
+    _season: int
+    _selected_player: bool
+    _users_club: int
+
     def __init__(self, params: DdGameParams):
         self._day = 0
         self._history = []
@@ -163,7 +174,6 @@ class DdGameDuck:
 
         self._history.append(self._standings)
         self._results = []
-        self._last_score = ""
         self._schedule = []
         self._MakeSchedule()
 
@@ -268,9 +278,5 @@ class DdGameDuck:
 
         plr1.AddExhaustion(exhaustion)
         plr2.AddExhaustion(exhaustion)
-
-        # self._Recover()
-
-        self._last_score = res.full_score
 
         return res
