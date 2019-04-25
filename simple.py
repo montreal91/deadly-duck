@@ -18,9 +18,10 @@ class DdSimplifiedApp:
 
     def __init__(self):
         self._game = DdGameDuck(DdGameParams(
+            exdiv_matches=2,
             exhaustion_function=CalculateConstExhaustion,
             exhaustion_per_set=2,
-            matches_to_play=44,
+            indiv_matches=2,
             probability_function=LinearProbabilityFunction,
             recovery_day=4,
             recovery_function=ExhaustedLinearRecovery,
@@ -118,7 +119,8 @@ class DdSimplifiedApp:
                 print("The away team names its player first.")
             return
 
-        _PrintPlayer(opponent, False)
+        print(opponent[0])
+        _PrintPlayer(opponent[1], False)
 
     def __ActionPractice(self, p1="0", p2="1"):
         if p1 == p2:
@@ -154,6 +156,7 @@ class DdSimplifiedApp:
 
             if exp is not None:
                 print("Gained exp:", exp)
+            print()
 
     def __ActionSelect(self, index="0"):
         try:
