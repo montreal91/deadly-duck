@@ -8,9 +8,9 @@ Created Apr 09, 2019
 import sys
 
 from simplified.game import DdGameDuck
-from simplified.game import DdGameParams
 from simplified.match import CalculateConstExhaustion
 from simplified.match import LinearProbabilityFunction
+from simplified.parameters import DdGameParams
 from simplified.player import DdPlayer
 from simplified.player import ExhaustedLinearRecovery
 
@@ -31,6 +31,7 @@ class DdSimplifiedApp:
             probability_function=LinearProbabilityFunction,
             recovery_day=4,
             recovery_function=ExhaustedLinearRecovery,
+            playoff_clubs=8,
         ))
         self._actions = {}
         self._is_running = True

@@ -96,7 +96,6 @@ class DdPlayer:
 
         return self._experience
 
-
     @property
     def initials(self) -> str:
         """Returns the name of the player in form of 'J. K. Rowling'."""

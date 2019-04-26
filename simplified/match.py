@@ -110,8 +110,7 @@ class DdMatchResult:
 class DdMatchProcessor:
     """This class incapsulates inner logic of a tennis match."""
 
-    _exhaustion_function: Callable[[int], int]
-    _probability_function: Callable[[float, float], float]
+    _callbacks: Dict[str, Callable]
     _res: DdMatchResult
 
     def __init__(
@@ -119,8 +118,9 @@ class DdMatchProcessor:
         exhaustion_function: Callable[[int], int],
         probability_function: Callable[[float, float], float]
     ):
-        self._exhaustion_function = exhaustion_function
-        self._probability_function = probability_function
+        self._callbacks = {}
+        self._callbacks["exhaustion_function"] = exhaustion_function
+        self._callbacks["probability_function"] = probability_function
         self._res = DdMatchResult()
 
     def ProcessMatch(
@@ -245,6 +245,16 @@ class DdMatchProcessor:
             away_games=away_games,
             set_status=DdSetStatuses.REGULAR,
         )
+
+    @property
+    def _exhaustion_function(self) -> Callable[[int], int]:
+        return self._callbacks["exhaustion_function"]
+
+    @property
+    def _probability_function(self) -> Callable[[float, float], float]:
+        return self._callbacks["probability_function"]
+
+
 
 
 class DdScheduledMatchStruct:
