@@ -5,12 +5,18 @@ Created Apr 09, 2019
 @author montreal91
 """
 
+import sys
+
 from simplified.game import DdGameDuck
 from simplified.game import DdGameParams
 from simplified.match import CalculateConstExhaustion
 from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
 from simplified.player import ExhaustedLinearRecovery
+
+
+BOLD = "\033[;1m"
+RESET = "\033[0;0m"
 
 
 class DdSimplifiedApp:
@@ -33,17 +39,15 @@ class DdSimplifiedApp:
 
     def Run(self):
         """Runs game."""
-
-        while self._is_running and not self._game.season_over:
+        print("Type ? for help.")
+        while self._is_running:
             self._PrintMain()
             self._ProcessInput()
 
-        if self._is_running:
-            print("_" * 80)
-            print("Final standings\n")
-            self._actions["standings"]()
-
     def _InitActions(self):
+        self._actions["?"] = self.__ActionHelp
+        self._actions["h"] = self.__ActionHistory
+        self._actions["history"] = self.__ActionHistory
         self._actions["l"] = self.__ActionList
         self._actions["list"] = self.__ActionList
         self._actions["n"] = self.__ActionNext
@@ -61,6 +65,8 @@ class DdSimplifiedApp:
         self._actions["st"] = self.__ActionStandings
         self._actions["standings"] = self.__ActionStandings
 
+        self._actions["_m"] = self.__ActionMeasure
+
     def _PrintMain(self):
         ctx = self._game.context
         print("\nDay: {0:2d}".format(ctx["day"]))
@@ -68,14 +74,38 @@ class DdSimplifiedApp:
 
     def _ProcessInput(self):
         user_input = input(">> ").split("/")
+        self._actions.setdefault(
+            user_input[0], lambda *_ : print("No such action.")
+        )
 
-        if user_input[0] in self._actions:
-            if len(user_input) == 1:
-                self._actions[user_input[0]]()
-            else:
-                self._actions[user_input[0]](*user_input[1:])
+        action = self._actions[user_input[0]]
+        if len(user_input) - 1 in range(*_GetNumberOfArguments(action)):
+            action(*user_input[1:])
         else:
             print("Your input is incorrect.")
+
+    def __ActionHelp(self):
+        with open("simplified/help.txt") as help_file:
+            print(help_file.read())
+
+    def __ActionHistory(self, season: str):
+        try:
+            s = int(season)
+            ctx = self._game.context
+
+            if s > len(ctx["history"]):
+                print(f"Season {s} is not finished yet.")
+                return
+            if s < 1:
+                print(f"Season should be a positive integer")
+                return
+            _PrintStandings(
+                standings=ctx["history"][s - 1],
+                club_names=ctx["clubs"],
+                users_club=ctx["users_club"],
+            )
+        except ValueError:
+            print("Season should be a valid integer.")
 
     def __ActionList(self):
         for i in range(len(self._game.context["user_players"])):
@@ -98,6 +128,14 @@ class DdSimplifiedApp:
                 end=" "
             )
             print()
+
+    def __ActionMeasure(self):
+        import time
+        t1 = time.time()
+        context = self._game.context
+        t2 = time.time()
+
+        print(f"Time to calculate context: {t2 - t1:.4f}")
 
     def __ActionNext(self):
         recovery = self._game.context["is_recovery_day"]
@@ -143,11 +181,6 @@ class DdSimplifiedApp:
         clubs = self._game.context["clubs"]
         uk = self._game.context["users_club"]
         for res in self._game.context["last_results"]:
-            print("{0:s} vs {1:s}\n{2:s}".format(
-                    clubs[res.home_pk],
-                    clubs[res.away_pk],
-                    res.full_score,
-                ))
             exp = None
             if res.home_pk == uk:
                 exp = res.home_exp
@@ -155,7 +188,16 @@ class DdSimplifiedApp:
                 exp = res.away_exp
 
             if exp is not None:
+                sys.stdout.write(BOLD)
+            print("{0:s} vs {1:s}\n{2:s}".format(
+                    clubs[res.home_pk],
+                    clubs[res.away_pk],
+                    res.full_score,
+                ))
+
+            if exp is not None:
                 print("Gained exp:", exp)
+                sys.stdout.write(RESET)
             print()
 
     def __ActionSelect(self, index="0"):
@@ -167,27 +209,20 @@ class DdSimplifiedApp:
             print("Please, input a correct integer.")
 
     def __ActionStandings(self):
-        import time
-        t1 = time.time()
         context = self._game.context
-        t2 = time.time()
-
-        print(f"Time to calculate context: {t2 - t1:.4f}")
-        print("_" * 80)
-
-        standings = sorted(
+        _PrintStandings(
             context["standings"],
-            key=lambda x: (x.sets_won, x.games_won),
-            reverse=True
+            context["clubs"],
+            context["users_club"]
         )
-        for i in range(len(standings)):
-            row = standings[i]
-            print("{pos:02d} {sets:2d} {games:3d} {club_name:s}".format(
-                club_name=row.club_name,
-                pos=i+1,
-                sets=row.sets_won,
-                games=row.games_won,
-            ))
+
+
+def _GetNumberOfArguments(function):
+    max_ = function.__code__.co_argcount
+    min_ = max_
+    if function.__defaults__ is not None:
+        min_ -= len(function.__defaults__)
+    return min_ - 1, max_
 
 
 def _PrintPlayer(player: DdPlayer, own=False):
@@ -207,6 +242,26 @@ def _PrintPlayer(player: DdPlayer, own=False):
     ))
     if own:
         print(f"Exp: {player.experience} / {player.next_level_exp}")
+
+
+def _PrintStandings(standings, club_names, users_club):
+    standings = sorted(
+        standings,
+        key=lambda x: (x.sets_won, x.games_won),
+        reverse=True
+    )
+    for i in range(len(standings)):
+        row = standings[i]
+        if row.club_pk == users_club:
+            sys.stdout.write(BOLD)
+        print("{pos:02d} {sets:2d} {games:3d} {club_name:s}".format(
+            club_name=club_names[row.club_pk],
+            pos=i+1,
+            sets=row.sets_won,
+            games=row.games_won,
+        ))
+        if row.club_pk == users_club:
+            sys.stdout.write(RESET)
 
 
 if __name__ == '__main__':

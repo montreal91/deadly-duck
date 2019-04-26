@@ -267,12 +267,11 @@ class DdScheduledMatchStruct:
         )
 
 
-
 class DdStandingsRowStruct:
     """Passive class for a row in standings."""
 
-    def __init__(self, club_name: str):
-        self.club_name = club_name
+    def __init__(self, club_pk: int):
+        self.club_pk = club_pk
         self.matches_won = 0
         self.sets_won = 0
         self.games_won = 0
@@ -286,8 +285,10 @@ class DdStandingsRowStruct:
             games_won=self.games_won,
         )
 
+
 def CalculateConstExhaustion(sets: int) -> int:
     return sets
+
 
 def CalculateLinearExhaustion(sets: int) -> int:
     return sum(range(sets + 1))

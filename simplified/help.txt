@@ -1,0 +1,41 @@
+
+Help
+
+Arguments to the actions are passed in the next form:
+action/arg_one/arg_two/arg_three
+
+Actions:
+    ? -- prints this text
+
+    h|history
+        argument: season number
+        prints standings for one of the previous seasons
+
+    l|list
+        prints list of accessible players
+
+    n|next
+        proceeds to the next day if possible
+
+    o|opponent
+        prints stats of the next opponent if possble
+
+    p|practice
+        arguments: two indexes from players list to practice
+        sets a practice match between two players
+
+    q|quit
+        quits program immediately
+
+    rem
+        number of remaining matches
+
+    res
+        list of most recent results
+
+    s|select
+        argument: index of a player for the next match
+        selects a player for the next match
+
+    st|standings:
+        prints current standings

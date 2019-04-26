@@ -86,6 +86,7 @@ class DdGameDuck:
             standings=self._standings,
             user_players=self._clubs[self._users_club].players,
             users_club=self._users_club,
+            history=self._history,
         )
 
     @property
@@ -312,7 +313,7 @@ class DdGameDuck:
 
     @property
     def _standings(self) -> List[DdStandingsRowStruct]:
-        results = [DdStandingsRowStruct(club.name) for club in self._clubs]
+        results = [DdStandingsRowStruct(i) for i in range(len(self._clubs))]
 
         for day in self._results:
             for match in day:
