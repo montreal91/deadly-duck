@@ -289,7 +289,7 @@ class DdStandingsRowStruct:
     @property
     def json(self) -> Dict[str, Any]:
         return dict(
-            club_name=self.club_name,
+            club_pk=self.club_pk,
             matches_won=self.matches_won,
             sets_won=self.sets_won,
             games_won=self.games_won,

@@ -22,7 +22,6 @@ from simplified.match import DdMatchProcessor
 from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
 from simplified.match import DdStandingsRowStruct
-from simplified.parameters import DdGameParams
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerFactory
 
@@ -33,17 +32,33 @@ ScheduleDay = List[DdScheduledMatchStruct]
 class DdGameDuck:
     """A class that incapsulates the game logic."""
 
+    class DdParams(NamedTuple):
+        """Passive class to store game parameters"""
+
+        exdiv_matches: int
+        exhaustion_function: Callable[[int], int]
+        exhaustion_per_set: int
+        indiv_matches: int
+
+        # This value should be a power of two
+        playoff_clubs: int
+
+        probability_function: Callable[[float, float], float]
+        recovery_day: int
+        recovery_function: Callable[[DdPlayer], int]
+        starting_club: int
+
     _clubs: List[DdClub]
     _day: int
     _history: List[List[DdStandingsRowStruct]]
-    _params: DdGameParams
+    _params: "DdParams"
     _player_factory: DdPlayerFactory
     _results: List[List[DdMatchResult]]
     _schedule: List[Optional[List[DdScheduledMatchStruct]]]
     _selected_player: bool
     _users_club: int
 
-    def __init__(self, params: DdGameParams):
+    def __init__(self, params: "DdParams"):
         self._day = 0
         self._history = []
         self._params = params
@@ -51,7 +66,7 @@ class DdGameDuck:
         self._results = []
         self._schedule = []
         self._selected_player = False
-        self._users_club = 0
+        self._users_club = params.starting_club
 
         self._clubs = []
 
@@ -310,6 +325,7 @@ class DdGameDuck:
                 results[match.away_pk].games_won += match.away_games
 
         return results
+
 
 def _MakeBasicSchedule(pk_list: List[int]):
     def MakePairs(lst: List[int]) -> ScheduleDay:

@@ -11,6 +11,9 @@ Actions:
         argument: season number
         prints standings for one of the previous seasons
 
+        example:
+        h/2
+
     l|list
         prints list of accessible players
 
@@ -24,6 +27,9 @@ Actions:
         arguments: two indexes from players list to practice
         sets a practice match between two players
 
+        Example:
+        practice/1/2
+
     q|quit
         quits program immediately
 
@@ -36,6 +42,9 @@ Actions:
     s|select
         argument: index of a player for the next match
         selects a player for the next match
+
+        Example:
+        select/1
 
     st|standings:
         prints current standings

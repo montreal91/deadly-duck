@@ -7,10 +7,12 @@ Created Apr 09, 2019
 
 import sys
 
+from typing import Dict
+from typing import Callable
+
 from simplified.game import DdGameDuck
 from simplified.match import CalculateConstExhaustion
 from simplified.match import LinearProbabilityFunction
-from simplified.parameters import DdGameParams
 from simplified.player import DdPlayer
 from simplified.player import ExhaustedLinearRecovery
 
@@ -22,8 +24,12 @@ RESET = "\033[0;0m"
 class DdSimplifiedApp:
     """Simple client for a game that runs in the console."""
 
-    def __init__(self):
-        self._game = DdGameDuck(DdGameParams(
+    _actions: Dict[str, Callable]
+    _game: DdGameDuck
+    _is_running: bool
+
+    def __init__(self, starting_club: int, save_filename: str):
+        self._game = DdGameDuck(DdGameDuck.DdParams(
             exdiv_matches=2,
             exhaustion_function=CalculateConstExhaustion,
             exhaustion_per_set=2,
@@ -32,6 +38,7 @@ class DdSimplifiedApp:
             recovery_day=4,
             recovery_function=ExhaustedLinearRecovery,
             playoff_clubs=8,
+            starting_club=starting_club,
         ))
         self._actions = {}
         self._is_running = True
@@ -266,5 +273,13 @@ def _PrintStandings(standings, club_names, users_club):
 
 
 if __name__ == '__main__':
-    app = DdSimplifiedApp()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--club", type=int, choices=range(16), default=0)
+    parser.add_argument("--savename", type=str, default="default")
+
+    args = parser.parse_args()
+
+    app = DdSimplifiedApp(args.club, args.savename)
     app.Run()
