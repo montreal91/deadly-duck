@@ -5,12 +5,15 @@ Created Apr 09, 2019
 @author montreal91
 """
 
+import os.path
+import pickle
 import sys
 
 from typing import Dict
 from typing import Callable
 
 from simplified.game import DdGameDuck
+from simplified.game import DdGameParams
 from simplified.match import CalculateConstExhaustion
 from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
@@ -24,22 +27,35 @@ RESET = "\033[0;0m"
 class DdSimplifiedApp:
     """Simple client for a game that runs in the console."""
 
+    _SAVE_FOLDER = ".saves"
+
     _actions: Dict[str, Callable]
     _game: DdGameDuck
     _is_running: bool
+    _save_filename: str
 
-    def __init__(self, starting_club: int, save_filename: str):
-        self._game = DdGameDuck(DdGameDuck.DdParams(
-            exdiv_matches=2,
-            exhaustion_function=CalculateConstExhaustion,
-            exhaustion_per_set=2,
-            indiv_matches=2,
-            probability_function=LinearProbabilityFunction,
-            recovery_day=4,
-            recovery_function=ExhaustedLinearRecovery,
-            playoff_clubs=8,
-            starting_club=starting_club,
-        ))
+    def __init__(
+        self,
+        starting_club: int,
+        save_filename: str,
+        load: bool = False
+    ):
+        self._save_path = os.path.join(self._SAVE_FOLDER, save_filename)
+
+        if load:
+            self._LoadGame()
+        else:
+            self._game = DdGameDuck(DdGameParams(
+                exdiv_matches=2,
+                exhaustion_function=CalculateConstExhaustion,
+                exhaustion_per_set=2,
+                indiv_matches=2,
+                probability_function=LinearProbabilityFunction,
+                recovery_day=4,
+                recovery_function=ExhaustedLinearRecovery,
+                playoff_clubs=8,
+                starting_club=starting_club,
+            ))
         self._actions = {}
         self._is_running = True
 
@@ -67,6 +83,7 @@ class DdSimplifiedApp:
         self._actions["q"] = self.__ActionQuit
         self._actions["quit"] = self.__ActionQuit
         self._actions["rem"] = self.__ActionRemaining
+        self._actions["save"] = self.__ActionSave
         self._actions["res"] = self.__ActionResults
         self._actions["s"] = self.__ActionSelect
         self._actions["select"] = self.__ActionSelect
@@ -74,6 +91,14 @@ class DdSimplifiedApp:
         self._actions["standings"] = self.__ActionStandings
 
         self._actions["_m"] = self.__ActionMeasure
+
+    def _LoadGame(self):
+        if os.path.isfile(self._save_path):
+            with open(self._save_path, "rb") as save_file:
+                self._game = pickle.load(save_file)
+                print("Game is loaded successfully.")
+        else:
+            print("This save does not exist yet.")
 
     def _PrintMain(self):
         ctx = self._game.context
@@ -208,6 +233,11 @@ class DdSimplifiedApp:
                 sys.stdout.write(RESET)
             print()
 
+    def __ActionSave(self):
+        with open(self._save_path, "wb") as save_file:
+            pickle.dump(self._game, save_file)
+            print("The game is saved.")
+
     def __ActionSelect(self, index="0"):
         try:
             self._game.SelectPlayer(int(index))
@@ -278,8 +308,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--club", type=int, choices=range(16), default=0)
     parser.add_argument("--savename", type=str, default="default")
+    parser.add_argument(
+        "--load",
+        help="Loads previously saved game if possible.",
+        action="store_true"
+    )
 
     args = parser.parse_args()
 
-    app = DdSimplifiedApp(args.club, args.savename)
+    app = DdSimplifiedApp(args.club, args.savename, args.load)
     app.Run()

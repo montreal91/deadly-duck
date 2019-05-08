@@ -29,36 +29,38 @@ from simplified.player import DdPlayerFactory
 ScheduleDay = List[DdScheduledMatchStruct]
 
 
+class DdGameParams(NamedTuple):
+    """Passive class to store game parameters"""
+
+    exdiv_matches: int
+    exhaustion_function: Callable[[int], int]
+    exhaustion_per_set: int
+    indiv_matches: int
+
+    # This value should be a power of two
+    playoff_clubs: int
+
+    probability_function: Callable[[float, float], float]
+    recovery_day: int
+    recovery_function: Callable[[DdPlayer], int]
+    starting_club: int
+
+
 class DdGameDuck:
     """A class that incapsulates the game logic."""
 
-    class DdParams(NamedTuple):
-        """Passive class to store game parameters"""
-
-        exdiv_matches: int
-        exhaustion_function: Callable[[int], int]
-        exhaustion_per_set: int
-        indiv_matches: int
-
-        # This value should be a power of two
-        playoff_clubs: int
-
-        probability_function: Callable[[float, float], float]
-        recovery_day: int
-        recovery_function: Callable[[DdPlayer], int]
-        starting_club: int
 
     _clubs: List[DdClub]
     _day: int
     _history: List[List[DdStandingsRowStruct]]
-    _params: "DdParams"
+    _params: DdGameParams
     _player_factory: DdPlayerFactory
     _results: List[List[DdMatchResult]]
     _schedule: List[Optional[List[DdScheduledMatchStruct]]]
     _selected_player: bool
     _users_club: int
 
-    def __init__(self, params: "DdParams"):
+    def __init__(self, params: DdGameParams):
         self._day = 0
         self._history = []
         self._params = params

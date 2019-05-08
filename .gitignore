@@ -11,3 +11,4 @@
 .env
 configuration/oauth_*
 .mypy_cache/
+.saves
