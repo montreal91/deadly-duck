@@ -9,6 +9,13 @@ Vue.component("player", {
   },
 });
 
+
+Vue.component("standings", {
+  props: ["rows", "names", "users_club"],
+  template: "#dd-template-standings",
+});
+
+
 let app = new Vue({
   el: "#dd-app",
   data: {

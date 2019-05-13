@@ -20,9 +20,15 @@ from flask_socketio import emit
 from simplified.encoder import DduckJsonEncoder
 from simplified.game_server import DdGameAction
 from simplified.game_server import DdGameServer
+from simplified.match import CalculateConstExhaustion
+from simplified.match import LinearProbabilityFunction
+from simplified.player import DdPlayerReputationCalculator
+from simplified.player import ExhaustedLinearRecovery
+
 
 app = Flask(__name__)
 app.json_encoder = DduckJsonEncoder
+
 
 in_queue = Queue()
 out_queue = Queue()
@@ -32,6 +38,7 @@ game_server.start()
 socket = SocketIO()
 socket.init_app(app, json=json)
 
+
 def Emitter():
     while True:
         time.sleep(0.5)
@@ -40,6 +47,7 @@ def Emitter():
         msg = out_queue.get(False)
         for pk, context in msg.items():
             socket.emit("context", context, namespace="/tennis/")
+
 
 socket.start_background_task(Emitter)
 
@@ -67,9 +75,16 @@ def StartNewGame():
         type="start_new_game",
         pk=request.json["pk"],
         arguments=dict(
+            exdiv_matches=2,
+            exhaustion_function=CalculateConstExhaustion,
             exhaustion_per_set=2,
-            matches_to_play=4,
-            recovery_day=3,
+            indiv_matches=2,
+            probability_function=LinearProbabilityFunction,
+            recovery_day=4,
+            recovery_function=ExhaustedLinearRecovery,
+            playoff_clubs=8,
+            reputation_function=DdPlayerReputationCalculator(6, 5),
+            starting_club=0,
         ),
     )
     in_queue.put(action)
