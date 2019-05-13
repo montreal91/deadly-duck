@@ -8,10 +8,10 @@ Actions:
     ? -- prints this text
 
     h|history
-        argument: season number
+        Argument: season number
         prints standings for one of the previous seasons
 
-        example:
+        Example:
         h/2
 
     l|list
@@ -24,7 +24,7 @@ Actions:
         prints stats of the next opponent if possble
 
     p|practice
-        arguments: two indexes from players list to practice
+        Arguments: two indexes from players list to practice
         sets a practice match between two players
 
         Example:
@@ -40,11 +40,18 @@ Actions:
         list of most recent results
 
     s|select
-        argument: index of a player for the next match
+        Argument: index of a player for the next match
         selects a player for the next match
 
         Example:
         select/1
 
-    st|standings:
+    sh|show
+        Argument: index of a player to show
+        prints details of the given player
+
+        Example:
+        show/3
+
+    st|standings
         prints current standings

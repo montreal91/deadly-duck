@@ -17,6 +17,7 @@ from simplified.game import DdGameParams
 from simplified.match import CalculateConstExhaustion
 from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
+from simplified.player import DdPlayerReputationCalculator
 from simplified.player import ExhaustedLinearRecovery
 
 
@@ -54,7 +55,9 @@ class DdSimplifiedApp:
                 recovery_day=4,
                 recovery_function=ExhaustedLinearRecovery,
                 playoff_clubs=8,
+                reputation_function=DdPlayerReputationCalculator(6, 5),
                 starting_club=starting_club,
+
             ))
         self._actions = {}
         self._is_running = True
@@ -87,6 +90,8 @@ class DdSimplifiedApp:
         self._actions["res"] = self.__ActionResults
         self._actions["s"] = self.__ActionSelect
         self._actions["select"] = self.__ActionSelect
+        self._actions["sh"] = self.__ActionShow
+        self._actions["show"] = self.__ActionShow
         self._actions["st"] = self.__ActionStandings
         self._actions["standings"] = self.__ActionStandings
 
@@ -246,6 +251,16 @@ class DdSimplifiedApp:
         except ValueError:
             print("Please, input a correct integer.")
 
+    def __ActionShow(self, index="0"):
+        try:
+            index = int(index)
+            player: DdPlayer = self._game.context["user_players"][index]
+            _PrintPlayer(player, own=True)
+        except AssertionError:
+            print("Your input is incorrect (wrong index).")
+        except ValueError:
+            print("Please, input a correct integer.")
+
     def __ActionStandings(self):
         context = self._game.context
         _PrintStandings(
@@ -280,6 +295,7 @@ def _PrintPlayer(player: DdPlayer, own=False):
     ))
     if own:
         print(f"Exp: {player.experience} / {player.next_level_exp}")
+        print(f"Rep: {player.reputation}")
 
 
 def _PrintStandings(standings, club_names, users_club):

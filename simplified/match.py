@@ -110,30 +110,40 @@ class DdMatchResult:
 class DdMatchProcessor:
     """This class incapsulates inner logic of a tennis match."""
 
+    _GAP: int = 2
+
     _callbacks: Dict[str, Callable]
+    _games_to_win: int
     _res: DdMatchResult
+    _sets_to_win: int
 
     def __init__(
         self,
+        games_to_win: int,
+        sets_to_win: int,
         exhaustion_function: Callable[[int], int],
-        probability_function: Callable[[float, float], float]
+        probability_function: Callable[[float, float], float],
+        reputation_function: Callable[[int], int],
     ):
         self._callbacks = {}
         self._callbacks["exhaustion_function"] = exhaustion_function
         self._callbacks["probability_function"] = probability_function
+        self._callbacks["reputation_function"] = reputation_function
+        self._games_to_win = games_to_win
         self._res = DdMatchResult()
+        self._sets_to_win = sets_to_win
 
     def ProcessMatch(
-        self, home_player, away_player, sets_to_win=2
+        self, home_player: DdPlayer, away_player: DdPlayer
     ) -> DdMatchResult:
         """Processes match and returns the results."""
-        while not self._IsMatchOver(
-            self._res.home_sets, self._res.away_sets, sets_to_win
-        ):
+        sets_played = 0
+        while not self._IsMatchOver():
             set_result = self._ProcessSet(
                 home_player,
                 away_player
             )
+            sets_played += 1
             self._res.home_games += set_result.home_games
             self._res.away_games += set_result.away_games
             self._res.AppendSetToFullScore(
@@ -152,6 +162,12 @@ class DdMatchProcessor:
                 self._res.home_sets = sets_to_win
                 self._res.away_sets = 0
                 break
+            home_player.AddReputation(
+                self._reputation_function(set_result.home_games) * sets_played
+            )
+            away_player.AddReputation(
+                self._reputation_function(set_result.away_games) * sets_played
+            )
 
         self._res.home_exp = DdPlayer.CalculateNewExperience(
             self._res.home_sets, away_player
@@ -188,14 +204,16 @@ class DdMatchProcessor:
     def _CalculateStaminaLostInGame(self):
         return 2
 
-    def _IsSetOver(self, hgames, agames):
-        c1 = hgames >= 6 and hgames - agames >= 2
-        c2 = agames >= 6 and agames - hgames >= 2
+    def _IsSetOver(self, hgames: int, agames: int) -> bool:
+        c1 = hgames >= self._games_to_win and hgames - agames >= self._GAP
+        c2 = agames >= self._games_to_win and agames - hgames >= self._GAP
 
         return c1 or c2
 
-    def _IsMatchOver(self, hsets, asets, sets_to_win):
-        return hsets == sets_to_win or asets == sets_to_win
+    def _IsMatchOver(self) -> bool:
+        home_won = self._res.home_sets == self._sets_to_win
+        away_won = self._res.away_sets == self._sets_to_win
+        return home_won or away_won
 
     def _ProcessSet(self, home_player, away_player):
         home_games, away_games = 0, 0
@@ -254,7 +272,9 @@ class DdMatchProcessor:
     def _probability_function(self) -> Callable[[float, float], float]:
         return self._callbacks["probability_function"]
 
-
+    @property
+    def _reputation_function(self) -> Callable[[int], int]:
+        return self._callbacks["reputation_function"]
 
 
 class DdScheduledMatchStruct:
@@ -322,6 +342,6 @@ def LinearProbabilityFunction(home_skill: float, away_skill: float) -> float:
         return round(0.009 * delta + 0.5, 2)
     elif delta < -50:
         return 0.05
-    elif delta > 0.95:
+    elif delta > 50:
         return 0.95
     return 0

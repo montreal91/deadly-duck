@@ -40,6 +40,8 @@ class DdPlayer:
     _current_stamina: int
     _age: int
 
+    _reputation: int
+
     def __init__(
         self,
         first_name,
@@ -59,6 +61,7 @@ class DdPlayer:
         self._exhaustion = 0
         self._experience = 0
         self._current_stamina = self.max_stamina
+        self._reputation = 0
 
     @property
     def age(self):
@@ -119,6 +122,7 @@ class DdPlayer:
             level=self.level,
             age=self._age,
             exhaustion=self._exhaustion,
+            reputation=self._reputation,
         )
 
     @property
@@ -137,6 +141,11 @@ class DdPlayer:
     @property
     def next_level_exp(self) -> int:
         return _LevelExp(self.level + 1)
+
+    @property
+    def reputation(self) -> int:
+        """Shows player reputation level among audience."""
+        return self._reputation
 
     @property
     def technique(self):
@@ -164,6 +173,10 @@ class DdPlayer:
                 self._technique += skill_delta
             else:
                 self._endurance += skill_delta
+
+    def AddReputation(self, rep: int):
+        """Adds new reputation."""
+        self._reputation += rep
 
     def AfterSeasonRest(self):
         self._exhaustion = 0
@@ -215,6 +228,22 @@ class DdPlayerFactory:
         player.AfterSeasonRest()
 
         return player
+
+
+class DdPlayerReputationCalculator:
+    """
+    Simple callable class to calculate player's reputation gained per set.
+
+    Basically, it constructs a linear function that depends on games won and
+    """
+
+    def __call__(self, games: int) -> int:
+        return self._k * (games - self._games_to_win // 2)
+
+    def __init__(self, games_to_win: int, k: int):
+        self._games_to_win = games_to_win
+        self._k = k
+
 
 
 def ExhaustedRecovery(player: DdPlayer) -> int:

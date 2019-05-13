@@ -24,6 +24,7 @@ from simplified.match import DdScheduledMatchStruct
 from simplified.match import DdStandingsRowStruct
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerFactory
+from simplified.player import DdPlayerReputationCalculator
 
 
 ScheduleDay = List[DdScheduledMatchStruct]
@@ -43,12 +44,12 @@ class DdGameParams(NamedTuple):
     probability_function: Callable[[float, float], float]
     recovery_day: int
     recovery_function: Callable[[DdPlayer], int]
+    reputation_function: Callable[[int], int]
     starting_club: int
 
 
 class DdGameDuck:
     """A class that incapsulates the game logic."""
-
 
     _clubs: List[DdClub]
     _day: int
@@ -237,7 +238,6 @@ class DdGameDuck:
             self._match_processor.ProcessMatch(
                 home_player=match[0],
                 away_player=match[1],
-                sets_to_win=1
             )
 
         for club in self._clubs:
@@ -253,7 +253,6 @@ class DdGameDuck:
             res = self._match_processor.ProcessMatch(
                 self._clubs[match.home_pk].selected_player,
                 self._clubs[match.away_pk].selected_player,
-                sets_to_win=2,
             )
             match.is_played = True
 
@@ -277,8 +276,11 @@ class DdGameDuck:
             base = self._params.exhaustion_function(sets)
             return base * self._params.exhaustion_per_set
         return DdMatchProcessor(
+            games_to_win=6,
+            sets_to_win=2,
             exhaustion_function=ExhaustionFunction,
-            probability_function=self._params.probability_function
+            probability_function=self._params.probability_function,
+            reputation_function=self._params.reputation_function,
         )
 
     @property
