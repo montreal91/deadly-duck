@@ -17,15 +17,19 @@ from simplified.player import PlayerModelComparator
 class DdClub:
     """A club in the tournament."""
 
+    _COACH_LEVELS = (0, 1, 2, 3)
+
     _name: str
     _players: List[DdPlayer]
     _practice_match: Optional[Tuple[int, int]]
+    _selected_coach: int
     _selected_player: Optional[int]
 
     def __init__(self, name: str):
         self._name = name
         self._players = []
         self._practice_match = None
+        self._selected_coach = 1
         self._selected_player = None
 
     @property
@@ -38,17 +42,6 @@ class DdClub:
         """List of club players."""
 
         return self._players
-
-    @property
-    def practice_match(self) -> Optional[Tuple[DdPlayer, DdPlayer]]:
-        """If set, returns a pair of players for practice."""
-
-        if self._practice_match is None:
-            return None
-        return (
-            self._players[self._practice_match[0]],
-            self._players[self._practice_match[1]]
-        )
 
     @property
     def selected_player(self) -> DdPlayer:
@@ -69,23 +62,24 @@ class DdClub:
         retirement_age = DdGameplayConstants.RETIREMENT_AGE.value
         self._players = [p for p in self._players if p.age < retirement_age]
 
+    def PerformPractice(self):
+        for plr in self._players:
+            plr.AddExperience(plr.current_stamina * self._coach_skill)
+
     def PopPlayer(self, index: int):
         """Removes player from the club."""
 
         self._players.pop(index)
 
+    def SelectCoach(self, index: int):
+        """Selects a coach."""
+        if 0 <= index <= len(self._COACH_LEVELS):
+            self._selected_coach = index
+
     def SelectPlayer(self, index: Optional[int]):
         """Selects player for the next match."""
 
         self._selected_player = index
-
-    def SetPractice(self, i1: int, i2: int):
-        """Selects players for the practice match."""
-
-        assert i1 != i2
-        assert 0 <= i1 < len(self._players)
-        assert 0 <= i2 < len(self._players)
-        self._practice_match = (i1, i2)
 
     def SortPlayers(self):
         """
@@ -96,7 +90,6 @@ class DdClub:
 
         self._players.sort(key=lambda p: p.age)
 
-    def UnsetPractice(self):
-        """Unselects players for the practice match."""
-
-        self._practice_match = None
+    @property
+    def _coach_skill(self):
+        return self._COACH_LEVELS[self._selected_coach]

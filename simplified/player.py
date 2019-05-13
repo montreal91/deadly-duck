@@ -129,7 +129,7 @@ class DdPlayer:
     def level(self) -> int:
         """Current level of the player."""
         level = 0
-        while _LevelExp(level) < self._experience:
+        while not self._experience < _LevelExp(level + 1):
             level += 1
         return level
 

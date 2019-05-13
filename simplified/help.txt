@@ -23,13 +23,6 @@ Actions:
     o|opponent
         prints stats of the next opponent if possble
 
-    p|practice
-        Arguments: two indexes from players list to practice
-        sets a practice match between two players
-
-        Example:
-        practice/1/2
-
     q|quit
         quits program immediately
 

@@ -81,8 +81,6 @@ class DdSimplifiedApp:
         self._actions["next"] = self.__ActionNext
         self._actions["o"] = self.__ActionOpponent
         self._actions["opponent"] = self.__ActionOpponent
-        self._actions["p"] = self.__ActionPractice
-        self._actions["practice"] = self.__ActionPractice
         self._actions["q"] = self.__ActionQuit
         self._actions["quit"] = self.__ActionQuit
         self._actions["rem"] = self.__ActionRemaining
@@ -197,17 +195,6 @@ class DdSimplifiedApp:
 
         print(opponent[0])
         _PrintPlayer(opponent[1], False)
-
-    def __ActionPractice(self, p1="0", p2="1"):
-        if p1 == p2:
-            print("Player can't practice with oneself.")
-            return
-        try:
-            self._game.SetPractice(int(p1), int(p2))
-        except AssertionError:
-            print("Your input is incorrect (wrong index).")
-        except ValueError:
-            print("Please, input a correct integer.")
 
     def __ActionQuit(self):
         self._is_running = False

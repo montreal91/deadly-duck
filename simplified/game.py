@@ -228,23 +228,19 @@ class DdGameDuck:
         self._schedule = []
         self._MakeSchedule()
 
+    def _PerformPractice(self):
+        for club in self._clubs:
+            club.PerformPractice()
+
     def _Recover(self):
         for club in self._clubs:
             for player in club.players:
                 player.RecoverStamina(self._params.recovery_function(player))
 
     def _PlayOneDay(self):
-        for match in self._practice_matches:
-            self._match_processor.ProcessMatch(
-                home_player=match[0],
-                away_player=match[1],
-            )
-
-        for club in self._clubs:
-            club.UnsetPractice()
-
         day = self._schedule[self._day]
         if day is None:
+            self._PerformPractice()
             self._Recover()
             return
 
