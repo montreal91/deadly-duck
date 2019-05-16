@@ -116,6 +116,7 @@ class DdMatchProcessor:
     _games_to_win: int
     _res: DdMatchResult
     _sets_to_win: int
+    _speciality_bonus: float
 
     def __init__(
         self,
@@ -132,11 +133,13 @@ class DdMatchProcessor:
         self._games_to_win = games_to_win
         self._res = DdMatchResult()
         self._sets_to_win = sets_to_win
+        self._speciality_bonus = 1.0
 
     def ProcessMatch(
         self, home_player: DdPlayer, away_player: DdPlayer
     ) -> DdMatchResult:
         """Processes match and returns the results."""
+
         sets_played = 0
         while not self._IsMatchOver():
             set_result = self._ProcessSet(
@@ -191,10 +194,20 @@ class DdMatchProcessor:
 
         return deepcopy(self._res)
 
+    def SetMatchSurface(self, surface: str):
+        """Sets surface on which match will be held."""
+        self._match_surface = surface
+
+    def SetSpecialityBonus(self, value: float):
+        """Sets speciality bonus for player."""
+        self._speciality_bonus = value
+
     def _CalculateActualSkill(self, player, actual_stamina=0):
         stamina_factor = actual_stamina / player.max_stamina
+        good_speciality = player.speciality == self._match_surface
+        bonus = self._speciality_bonus if good_speciality else 1.0
         return max(
-            player.technique * stamina_factor,
+            player.technique * stamina_factor * bonus,
             5
         )
 

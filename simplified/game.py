@@ -48,6 +48,7 @@ class DdGameParams(NamedTuple):
     recovery_day: int
     recovery_function: Callable[[DdPlayer], int]
     reputation_function: Callable[[int], int]
+    speciality_bonus: float
     starting_club: int
 
 
@@ -297,7 +298,9 @@ class DdGameDuck:
 
         day_results = []
         for match in day:
-            res = self._match_processor.ProcessMatch(
+            processor = self._match_processor
+            processor.SetMatchSurface(self._clubs[match.home_pk].surface)
+            res = processor.ProcessMatch(
                 self._clubs[match.home_pk].selected_player,
                 self._clubs[match.away_pk].selected_player,
             )
@@ -322,13 +325,15 @@ class DdGameDuck:
         def ExhaustionFunction(sets: int) -> int:
             base = self._params.exhaustion_function(sets)
             return base * self._params.exhaustion_per_set
-        return DdMatchProcessor(
+        processor = DdMatchProcessor(
             games_to_win=6,
             sets_to_win=2,
             exhaustion_function=ExhaustionFunction,
             probability_function=self._params.probability_function,
             reputation_function=self._params.reputation_function,
         )
+        processor.SetSpecialityBonus(self._params.speciality_bonus)
+        return processor
 
     @property
     def _opponent(self) -> Optional[DdOpponentStruct]:

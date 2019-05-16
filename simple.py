@@ -58,6 +58,7 @@ class DdSimplifiedApp:
                 playoff_clubs=8,
                 reputation_function=DdPlayerReputationCalculator(6, 5),
                 starting_club=starting_club,
+                speciality_bonus=1.25,
 
             ))
         self._actions = {}

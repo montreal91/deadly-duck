@@ -60,7 +60,7 @@ class DdClub:
 
     def AddPlayer(self, player: DdPlayer):
         """Adds player to the club."""
-        self._players.append(player)
+        self._players.insert(0, player)
         self.SortPlayers()
 
     def ExpelRetiredPlayers(self):
