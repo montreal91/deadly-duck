@@ -1,0 +1,66 @@
+[
+    {
+        "name": "Auckland Aces",
+        "surface": "grass"
+    },
+    {
+        "name": "Brisbane Broncos",
+        "surface": "clay"
+    },
+    {
+        "name": "Canberra Masters",
+        "surface": "hard"
+    },
+    {
+        "name": "Dandenong Pianists",
+        "surface": "hard"
+    },
+    {
+        "name": "Melbourne Rockets",
+        "surface": "hard"
+    },
+    {
+        "name": "Sydney Storm",
+        "surface": "grass"
+    },
+    {
+        "name": "Sydney Volts",
+        "surface": "grass"
+    },
+    {
+        "name": "Tasmanian Devils",
+        "surface": "hard"
+    },
+    {
+        "name": "Adelaide Falcons",
+        "surface": "hard"
+    },
+    {
+        "name": "Bunbury Ravens",
+        "surface": "hard"
+    },
+    {
+        "name": "Darwin Ducks",
+        "surface": "clay"
+    },
+    {
+        "name": "Mandurah Turtles",
+        "surface": "clay"
+    },
+    {
+        "name": "Perth Penguins",
+        "surface": "hard"
+    },
+    {
+        "name": "Rockingham Rocks",
+        "surface": "clay"
+    },
+    {
+        "name": "Southern Raiders",
+        "surface": "grass"
+    },
+    {
+        "name": "Western Fury",
+        "surface": "clay"
+    }
+]

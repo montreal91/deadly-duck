@@ -25,6 +25,17 @@ _PRECISION = 1
 _EXHAUSTION_BOUNDS = tuple(range(0, 400, 20))
 
 
+class DdCourtSurface:
+    """
+    All possible surfaces of courts.
+
+    Constant.
+    """
+    CLAY = "clay"
+    GRASS = "grass"
+    HARD = "hard"
+
+
 class DdPlayer:
     """A class that describes a tennis player."""
 
@@ -36,6 +47,7 @@ class DdPlayer:
     _endurance: int
     _exhaustion: int
     _experience: int
+    _speciality: str
 
     _current_stamina: int
     _age: int
@@ -44,12 +56,13 @@ class DdPlayer:
 
     def __init__(
         self,
-        first_name,
-        second_name,
-        last_name,
-        technique,
-        endurance,
-        age
+        first_name: str,
+        second_name: str,
+        last_name: str,
+        technique: int,
+        endurance: int,
+        age: int,
+        speciality: str = DdCourtSurface.HARD,
     ):
         self._first_name = first_name
         self._second_name = second_name
@@ -57,6 +70,7 @@ class DdPlayer:
         self._technique = technique
         self._endurance = endurance
         self._age = age
+        self._speciality = speciality
 
         self._exhaustion = 0
         self._experience = 0
@@ -123,6 +137,7 @@ class DdPlayer:
             age=self._age,
             exhaustion=self._exhaustion,
             reputation=self._reputation,
+            speciality=self._speciality,
         )
 
     @property
@@ -146,6 +161,10 @@ class DdPlayer:
     def reputation(self) -> int:
         """Shows player reputation level among audience."""
         return self._reputation
+
+    @property
+    def speciality(self) -> str:
+        return self._speciality
 
     @property
     def technique(self):
@@ -209,7 +228,7 @@ class DdPlayerFactory:
     def __init__(self):
         self._first_names, self._last_names = _LoadNames()
 
-    def CreatePlayer(self, level: int, age: int) -> DdPlayer:
+    def CreatePlayer(self, level: int, age: int, speciality: str) -> DdPlayer:
         """
         Creates a player object of given age and level.
         """
@@ -222,6 +241,7 @@ class DdPlayerFactory:
             last_name=choice(self._last_names),
             technique=skill_base,
             endurance=skill_base,
+            speciality=speciality,
         )
 
         player.AddExperience(_LevelExp(level))

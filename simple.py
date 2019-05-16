@@ -14,6 +14,7 @@ from typing import Callable
 
 from simplified.game import DdGameDuck
 from simplified.game import DdGameParams
+from simplified.game import DdOpponentStruct
 from simplified.match import CalculateConstExhaustion
 from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
@@ -73,6 +74,8 @@ class DdSimplifiedApp:
 
     def _InitActions(self):
         self._actions["?"] = self.__ActionHelp
+        self._actions["fire"] = self.__ActionFire
+        self._actions["hire"] = self.__ActionHire
         self._actions["h"] = self.__ActionHistory
         self._actions["history"] = self.__ActionHistory
         self._actions["l"] = self.__ActionList
@@ -120,9 +123,22 @@ class DdSimplifiedApp:
         else:
             print("Your input is incorrect.")
 
+    def __ActionFire(self, index: str):
+        try:
+            i = int(index)
+            self._game.FirePlayer(i)
+        except (AssertionError, ValueError) as error:
+            print(error)
+
     def __ActionHelp(self):
         with open("simplified/help.txt") as help_file:
             print(help_file.read())
+
+    def __ActionHire(self, surface: str):
+        try:
+            self._game.HirePlayer(surface)
+        except AssertionError as error:
+            print(error)
 
     def __ActionHistory(self, season: str):
         try:
@@ -144,25 +160,29 @@ class DdSimplifiedApp:
             print("Season should be a valid integer.")
 
     def __ActionList(self):
+        print(" #| Age| Technique|Stm|Exh| Spec| Name")
+        print("__|____|__________|___|___|_____|________________")
         for i in range(len(self._game.context["user_players"])):
-            print(i, end=" ")
-            plr = self._game.context["user_players"][i]
-            print("Age: {0:2d}".format(plr.json["age"]), end=" ")
+            print("{0:2}|".format(i), end="")
+            plr: DdPlayer = self._game.context["user_players"][i]
+            print(" {0:2d} |".format(plr.json["age"]), end="")
             print(
-                "Technique: {0:3.1f}/{1:3.1f}".format(
+                "{0:4.1f} /{1:4.1f}|".format(
                     round(plr.json["actual_technique"] / 10, 1),
                     round(plr.json["technique"] / 10, 1)
                 ),
-                end=" ",
+                end="",
             )
             print(
-                "Stamina: {0:3d}".format(plr.json["current_stamina"]),
-                end=" ",
+                "{0:3d}|".format(plr.json["current_stamina"]),
+                end="",
             )
             print(
-                "Exhaustion: {0:3d}".format(plr.json["exhaustion"]),
-                end=" "
+                "{0:3d}|".format(plr.json["exhaustion"]),
+                end=""
             )
+            print("{0:5s}|".format(plr.json["speciality"]), end="")
+            print(plr.initials, end="")
             print()
 
     def __ActionMeasure(self):
@@ -184,17 +204,19 @@ class DdSimplifiedApp:
             self.__ActionResults()
 
     def __ActionOpponent(self):
-        opponent: DdPlayer = self._game.context["opponent"]
+        opponent: DdOpponentStruct = self._game.context["opponent"]
         if opponent is None:
-            if self._game.context["is_recovery_day"]:
-                print("No opponents today.")
-            else:
-                print("You are away.")
-                print("The away team names its player first.")
+            print("No opponents today.")
             return
+        print(opponent.club_name, end=" ")
+        print("({})".format(
+            "home" if opponent.player is not None else "away"
+        ))
+        print("Match surface:", opponent.match_surface)
+        print("_" * 30)
 
-        print(opponent[0])
-        _PrintPlayer(opponent[1], False)
+        if opponent.player is not None:
+            _PrintPlayer(opponent.player, False)
 
     def __ActionQuit(self):
         self._is_running = False
@@ -270,7 +292,8 @@ def _PrintPlayer(player: DdPlayer, own=False):
         "{initials:s} [{level:d}]\n"
         "Technique:  {actual_technique:3.1f} / {technique:3.1f}\n"
         "Endurance:  {endurance:3.1f}\n"
-        "Exhaustion: {exhaustion:d}\n"
+        "Exhaustion: {exhaustion:d}\n\n"
+        "Speciality: {speciality:s}\n"
     )
     print(string.format(
         initials=player.initials,
@@ -279,6 +302,7 @@ def _PrintPlayer(player: DdPlayer, own=False):
         technique=round(player.technique / 10, 1),
         endurance=player.endurance,
         exhaustion=player.exhaustion,
+        speciality=player.speciality,
     ))
     if own:
         print(f"Exp: {player.experience} / {player.next_level_exp}")

@@ -1,28 +1,6 @@
 
 from enum import Enum
 
-club_names = {
-    1: [
-        "Auckland Aces",
-        "Brisbane Broncos",
-        "Canberra Masters",
-        "Dandenong Pianists",
-        "Melbourne Rockets",
-        "Sydney Storm",
-        "Sydney Volts",
-        "Tasmanian Devils",
-    ],
-    2: [
-        "Adelaide Falcons",
-        "Bunbury Ravens",
-        "Darwin Ducks",
-        "Mandurah Turtles",
-        "Perth Penguins",
-        "Rockingham Rocks",
-        "Southern Raiders",
-        "Western Fury",
-    ]
-}
 
 number_of_recent_matches = 5
 sets_to_win = 2

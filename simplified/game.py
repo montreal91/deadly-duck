@@ -5,6 +5,9 @@ Created Apr 09, 2019
 @author montreal91
 """
 
+import json
+
+from random import choice
 from random import shuffle
 from typing import Any
 from typing import Callable
@@ -15,13 +18,13 @@ from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 
-from configuration.config_game import club_names
 from configuration.config_game import DdGameplayConstants
 from simplified.club import DdClub
 from simplified.match import DdMatchProcessor
 from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
 from simplified.match import DdStandingsRowStruct
+from simplified.player import DdCourtSurface
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerFactory
 from simplified.player import DdPlayerReputationCalculator
@@ -48,8 +51,22 @@ class DdGameParams(NamedTuple):
     starting_club: int
 
 
+class DdOpponentStruct:
+    """Passive class to store information about opponent for the next match."""
+
+    club_name: str
+    match_surface: str
+    player: Optional[DdPlayer]
+
+
 class DdGameDuck:
     """A class that incapsulates the game logic."""
+
+    _SURFACES = (
+        DdCourtSurface.CLAY,
+        DdCourtSurface.GRASS,
+        DdCourtSurface.HARD,
+    )
 
     _clubs: List[DdClub]
     _day: int
@@ -73,8 +90,11 @@ class DdGameDuck:
 
         self._clubs = []
 
-        for club_name in club_names[1] + club_names[2]:
-            self._AddClub(club_name=club_name)
+        with open("configuration/clubs.json", "r") as data_file:
+            club_data = json.load(data_file)
+
+        for club in club_data:
+            self._AddClub(club_name=club["name"], surface=club["surface"])
         self._MakeSchedule()
 
     @property
@@ -99,6 +119,31 @@ class DdGameDuck:
         """Checks if season is over."""
 
         return self._day >= len(self._schedule)
+
+    def FirePlayer(self, i: int):
+        """Fires the selected player from user's club."""
+
+        assert 0 <= i, "Player index should be positive."
+        assert i< len(self._clubs[self._users_club].players), (
+            "There is no player with such index in your club."
+        )
+        self._clubs[self._users_club].PopPlayer(i)
+
+    def HirePlayer(self, surface: str):
+        """Hires a new player for user's club."""
+
+        choices = "|".join(self._SURFACES)
+        assert surface in self._SURFACES, (
+            "You can't choose such speciality. "
+            "Choices are: "
+            f"{choices}"
+        )
+        player = self._player_factory.CreatePlayer(
+            level=0,
+            age=DdGameplayConstants.STARTING_AGE.value,
+            speciality=surface
+        )
+        self._clubs[self._users_club].AddPlayer(player)
 
     def SelectPlayer(self, i: int):
         """Sets selected player for user."""
@@ -131,15 +176,15 @@ class DdGameDuck:
             self._NextSeason()
         return True
 
-    def _AddClub(self, club_name: str):
-        club = DdClub(name=club_name)
+    def _AddClub(self, club_name: str, surface: str):
+        club = DdClub(name=club_name, surface=surface)
         max_players = 5
         for i in range(max_players):
             age = DdGameplayConstants.STARTING_AGE.value + i
 
-            club.AddPlayer(
-                self._player_factory.CreatePlayer(age=age, level=i*2)
-            )
+            club.AddPlayer(self._player_factory.CreatePlayer(
+                age=age, level=i*2, speciality=choice(self._SURFACES)
+            ))
         self._clubs.append(club)
 
     def _GetClubSchedule(self, club_pk):
@@ -207,19 +252,25 @@ class DdGameDuck:
         self._schedule.append(None)
 
     def _NextSeason(self):
-        max_players_in_club = DdGameplayConstants.MAX_PLAYERS_IN_CLUB.value
-        for club in self._clubs:
+        for i in range(len(self._clubs)):
+            club: DdClub = self._clubs[i]
             for player in club.players:
                 player.AgeUp()
                 player.AfterSeasonRest()
             club.ExpelRetiredPlayers()
 
-            while len(club.players) < max_players_in_club:
-                club.AddPlayer(self._player_factory.CreatePlayer(
-                    age=DdGameplayConstants.STARTING_AGE.value,
-                    level=0,
-                ))
-            club.SortPlayers()
+            if i == self._users_club:
+                continue
+            club.AddPlayer(self._player_factory.CreatePlayer(
+                age=DdGameplayConstants.STARTING_AGE.value,
+                level=0,
+                speciality=club.surface
+            ))
+            club.AddPlayer(self._player_factory.CreatePlayer(
+                age=DdGameplayConstants.STARTING_AGE.value,
+                level=0,
+                speciality=choice(self._SURFACES),
+            ))
 
         self._day = 0
 
@@ -280,12 +331,14 @@ class DdGameDuck:
         )
 
     @property
-    def _opponent(self) -> Optional[Tuple[str, DdPlayer]]:
+    def _opponent(self) -> Optional[DdOpponentStruct]:
         if self._IsRecoveryDay():
             return None
 
         def ScheduleFilter(pair: DdScheduledMatchStruct):
-            return pair.home_pk == self._users_club
+            if pair.home_pk == self._users_club:
+                return True
+            return pair.away_pk == self._users_club
 
         schedule = self._schedule[self._day]
 
@@ -294,13 +347,24 @@ class DdGameDuck:
             return None
         planned_match = [pair for pair in schedule if ScheduleFilter(pair)]
 
-        if planned_match:
-            opponent_club = self._clubs[planned_match[0].away_pk]
-            return (
-                opponent_club.name,
-                opponent_club.selected_player
-            )
-        return None
+        if not planned_match:
+            return None
+        planned_match = planned_match[0]
+        if planned_match.home_pk == self._users_club:
+            res = DdOpponentStruct()
+            opponent_club: DdClub = self._clubs[planned_match.away_pk]
+            res.club_name = opponent_club.name
+            res.match_surface = self._clubs[self._users_club].surface
+            res.player = opponent_club.selected_player
+            return res
+        elif planned_match.away_pk == self._users_club:
+            res = DdOpponentStruct()
+            opponent_club: DdClub = self._clubs[planned_match.home_pk]
+            res.club_name = opponent_club.name
+            res.match_surface = opponent_club.surface
+            res.player = None
+            return res
+        raise Exception("Bad schedule.")
 
     @property
     def _practice_matches(self):

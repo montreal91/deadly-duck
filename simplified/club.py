@@ -10,6 +10,7 @@ from typing import Optional
 from typing import Tuple
 
 from configuration.config_game import DdGameplayConstants
+from simplified.player import DdCourtSurface
 from simplified.player import DdPlayer
 from simplified.player import PlayerModelComparator
 
@@ -24,13 +25,15 @@ class DdClub:
     _practice_match: Optional[Tuple[int, int]]
     _selected_coach: int
     _selected_player: Optional[int]
+    _surface: str
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, surface: str):
         self._name = name
         self._players = []
         self._practice_match = None
         self._selected_coach = 1
         self._selected_player = None
+        self._surface = surface
 
     @property
     def name(self) -> str:
@@ -40,7 +43,6 @@ class DdClub:
     @property
     def players(self) -> List[DdPlayer]:
         """List of club players."""
-
         return self._players
 
     @property
@@ -51,10 +53,15 @@ class DdClub:
             return max(self._players, key=PlayerModelComparator)
         return self._players[self._selected_player]
 
+    @property
+    def surface(self) -> str:
+        """Court surface where club plays its home matches."""
+        return self._surface
+
     def AddPlayer(self, player: DdPlayer):
         """Adds player to the club."""
-
         self._players.append(player)
+        self.SortPlayers()
 
     def ExpelRetiredPlayers(self):
         """Removes players from the club which are too old to play."""
@@ -63,6 +70,7 @@ class DdClub:
         self._players = [p for p in self._players if p.age < retirement_age]
 
     def PerformPractice(self):
+        """Performs player practice."""
         for plr in self._players:
             plr.AddExperience(plr.current_stamina * self._coach_skill)
 
