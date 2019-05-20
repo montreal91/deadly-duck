@@ -265,7 +265,6 @@ class DdPlayerReputationCalculator:
         self._k = k
 
 
-
 def ExhaustedRecovery(player: DdPlayer) -> int:
     """Player recovery function that involves exhaustion.
 

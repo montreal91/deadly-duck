@@ -64,6 +64,7 @@ confidence=
 disable=
     # disabled by me,
     bad-continuation,
+    too-few-public-methods
     # locally-disabled,
     # missing-docstring,
     # fixme,

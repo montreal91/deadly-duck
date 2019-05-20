@@ -15,11 +15,13 @@ from typing import Callable
 from simplified.game import DdGameDuck
 from simplified.game import DdGameParams
 from simplified.game import DdOpponentStruct
-from simplified.match import CalculateConstExhaustion
+from simplified.match import DdExhaustionCalculator
+from simplified.match import DdMatchParams
 from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerReputationCalculator
 from simplified.player import ExhaustedLinearRecovery
+from simplified.regular_championship import DdChampionshipParams
 
 
 BOLD = "\033[;1m"
@@ -31,6 +33,7 @@ class DdSimplifiedApp:
 
     _SAVE_FOLDER = ".saves"
 
+    _club_pk: int
     _actions: Dict[str, Callable]
     _game: DdGameDuck
     _is_running: bool
@@ -43,22 +46,28 @@ class DdSimplifiedApp:
         load: bool = False
     ):
         self._save_path = os.path.join(self._SAVE_FOLDER, save_filename)
+        self._club_pk = starting_club
 
         if load:
             self._LoadGame()
         else:
-            self._game = DdGameDuck(DdGameParams(
-                exdiv_matches=2,
-                exhaustion_function=CalculateConstExhaustion,
-                exhaustion_per_set=2,
-                indiv_matches=2,
-                probability_function=LinearProbabilityFunction,
-                recovery_day=4,
-                recovery_function=ExhaustedLinearRecovery,
-                playoff_clubs=8,
+            match_params = DdMatchParams(
+                speciality_bonus=11,
+                games_to_win=6,
+                sets_to_win=2,
+                exhaustion_function=DdExhaustionCalculator(3),
                 reputation_function=DdPlayerReputationCalculator(6, 5),
+                probability_function=LinearProbabilityFunction,
+            )
+            championship_params = DdChampionshipParams(
+                match_params=match_params,
+                recovery_day=4,
+                rounds=2,
+            )
+            self._game = DdGameDuck(DdGameParams(
+                championship_params=championship_params,
+                recovery_function=ExhaustedLinearRecovery,
                 starting_club=starting_club,
-                speciality_bonus=1.25,
 
             ))
         self._actions = {}
@@ -96,6 +105,8 @@ class DdSimplifiedApp:
         self._actions["show"] = self.__ActionShow
         self._actions["st"] = self.__ActionStandings
         self._actions["standings"] = self.__ActionStandings
+        self._actions["u"] = self.__ActionUpcoming
+        self._actions["upcoming"] = self.__ActionUpcoming
 
         self._actions["_m"] = self.__ActionMeasure
 
@@ -103,6 +114,7 @@ class DdSimplifiedApp:
         if os.path.isfile(self._save_path):
             with open(self._save_path, "rb") as save_file:
                 self._game = pickle.load(save_file)
+                self._club_pk = self._game.context["users_club"]
                 print("Game is loaded successfully.")
         else:
             print("This save does not exist yet.")
@@ -115,7 +127,7 @@ class DdSimplifiedApp:
     def _ProcessInput(self):
         user_input = input(">> ").split("/")
         self._actions.setdefault(
-            user_input[0], lambda *_ : print("No such action.")
+            user_input[0], lambda *_: print("No such action.")
         )
 
         action = self._actions[user_input[0]]
@@ -127,7 +139,7 @@ class DdSimplifiedApp:
     def __ActionFire(self, index: str):
         try:
             i = int(index)
-            self._game.FirePlayer(i)
+            self._game.FirePlayer(i, self._club_pk)
         except (AssertionError, ValueError) as error:
             print(error)
 
@@ -137,7 +149,7 @@ class DdSimplifiedApp:
 
     def __ActionHire(self, surface: str):
         try:
-            self._game.HirePlayer(surface)
+            self._game.HirePlayer(surface, self._club_pk)
         except AssertionError as error:
             print(error)
 
@@ -162,10 +174,11 @@ class DdSimplifiedApp:
 
     def __ActionList(self):
         print(" #| Age| Technique|Stm|Exh| Spec| Name")
-        print("__|____|__________|___|___|_____|________________")
-        for i in range(len(self._game.context["user_players"])):
+        print("__|____|__________|___|___|_____|_____________________")
+        ctx = self._game.context
+        for i in range(len(ctx["user_players"])):
             print("{0:2}|".format(i), end="")
-            plr: DdPlayer = self._game.context["user_players"][i]
+            plr: DdPlayer = ctx["user_players"][i]
             print(" {0:2d} |".format(plr.json["age"]), end="")
             print(
                 "{0:4.1f} /{1:4.1f}|".format(
@@ -183,7 +196,7 @@ class DdSimplifiedApp:
                 end=""
             )
             print("{0:5s}|".format(plr.json["speciality"]), end="")
-            print(plr.initials, end="")
+            print(plr.json["first_name"], plr.json["last_name"], end="")
             print()
 
     def __ActionMeasure(self):
@@ -195,14 +208,12 @@ class DdSimplifiedApp:
         print(f"Time to calculate context: {t2 - t1:.4f}")
 
     def __ActionNext(self):
-        recovery = self._game.context["is_recovery_day"]
         res = self._game.Update()
         if not res:
             print("You have to select a player.")
             return
 
-        if not recovery:
-            self.__ActionResults()
+        self.__ActionResults()
 
     def __ActionOpponent(self):
         opponent: DdOpponentStruct = self._game.context["opponent"]
@@ -223,7 +234,10 @@ class DdSimplifiedApp:
         self._is_running = False
 
     def __ActionRemaining(self):
-        print("Remaining matches:", self._game.context["remaining_matches"])
+        print(
+            "Remaining matches:",
+            len(self._game.context["remaining_matches"]),
+        )
 
     def __ActionResults(self):
         clubs = self._game.context["clubs"]
@@ -255,7 +269,7 @@ class DdSimplifiedApp:
 
     def __ActionSelect(self, index="0"):
         try:
-            self._game.SelectPlayer(int(index))
+            self._game.SelectPlayer(int(index), self._club_pk)
         except AssertionError:
             print("Your input is incorrect (wrong index).")
         except ValueError:
@@ -278,6 +292,16 @@ class DdSimplifiedApp:
             context["clubs"],
             context["users_club"]
         )
+
+    def __ActionUpcoming(self):
+        context = self._game.context
+        for match in context["remaining_matches"][:5]:
+            if match.home_pk == self._club_pk:
+                print(context["clubs"][match.away_pk], "(home)")
+            elif match.away_pk == self._club_pk:
+                print(context["clubs"][match.home_pk], "(away)")
+            else:
+                raise Exception("Bad match {}".format(match))
 
 
 def _GetNumberOfArguments(function):

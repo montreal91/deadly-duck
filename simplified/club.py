@@ -10,7 +10,6 @@ from typing import Optional
 from typing import Tuple
 
 from configuration.config_game import DdGameplayConstants
-from simplified.player import DdCourtSurface
 from simplified.player import DdPlayer
 from simplified.player import PlayerModelComparator
 
@@ -20,6 +19,7 @@ class DdClub:
 
     _COACH_LEVELS = (0, 1, 2, 3)
 
+    _is_controlled: bool
     _name: str
     _players: List[DdPlayer]
     _practice_match: Optional[Tuple[int, int]]
@@ -28,6 +28,7 @@ class DdClub:
     _surface: str
 
     def __init__(self, name: str, surface: str):
+        self._is_controlled = False
         self._name = name
         self._players = []
         self._practice_match = None
@@ -36,9 +37,22 @@ class DdClub:
         self._surface = surface
 
     @property
+    def is_controlled(self):
+        """Checks if club us controlled by some user."""
+
+        return self._is_controlled
+
+    @property
     def name(self) -> str:
         """Club name."""
+
         return self._name
+
+    @property
+    def needs_decision(self) -> bool:
+        """Checks if the club needs a decision made by user."""
+
+        return self._is_controlled and self._selected_player is None
 
     @property
     def players(self) -> List[DdPlayer]:
@@ -56,10 +70,12 @@ class DdClub:
     @property
     def surface(self) -> str:
         """Court surface where club plays its home matches."""
+
         return self._surface
 
     def AddPlayer(self, player: DdPlayer):
         """Adds player to the club."""
+
         self._players.insert(0, player)
         self.SortPlayers()
 
@@ -71,6 +87,7 @@ class DdClub:
 
     def PerformPractice(self):
         """Performs player practice."""
+
         for plr in self._players:
             plr.AddExperience(plr.current_stamina * self._coach_skill)
 
@@ -81,6 +98,7 @@ class DdClub:
 
     def SelectCoach(self, index: int):
         """Selects a coach."""
+
         if 0 <= index <= len(self._COACH_LEVELS):
             self._selected_coach = index
 
@@ -88,6 +106,11 @@ class DdClub:
         """Selects player for the next match."""
 
         self._selected_player = index
+
+    def SetControlled(self, val: bool):
+        """Sets club controlled or uncontrolled by a human user."""
+
+        self._is_controlled = val
 
     def SortPlayers(self):
         """
