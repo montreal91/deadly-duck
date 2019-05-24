@@ -52,7 +52,7 @@ class DdGameDuck:
         DdCourtSurface.HARD,
     )
 
-    _clubs: List[DdClub]
+    _clubs: Dict[int, DdClub]
     _competition: DdAbstractCompetition
     _history: List[List[DdStandingsRowStruct]]
     _params: DdGameParams
@@ -65,13 +65,15 @@ class DdGameDuck:
         self._player_factory = DdPlayerFactory()
         self._results = []
 
-        self._clubs = []
+        self._clubs = {}
 
         with open("configuration/clubs.json", "r") as data_file:
             club_data = json.load(data_file)
 
-        for club in club_data:
-            self._AddClub(club_name=club["name"], surface=club["surface"])
+        for pk, club in enumerate(club_data):
+            self._AddClub(
+                pk=pk, club_name=club["name"], surface=club["surface"]
+            )
 
         self._clubs[self._params.starting_club].SetControlled(True)
 
@@ -85,7 +87,7 @@ class DdGameDuck:
 
         return dict(
             day=self._competition.day,
-            clubs=[club.name for club in self._clubs],
+            clubs=[club.name for club in self._clubs.values()],
             last_results=self._last_results,
             opponent=self._GetOpponent(self._params.starting_club),
             remaining_matches=self._competition.GetClubSchedule(
@@ -186,12 +188,12 @@ class DdGameDuck:
 
     @property
     def _user_players(self) -> List[DdPlayer]:
-        for club in self._clubs:
+        for club in self._clubs.values():
             if club.is_controlled:
                 return club.players
         return []
 
-    def _AddClub(self, club_name: str, surface: str):
+    def _AddClub(self, pk: int, club_name: str, surface: str):
         club = DdClub(name=club_name, surface=surface)
         max_players = 5
         for i in range(max_players):
@@ -200,7 +202,7 @@ class DdGameDuck:
             club.AddPlayer(self._player_factory.CreatePlayer(
                 age=age, level=i*2, speciality=choice(self._SURFACES)
             ))
-        self._clubs.append(club)
+        self._clubs[pk] = club
 
     def _NextSeason(self):
         for i in range(len(self._clubs)):
@@ -231,11 +233,11 @@ class DdGameDuck:
         )
 
     def _PerformPractice(self):
-        for club in self._clubs:
+        for club in self._clubs.values():
             club.PerformPractice()
 
     def _Recover(self):
-        for club in self._clubs:
+        for club in self._clubs.values():
             for player in club.players:
                 player.RecoverStamina(self._params.recovery_function(player))
 
@@ -248,7 +250,7 @@ class DdGameDuck:
         self._Recover()
 
     def _Unselect(self):
-        for club in self._clubs:
+        for club in self._clubs.values():
             club.SelectPlayer(None)
 
     def _GetOpponent(self, pk: int) -> Optional[DdOpponentStruct]:

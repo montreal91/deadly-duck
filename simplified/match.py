@@ -123,31 +123,13 @@ class DdMatchProcessor:
 
     _GAP: int = 2
 
-    # _callbacks: Dict[str, Callable]
-    # _games_to_win: int
     _match_surface: str
     _res: DdMatchResult
     _params: DdMatchParams
-    # _sets_to_win: int
-    # _speciality_bonus: float
 
-    def __init__(
-        self, params: DdMatchParams
-        # games_to_win: int,
-        # sets_to_win: int,
-        # exhaustion_function: Callable[[int], int],
-        # probability_function: Callable[[float, float], float],
-        # reputation_function: Callable[[int], int],
-    ):
-        # self._callbacks = {}
-        # self._callbacks["exhaustion_function"] = exhaustion_function
-        # self._callbacks["probability_function"] = probability_function
-        # self._callbacks["reputation_function"] = reputation_function
-        # self._games_to_win = games_to_win
+    def __init__(self, params: DdMatchParams):
         self._res = DdMatchResult()
         self._params = params
-        # self._sets_to_win = sets_to_win
-        # self._speciality_bonus = 1.0
 
     def ProcessMatch(
         self, home_player: DdPlayer, away_player: DdPlayer
@@ -211,10 +193,6 @@ class DdMatchProcessor:
     def SetMatchSurface(self, surface: str):
         """Sets surface on which match will be held."""
         self._match_surface = surface
-
-    # def SetSpecialityBonus(self, value: float):
-    #     """Sets speciality bonus for player."""
-    #     self._speciality_bonus = value
 
     def _CalculateActualSkill(self, player, actual_stamina=0):
         stamina_factor = actual_stamina / player.max_stamina
@@ -345,19 +323,13 @@ class DdStandingsRowStruct:
 
 
 class DdExhaustionCalculator:
+    """Callable class to calculate exhaustion gained in a match."""
+
     def __call__(self, sets):
         return self._k * sets
 
     def __init__(self, k):
         self._k = k
-
-
-# def CalculateConstExhaustion(sets: int) -> int:
-    # return sets * 3
-#
-#
-# def CalculateLinearExhaustion(sets: int) -> int:
-    # return sum(range(sets + 1))
 
 
 def NaiveProbabilityFunction(home_skill: float, away_skill: float) -> float:

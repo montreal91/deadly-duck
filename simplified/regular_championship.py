@@ -6,6 +6,7 @@ Created May 20, 2019
 """
 
 from random import shuffle
+from typing import Dict
 from typing import Generator
 from typing import List
 from typing import NamedTuple
@@ -35,7 +36,7 @@ class DdRegularChampionship(DdAbstractCompetition):
     _params: DdChampionshipParams
     _results: List[List[DdMatchResult]]
 
-    def __init__(self, clubs: List[DdClub], params: DdChampionshipParams):
+    def __init__(self, clubs: Dict[int, DdClub], params: DdChampionshipParams):
         super().__init__(clubs, params)
         self._results = []
 

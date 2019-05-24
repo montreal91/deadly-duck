@@ -6,6 +6,7 @@ Created May 20, 2019
 """
 
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -21,12 +22,12 @@ ScheduleDay = List[DdScheduledMatchStruct]
 class DdAbstractCompetition:
     """Abstract competition class."""
 
-    _clubs: List[DdClub]
+    _clubs: Dict[int, DdClub]
     _schedule: List[Optional[ScheduleDay]]
     _day: int
     _params: Any
 
-    def __init__(self, clubs: List[DdClub], params: Any):
+    def __init__(self, clubs: Dict[int, DdClub], params: Any):
         self._clubs = clubs
         self._day = 0
         self._params = params

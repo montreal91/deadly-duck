@@ -76,8 +76,8 @@ class DdClub:
     def AddPlayer(self, player: DdPlayer):
         """Adds player to the club."""
 
-        self._players.insert(0, player)
-        self.SortPlayers()
+        self._players.append(player)
+        self._SortPlayers()
 
     def ExpelRetiredPlayers(self):
         """Removes players from the club which are too old to play."""
@@ -112,15 +112,9 @@ class DdClub:
 
         self._is_controlled = val
 
-    def SortPlayers(self):
-        """
-        Obviously, sorts players.
-
-        Added for convenience.
-        """
-
-        self._players.sort(key=lambda p: p.age)
-
     @property
     def _coach_skill(self):
         return self._COACH_LEVELS[self._selected_coach]
+
+    def _SortPlayers(self):
+        self._players.sort(key=lambda p: p.age, reverse=True)
