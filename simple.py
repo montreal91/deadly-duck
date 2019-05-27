@@ -21,6 +21,7 @@ from simplified.match import LinearProbabilityFunction
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerReputationCalculator
 from simplified.player import ExhaustedLinearRecovery
+from simplified.playoffs import DdPlayoffParams
 from simplified.regular_championship import DdChampionshipParams
 
 
@@ -64,8 +65,17 @@ class DdSimplifiedApp:
                 recovery_day=4,
                 rounds=2,
             )
+            playoff_params = DdPlayoffParams(
+                series_matches_pattern=(
+                    True, True, False, False, True, False, True,
+                ),
+                length=8,
+                gap_days=1,
+                match_params=match_params,
+            )
             self._game = DdGameDuck(DdGameParams(
                 championship_params=championship_params,
+                playoff_params=playoff_params,
                 recovery_function=ExhaustedLinearRecovery,
                 starting_club=starting_club,
 
@@ -157,18 +167,26 @@ class DdSimplifiedApp:
         try:
             s = int(season)
             ctx = self._game.context
+            history = ctx["history"]
 
-            if s > len(ctx["history"]):
+            if s > len(history) or history[s - 1] == {}:
                 print(f"Season {s} is not finished yet.")
                 return
             if s < 1:
                 print(f"Season should be a positive integer")
                 return
-            _PrintStandings(
-                standings=ctx["history"][s - 1],
+            _PrintRegularStandings(
+                standings=history[s - 1]["Championship"],
                 club_names=ctx["clubs"],
                 users_club=ctx["users_club"],
             )
+            if "Cup" in history[s - 1]:
+                print("=" * 50)
+                _PrintCupStandings(
+                    history[s-1]["Cup"],
+                    ctx["clubs"],
+                    ctx["users_club"]
+                )
         except ValueError:
             print("Season should be a valid integer.")
 
@@ -287,11 +305,18 @@ class DdSimplifiedApp:
 
     def __ActionStandings(self):
         context = self._game.context
-        _PrintStandings(
-            context["standings"],
-            context["clubs"],
-            context["users_club"]
-        )
+        if context["title"] == "Cup":
+            _PrintCupStandings(
+                context["standings"],
+                context["clubs"],
+                context["users_club"]
+            )
+        else:
+            _PrintRegularStandings(
+                context["standings"],
+                context["clubs"],
+                context["users_club"]
+            )
 
     def __ActionUpcoming(self):
         context = self._game.context
@@ -310,6 +335,24 @@ def _GetNumberOfArguments(function):
     if function.__defaults__ is not None:
         min_ -= len(function.__defaults__)
     return min_ - 1, max_
+
+
+def _PrintCupStandings(series, club_names, users_club):
+    row_string = (
+        "{top_name:s} vs {bottom_name:s}\n"
+        "    {top_score:d}:{bottom_score:n}"
+    )
+    for row in series:
+        if users_club in row["clubs"]:
+            sys.stdout.write(BOLD)
+        print(row_string.format(
+            top_name=club_names[row["clubs"][0]],
+            bottom_name=club_names[row["clubs"][1]],
+            top_score=row["score"][0],
+            bottom_score=row["score"][1],
+        ))
+        if users_club in row["clubs"]:
+            sys.stdout.write(RESET)
 
 
 def _PrintPlayer(player: DdPlayer, own=False):
@@ -334,19 +377,18 @@ def _PrintPlayer(player: DdPlayer, own=False):
         print(f"Rep: {player.reputation}")
 
 
-def _PrintStandings(standings, club_names, users_club):
+def _PrintRegularStandings(standings, club_names, users_club):
     standings = sorted(
         standings,
         key=lambda x: (x.sets_won, x.games_won),
         reverse=True
     )
-    for i in range(len(standings)):
-        row = standings[i]
+    for i, row in enumerate(standings, 1):
         if row.club_pk == users_club:
             sys.stdout.write(BOLD)
         print("{pos:02d} {sets:2d} {games:3d} {club_name:s}".format(
             club_name=club_names[row.club_pk],
-            pos=i+1,
+            pos=i,
             sets=row.sets_won,
             games=row.games_won,
         ))
@@ -357,7 +399,7 @@ def _PrintStandings(standings, club_names, users_club):
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Short description.")
     parser.add_argument("--club", type=int, choices=range(16), default=0)
     parser.add_argument("--savename", type=str, default="default")
     parser.add_argument(

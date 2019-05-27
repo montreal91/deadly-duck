@@ -26,13 +26,14 @@ class DdAbstractCompetition:
     _schedule: List[Optional[ScheduleDay]]
     _day: int
     _params: Any
+    _results: List[List[DdMatchResult]]
 
     def __init__(self, clubs: Dict[int, DdClub], params: Any):
         self._clubs = clubs
         self._day = 0
         self._params = params
+        self._results = []
         self._schedule = []
-        self._MakeSchedule()
 
     @property
     def current_matches(self) -> Optional[ScheduleDay]:
@@ -54,6 +55,10 @@ class DdAbstractCompetition:
     def standings(self) -> List[Any]:
         """List of current standings."""
 
+    @property
+    def title(self) -> str:
+        """Title of the competition."""
+
     def GetClubSchedule(self, club_pk: int) -> List[DdScheduledMatchStruct]:
         """List of matches scheduled for a club."""
 
@@ -73,7 +78,7 @@ class DdAbstractCompetition:
 
     @property
     def _match_processor(self) -> DdMatchProcessor:
-        pass
+        return DdMatchProcessor(self._params.match_params)
 
     def _MakeSchedule(self):
         pass

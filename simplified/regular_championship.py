@@ -16,7 +16,6 @@ from simplified.club import DdClub
 from simplified.competition import DdAbstractCompetition
 from simplified.competition import ScheduleDay
 from simplified.match import DdMatchParams
-from simplified.match import DdMatchProcessor
 from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
 from simplified.match import DdStandingsRowStruct
@@ -38,7 +37,7 @@ class DdRegularChampionship(DdAbstractCompetition):
 
     def __init__(self, clubs: Dict[int, DdClub], params: DdChampionshipParams):
         super().__init__(clubs, params)
-        self._results = []
+        self._MakeSchedule()
 
     @property
     def is_over(self) -> bool:
@@ -57,6 +56,10 @@ class DdRegularChampionship(DdAbstractCompetition):
                 results[match.away_pk].games_won += match.away_games
 
         return results
+
+    @property
+    def title(self):
+        return "Championship"
 
     def Update(self) -> Optional[List[DdMatchResult]]:
         if self.current_matches is None:
@@ -79,10 +82,6 @@ class DdRegularChampionship(DdAbstractCompetition):
         self._results.append(day_results)
         return day_results
 
-    @property
-    def _match_processor(self) -> DdMatchProcessor:
-        return DdMatchProcessor(self._params.match_params)
-
     def _MakeFullSchedule(self, pk_list: List[int]):
         def MirrorDay(matches: List[DdScheduledMatchStruct]):
             return [
@@ -94,11 +93,11 @@ class DdRegularChampionship(DdAbstractCompetition):
                 DdScheduledMatchStruct(m.home_pk, m.away_pk) for m in matches
             ]
 
-        def ComposeDays(matches: List[DdScheduledMatchStruct], n: int):
+        def ComposeDays(matches: List[DdScheduledMatchStruct], num: int):
             res = []
-            for _ in range(n // 2):
+            for _ in range(num // 2):
                 res.append(CopyDay(matches))
-            for _ in range(n // 2):
+            for _ in range(num // 2):
                 res.append(MirrorDay(matches))
             return res
 
@@ -137,14 +136,14 @@ class DdRegularChampionship(DdAbstractCompetition):
 
 def _MakeBasicSchedule(pk_list: List[int]):
     def MakePairs(lst: List[int]) -> ScheduleDay:
-        n = len(lst) - 1
+        num = len(lst) - 1
         mid = len(lst) // 2
-        return [DdScheduledMatchStruct(lst[i], lst[n-i]) for i in range(mid)]
+        return [DdScheduledMatchStruct(lst[i], lst[num-i]) for i in range(mid)]
 
-    def Shift(lst: List[int], n: int) -> List[int]:
-        if n == 0:
+    def Shift(lst: List[int], num: int) -> List[int]:
+        if num == 0:
             return list(lst)
-        return [lst[0]] + lst[-n:] + lst[1:-n]
+        return [lst[0]] + lst[-num:] + lst[1:-num]
 
     def ShiftGen(lst: List[int]) -> Generator[List[int], None, None]:
         for i in range(len(lst) - 1):

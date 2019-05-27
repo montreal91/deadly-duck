@@ -24,6 +24,8 @@ from simplified.match import DdStandingsRowStruct
 from simplified.player import DdCourtSurface
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerFactory
+from simplified.playoffs import DdPlayoff
+from simplified.playoffs import DdPlayoffParams
 from simplified.regular_championship import DdChampionshipParams
 from simplified.regular_championship import DdRegularChampionship
 
@@ -32,6 +34,7 @@ class DdGameParams(NamedTuple):
     """Passive class to store game parameters"""
 
     championship_params: DdChampionshipParams
+    playoff_params: DdPlayoffParams
     recovery_function: Callable[[DdPlayer], int]
     starting_club: int
 
@@ -54,13 +57,13 @@ class DdGameDuck:
 
     _clubs: Dict[int, DdClub]
     _competition: DdAbstractCompetition
-    _history: List[List[DdStandingsRowStruct]]
+    _history: List[Dict[str, Any]]
     _params: DdGameParams
     _player_factory: DdPlayerFactory
     _results: List[DdMatchResult]
 
     def __init__(self, params: DdGameParams):
-        self._history = []
+        self._history = [{}]
         self._params = params
         self._player_factory = DdPlayerFactory()
         self._results = []
@@ -97,13 +100,14 @@ class DdGameDuck:
             user_players=self._user_players,
             users_club=self._params.starting_club,
             history=self._history,
+            title=self._competition.title,
         )
 
     @property
     def season_over(self) -> bool:
         """Checks if season is over."""
 
-        return self._competition.is_over
+        return self._competition.title == "Cup" and self._competition.is_over
 
     def FirePlayer(self, i: int, pk: int):
         """Fires the selected player from user's club."""
@@ -159,6 +163,10 @@ class DdGameDuck:
 
         if self.season_over:
             self._NextSeason()
+
+        if self._competition.is_over:
+            self._SaveHistory()
+            self._StartPlayoff()
         return True
 
     @property
@@ -226,11 +234,12 @@ class DdGameDuck:
                 speciality=choice(self._SURFACES),
             ))
 
-        self._history.append(self._competition.standings)
+        self._SaveHistory()
         self._competition = DdRegularChampionship(
             self._clubs,
             self._params.championship_params
         )
+        self._history.append({})
 
     def _PerformPractice(self):
         for club in self._clubs.values():
@@ -248,6 +257,16 @@ class DdGameDuck:
             self._PerformPractice()
 
         self._Recover()
+
+    def _SaveHistory(self):
+        self._history[-1][self._competition.title] = self._competition.standings
+
+    def _StartPlayoff(self):
+        self._competition = DdPlayoff(
+            self._clubs,
+            self._params.playoff_params,
+            self._competition.standings,
+        )
 
     def _Unselect(self):
         for club in self._clubs.values():
