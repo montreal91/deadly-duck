@@ -106,7 +106,6 @@ class DdSimplifiedApp:
         self._actions["opponent"] = self.__ActionOpponent
         self._actions["q"] = self.__ActionQuit
         self._actions["quit"] = self.__ActionQuit
-        self._actions["rem"] = self.__ActionRemaining
         self._actions["save"] = self.__ActionSave
         self._actions["res"] = self.__ActionResults
         self._actions["s"] = self.__ActionSelect
@@ -252,12 +251,6 @@ class DdSimplifiedApp:
     def __ActionQuit(self):
         self._is_running = False
 
-    def __ActionRemaining(self):
-        print(
-            "Remaining matches:",
-            len(self._game.context["remaining_matches"]),
-        )
-
     def __ActionResults(self):
         clubs = self._game.context["clubs"]
         uk = self._game.context["users_club"]
@@ -329,6 +322,11 @@ class DdSimplifiedApp:
                 print(context["clubs"][match.home_pk], "(away)")
             else:
                 raise Exception("Bad match {}".format(match))
+        print(
+            "\nRemaining matches:",
+            len(context["remaining_matches"]),
+        )
+
 
 
 def _GetNumberOfArguments(function):

@@ -5,46 +5,66 @@ Arguments to the actions are passed in the next form:
 action/arg_one/arg_two/arg_three
 
 Actions:
-    ? -- prints this text
+    ? -- prints this text.
+
+    fire
+        Argument: an index of a player to fire.
+        Fires player from your club.
+
+        Example:
+        fire/2
+
+    hire
+        Argument: Player speciality {clay, grass, hard}.
+        Hires a player with given speciality.
+
+        Example:
+        hire/hard
 
     h|history
         Argument: season number
-        prints standings for one of the previous seasons
+        Prints standings for one of the previous seasons.
 
         Example:
         h/2
 
     l|list
-        prints list of accessible players
+        Prints list of accessible players.
 
     n|next
-        proceeds to the next day if possible
+        Proceeds to the next day if possible.
 
     o|opponent
-        prints stats of the next opponent if possble
+        Prints detailed information of the next opponent if possble.
 
     q|quit
-        quits program immediately
+        Quits program immediately.
 
-    rem
-        number of remaining matches
+    save
+        Saves game state to the specified filename. If filename was not
+        specified, saves to default filename. If the game was loaded from the
+        given filename, this action overrides save file.
 
     res
-        list of most recent results
+        List of most recent results.
 
     s|select
         Argument: index of a player for the next match
-        selects a player for the next match
+        Selects a player for the next match.
 
         Example:
         select/1
 
     sh|show
         Argument: index of a player to show
-        prints details of the given player
+        Prints detailed information of the given player.
 
         Example:
         show/3
 
     st|standings
-        prints current standings
+        Prints current standings in the current competition.
+
+    u|upcoming
+        Prints short list of upcoming matches. And total number of remaining
+        matches.
