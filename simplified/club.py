@@ -22,7 +22,6 @@ class DdClub:
     _is_controlled: bool
     _name: str
     _players: List[DdPlayer]
-    _practice_match: Optional[Tuple[int, int]]
     _selected_coach: int
     _selected_player: Optional[int]
     _surface: str
@@ -31,7 +30,6 @@ class DdClub:
         self._is_controlled = False
         self._name = name
         self._players = []
-        self._practice_match = None
         self._selected_coach = 1
         self._selected_player = None
         self._surface = surface
@@ -77,7 +75,6 @@ class DdClub:
         """Adds player to the club."""
 
         self._players.append(player)
-        self._SortPlayers()
 
     def ExpelRetiredPlayers(self):
         """Removes players from the club which are too old to play."""
@@ -115,6 +112,3 @@ class DdClub:
     @property
     def _coach_skill(self):
         return self._COACH_LEVELS[self._selected_coach]
-
-    def _SortPlayers(self):
-        self._players.sort(key=lambda p: p.age, reverse=True)

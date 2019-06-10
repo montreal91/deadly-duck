@@ -253,7 +253,7 @@ class DdGameDuck:
     def _PlayOneDay(self):
         self._results = self._competition.Update()
 
-        if self._results is None:
+        if self._results is None and self._competition.title == "Championship":
             self._PerformPractice()
 
         self._Recover()

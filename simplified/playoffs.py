@@ -182,12 +182,15 @@ class DdPlayoff(DdAbstractCompetition):
 
     @property
     def is_over(self):
-        return len(self._series) == 1 and self._series[0].winner is not None
+        if len(self._series) > 1:
+            return False
+        last_day = self._day == len(self._schedule)
+        return self._series[0].winner is not None and last_day
 
     @property
     def standings(self):
         result = []
-        for series in self._series:
+        for series in self._past_series + self._series:
             res = dict(
                 clubs=series.pair,
                 score=series.score,

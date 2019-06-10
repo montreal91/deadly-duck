@@ -347,7 +347,7 @@ def LinearProbabilityFunction(home_skill: float, away_skill: float) -> float:
     delta = home_skill - away_skill
 
     if -50 <= delta <= 50:
-        return round(0.009 * delta + 0.5, 2)
+        return round(0.009 * delta + 0.5, 6)
     elif delta < -50:
         return 0.05
     elif delta > 50:

@@ -185,7 +185,8 @@ class DdSimplifiedApp:
                 _PrintCupStandings(
                     history[s-1]["Cup"],
                     ctx["clubs"],
-                    ctx["users_club"]
+                    ctx["users_club"],
+                    3,
                 )
         except ValueError:
             print("Season should be a valid integer.")
@@ -309,7 +310,8 @@ class DdSimplifiedApp:
             _PrintCupStandings(
                 context["standings"],
                 context["clubs"],
-                context["users_club"]
+                context["users_club"],
+                3,
             )
         else:
             _PrintRegularStandings(
@@ -337,22 +339,34 @@ def _GetNumberOfArguments(function):
     return min_ - 1, max_
 
 
-def _PrintCupStandings(series, club_names, users_club):
+def _PrintCupStandings(series, club_names, users_club, rounds):
+    def RoundIndexGenerator(n):
+        first = 0
+        for i in range(n):
+            res = list(range(first, first + 2 ** (n - i - 1)))
+            first += len(res)
+            yield i, res
     row_string = (
         "{top_name:s} vs {bottom_name:s}\n"
         "    {top_score:d}:{bottom_score:n}"
     )
-    for row in series:
-        if users_club in row["clubs"]:
-            sys.stdout.write(BOLD)
-        print(row_string.format(
-            top_name=club_names[row["clubs"][0]],
-            bottom_name=club_names[row["clubs"][1]],
-            top_score=row["score"][0],
-            bottom_score=row["score"][1],
-        ))
-        if users_club in row["clubs"]:
-            sys.stdout.write(RESET)
+    for i, _round in RoundIndexGenerator(rounds):
+        if _round[0] == len(series):
+            break
+        print(f"Round {i + 1}")
+        for j in _round:
+            row = series[j]
+            if users_club in row["clubs"]:
+                sys.stdout.write(BOLD)
+            print(row_string.format(
+                top_name=club_names[row["clubs"][0]],
+                bottom_name=club_names[row["clubs"][1]],
+                top_score=row["score"][0],
+                bottom_score=row["score"][1],
+            ))
+            if users_club in row["clubs"]:
+                sys.stdout.write(RESET)
+        print()
 
 
 def _PrintPlayer(player: DdPlayer, own=False):
@@ -360,6 +374,7 @@ def _PrintPlayer(player: DdPlayer, own=False):
         "{initials:s} [{level:d}]\n"
         "Technique:  {actual_technique:3.1f} / {technique:3.1f}\n"
         "Endurance:  {endurance:3.1f}\n"
+        "Stamina:    {current_stamina:d} / {max_stamina:d}\n"
         "Exhaustion: {exhaustion:d}\n\n"
         "Speciality: {speciality:s}\n"
     )
@@ -371,6 +386,8 @@ def _PrintPlayer(player: DdPlayer, own=False):
         endurance=player.endurance,
         exhaustion=player.exhaustion,
         speciality=player.speciality,
+        current_stamina=player.current_stamina,
+        max_stamina=player.max_stamina,
     ))
     if own:
         print(f"Exp: {player.experience} / {player.next_level_exp}")

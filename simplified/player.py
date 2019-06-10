@@ -132,6 +132,7 @@ class DdPlayer:
             technique=self.technique,
             endurance=self.endurance,
             current_stamina=self._current_stamina,
+            max_stamina=self.max_stamina,
             actual_technique=self.actual_technique,
             level=self.level,
             age=self._age,
