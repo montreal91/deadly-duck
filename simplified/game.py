@@ -261,6 +261,11 @@ class DdGameDuck:
     def _SaveHistory(self):
         self._history[-1][self._competition.title] = self._competition.standings
 
+        # This is done for collecting match statistics.
+        with open("simplified/results.csv", "a") as results_file:
+            for match in self._competition.results_:
+                print(match.csv, file=results_file)
+
     def _StartPlayoff(self):
         self._competition = DdPlayoff(
             self._clubs,

@@ -81,6 +81,21 @@ class DdMatchResult:
         self._away_sets = int(value)
 
     @property
+    def csv(self) -> str:
+        """Comma separated values of the match for statistic purposes."""
+
+        return (
+            f"{self.home_player_snapshot['actual_technique']},"
+            f"{self.home_player_snapshot['current_stamina']},"
+            f"{int(self.home_player_snapshot['speciality'] == self.surface)},"
+            f"{self.home_sets},"
+            f"{self.away_player_snapshot['actual_technique']},"
+            f"{self.away_player_snapshot['current_stamina']},"
+            f"{int(self.away_player_snapshot['speciality'] == self.surface)},"
+            f"{self.away_sets}"
+        )
+
+    @property
     def full_score(self):
         return self._full_score
 

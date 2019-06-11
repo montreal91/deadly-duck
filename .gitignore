@@ -12,3 +12,4 @@
 configuration/oauth_*
 .mypy_cache/
 .saves
+*.csv

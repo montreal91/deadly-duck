@@ -5,8 +5,11 @@ Created May 20, 2019
 @author montreal91
 """
 
+from copy import copy
+from itertools import chain
 from typing import Any
 from typing import Dict
+from typing import Generator
 from typing import List
 from typing import Optional
 
@@ -50,6 +53,17 @@ class DdAbstractCompetition:
     @property
     def is_over(self) -> bool:
         """Checks if competition is over"""
+
+    @property
+    def results_(self) -> Generator[List[DdMatchResult], None, None]:
+        """
+        List of match results.
+
+        Actually, this method is present here for testing purposes and should
+        not be used for production.
+        """
+        for match in chain(*self._results):
+            yield copy(match)
 
     @property
     def standings(self) -> List[Any]:
