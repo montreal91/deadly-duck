@@ -9,6 +9,7 @@ import os.path
 import pickle
 import sys
 
+from typing import Any
 from typing import Dict
 from typing import Callable
 
@@ -263,11 +264,15 @@ class DdSimplifiedApp:
 
             if exp is not None:
                 sys.stdout.write(BOLD)
-            print("{0:s} vs {1:s}\n{2:s}".format(
-                    clubs[res.home_pk],
-                    clubs[res.away_pk],
-                    res.full_score,
-                ))
+            print(
+                f"{clubs[res.home_pk]} vs "
+                f"{clubs[res.away_pk]}\n"
+                f"[{res.home_player_snapshot['level']}] "
+                f"{_GetPlayerName(res.home_player_snapshot)} vs "
+                f"[{res.away_player_snapshot['level']}] "
+                f"{_GetPlayerName(res.away_player_snapshot)}\n"
+                f"{res.full_score}"
+            )
 
             if exp is not None:
                 print("Gained exp:", exp)
@@ -335,6 +340,14 @@ def _GetNumberOfArguments(function):
     if function.__defaults__ is not None:
         min_ -= len(function.__defaults__)
     return min_ - 1, max_
+
+
+def _GetPlayerName(player_json: Dict[str, Any]) -> str:
+    return (
+        f"{player_json['first_name']} "
+        f"{player_json['second_name']} "
+        f"{player_json['last_name']}"
+    )
 
 
 def _PrintCupStandings(series, club_names, users_club, rounds):

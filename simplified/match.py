@@ -42,6 +42,9 @@ class DdMatchResult:
     def __init__(self):
         self.home_pk = None
         self.away_pk = None
+        self.home_player_snapshot = None
+        self.away_player_snapshot = None
+        self.surface = None
         self.home_games = 0
         self.away_games = 0
         self.home_exp = 0
@@ -137,6 +140,10 @@ class DdMatchProcessor:
         """Processes match and returns the results."""
 
         sets_played = 0
+        self._res.surface = self._match_surface
+        self._res.home_player_snapshot = home_player.json
+        self._res.away_player_snapshot = away_player.json
+
         while not self._IsMatchOver():
             set_result = self._ProcessSet(
                 home_player,
