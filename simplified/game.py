@@ -138,6 +138,13 @@ class DdGameDuck:
         )
         self._clubs[pk].AddPlayer(player)
 
+    def ProceedToNextCompetition(self):
+        """Updates game while player action is not required."""
+
+        step = True
+        while self._competition.day != 0 and step:
+            step = self.Update()
+
     def SelectPlayer(self, i: int, pk: int):
         """Sets selected player for user."""
 

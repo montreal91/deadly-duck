@@ -105,6 +105,7 @@ class DdSimplifiedApp:
         self._actions["next"] = self.__ActionNext
         self._actions["o"] = self.__ActionOpponent
         self._actions["opponent"] = self.__ActionOpponent
+        self._actions["proceed"] = self.__ActionProceed
         self._actions["q"] = self.__ActionQuit
         self._actions["quit"] = self.__ActionQuit
         self._actions["save"] = self.__ActionSave
@@ -248,6 +249,9 @@ class DdSimplifiedApp:
 
         if opponent.player is not None:
             _PrintPlayer(opponent.player, False)
+
+    def __ActionProceed(self):
+        self._game.ProceedToNextCompetition()
 
     def __ActionQuit(self):
         self._is_running = False

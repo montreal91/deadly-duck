@@ -37,6 +37,9 @@ Actions:
     o|opponent
         Prints detailed information of the next opponent if possble.
 
+    proceed
+        Updates game while player action is not required.
+
     q|quit
         Quits program immediately.
 
