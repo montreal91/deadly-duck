@@ -14,6 +14,15 @@ Actions:
         Example:
         fire/2
 
+    coach
+        Argument 1: an index of a player.
+        Argument 2: a coach level {0, 1, 2, 3}
+
+        Sets a coach for a player.
+
+        Example:
+        coach/1/3
+
     hire
         Argument: Player speciality {clay, grass, hard}.
         Hires a player with given speciality.

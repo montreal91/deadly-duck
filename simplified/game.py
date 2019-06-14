@@ -47,7 +47,12 @@ class DdOpponentStruct:
 
 
 class DdGameDuck:
-    """A class that incapsulates the game logic."""
+    """
+    A class that incapsulates the game logic.
+
+    Public methods of this class validate user inputs. If input is incorrect,
+    an error with (hopefully) descriptive message is raised.
+    """
 
     _SURFACES = (
         DdCourtSurface.CLAY,
@@ -145,10 +150,29 @@ class DdGameDuck:
         while self._competition.day != 0 and step:
             step = self.Update()
 
+    def SelectCoachForPlayer(
+        self, coach_index: int, player_index: int, pk: int
+    ):
+        """
+        Selects a coach (bad, normal, or good) for the player in the club.
+        """
+
+        assert pk in self._clubs, "Incorrect club pk."
+        assert 0 <= player_index < len(self._clubs[pk].players), (
+            "Incorrect player index."
+        )
+        assert 0 <= coach_index < len(DdClub.COACH_LEVELS), (
+            "Incorrect coach index."
+        )
+
+        self._clubs[pk].SelectCoach(
+            coach_index=coach_index, player_index=player_index
+        )
+
     def SelectPlayer(self, i: int, pk: int):
         """Sets selected player for user."""
 
-        assert 0 <= pk < len(self._clubs), "Incorrect club index."
+        assert 0 <= pk < len(self._clubs), "Incorrect club pk."
         assert 0 <= i < len(self._clubs[pk].players), (
             "Incorrect player index."
         )
@@ -220,11 +244,19 @@ class DdGameDuck:
         self._clubs[pk] = club
 
     def _NextSeason(self):
-        for i in range(len(self._clubs)):
-            club: DdClub = self._clubs[i]
-            for player in club.players:
-                player.AgeUp()
-                player.AfterSeasonRest()
+        previous_standings = sorted(
+            self._history[-1]["Championship"],
+            key=lambda x: (x.sets_won, x.games_won),
+            reverse=True
+        )
+        for i, row in enumerate(previous_standings):
+            club: DdClub = self._clubs[row.club_pk]
+            coach_index = 1 if i < len(previous_standings) // 2 else 2
+            for j, slot in enumerate(club.players):
+                slot.player.AgeUp()
+                slot.player.AfterSeasonRest()
+                if not club.is_controlled:
+                    club.SelectCoach(coach_index=coach_index, player_index=j)
             club.ExpelRetiredPlayers()
 
             if club.is_controlled:
@@ -235,11 +267,14 @@ class DdGameDuck:
                 level=0,
                 speciality=club.surface
             ))
+            club.SelectCoach(coach_index=coach_index, player_index=-1)
+
             club.AddPlayer(self._player_factory.CreatePlayer(
                 age=DdGameplayConstants.STARTING_AGE.value,
                 level=0,
                 speciality=choice(self._SURFACES),
             ))
+            club.SelectCoach(coach_index=coach_index, player_index=-1)
 
         self._SaveHistory()
         self._competition = DdRegularChampionship(
@@ -254,8 +289,10 @@ class DdGameDuck:
 
     def _Recover(self):
         for club in self._clubs.values():
-            for player in club.players:
-                player.RecoverStamina(self._params.recovery_function(player))
+            for player_coach in club.players:
+                player_coach.player.RecoverStamina(
+                    self._params.recovery_function(player_coach.player)
+                )
 
     def _PlayOneDay(self):
         self._results = self._competition.Update()

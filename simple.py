@@ -95,6 +95,7 @@ class DdSimplifiedApp:
 
     def _InitActions(self):
         self._actions["?"] = self.__ActionHelp
+        self._actions["coach"] = self.__ActionCoach
         self._actions["fire"] = self.__ActionFire
         self._actions["hire"] = self.__ActionHire
         self._actions["h"] = self.__ActionHistory
@@ -147,6 +148,16 @@ class DdSimplifiedApp:
         else:
             print("Your input is incorrect.")
 
+    def __ActionCoach(self, player_index: str, coach_index: str):
+        try:
+            pi = int(player_index)
+            ci = int(coach_index)
+            self._game.SelectCoachForPlayer(
+                coach_index=ci, player_index=pi, pk=self._club_pk
+            )
+        except (AssertionError, ValueError) as error:
+            print(error)
+
     def __ActionFire(self, index: str):
         try:
             i = int(index)
@@ -193,12 +204,12 @@ class DdSimplifiedApp:
             print("Season should be a valid integer.")
 
     def __ActionList(self):
-        print(" #| Age| Technique|Stm|Exh| Spec| Name")
-        print("__|____|__________|___|___|_____|_____________________")
+        print(" #| Age| Technique|Stm|Exh| Spec| Coach | Name")
+        print("__|____|__________|___|___|_____|_______|_____________")
         ctx = self._game.context
         for i in range(len(ctx["user_players"])):
             print("{0:2}|".format(i), end="")
-            plr: DdPlayer = ctx["user_players"][i]
+            plr: DdPlayer = ctx["user_players"][i].player
             print(" {0:2d} |".format(plr.json["age"]), end="")
             print(
                 "{0:4.1f} /{1:4.1f}|".format(
@@ -216,6 +227,12 @@ class DdSimplifiedApp:
                 end=""
             )
             print("{0:5s}|".format(plr.json["speciality"]), end="")
+            print(
+                "   {0:1d}   |".format(
+                    ctx["user_players"][i].coach_level
+                ),
+                end=""
+            )
             print(plr.json["first_name"], plr.json["last_name"], end="")
             print()
 
@@ -299,7 +316,7 @@ class DdSimplifiedApp:
     def __ActionShow(self, index="0"):
         try:
             index = int(index)
-            player: DdPlayer = self._game.context["user_players"][index]
+            player: DdPlayer = self._game.context["user_players"][index].player
             _PrintPlayer(player, own=True)
         except AssertionError:
             print("Your input is incorrect (wrong index).")

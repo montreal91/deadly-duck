@@ -14,14 +14,25 @@ from simplified.player import DdPlayer
 from simplified.player import PlayerModelComparator
 
 
+class _DdPlayerCoach:
+    """A passive data structure to bind player and coach level."""
+
+    player: DdPlayer
+    coach_level: int
+
+    def __init__(self, player: DdPlayer, coach_level: int):
+        self.player = player
+        self.coach_level = coach_level
+
+
 class DdClub:
     """A club in the tournament."""
 
-    _COACH_LEVELS = (0, 1, 2, 3)
+    COACH_LEVELS = (0, 1, 2, 3)
 
     _is_controlled: bool
     _name: str
-    _players: List[DdPlayer]
+    _players: List[_DdPlayerCoach]
     _selected_coach: int
     _selected_player: Optional[int]
     _surface: str
@@ -53,7 +64,7 @@ class DdClub:
         return self._is_controlled and self._selected_player is None
 
     @property
-    def players(self) -> List[DdPlayer]:
+    def players(self) -> List[_DdPlayerCoach]:
         """List of club players."""
         return self._players
 
@@ -61,9 +72,12 @@ class DdClub:
     def selected_player(self) -> DdPlayer:
         """Player selected for the next match."""
 
+        def RawPlayers():
+            return [p.player for p in self._players]
+
         if self._selected_player is None:
-            return max(self._players, key=PlayerModelComparator)
-        return self._players[self._selected_player]
+            return max(RawPlayers(), key=PlayerModelComparator)
+        return self._players[self._selected_player].player
 
     @property
     def surface(self) -> str:
@@ -74,30 +88,38 @@ class DdClub:
     def AddPlayer(self, player: DdPlayer):
         """Adds player to the club."""
 
-        self._players.append(player)
+        self._players.append(_DdPlayerCoach(player, 0))
 
     def ExpelRetiredPlayers(self):
         """Removes players from the club which are too old to play."""
 
         retirement_age = DdGameplayConstants.RETIREMENT_AGE.value
-        self._players = [p for p in self._players if p.age < retirement_age]
+        def AgeCheck(player_slot: _DdPlayerCoach):
+            return player_slot.player.age < retirement_age
+
+        self._players = [p for p in self._players if AgeCheck(p)]
 
     def PerformPractice(self):
         """Performs player practice."""
 
         for plr in self._players:
-            plr.AddExperience(plr.current_stamina * self._coach_skill)
+            plr.player.AddExperience(
+                plr.player.current_stamina * plr.coach_level
+            )
 
     def PopPlayer(self, index: int):
         """Removes player from the club."""
 
         self._players.pop(index)
 
-    def SelectCoach(self, index: int):
-        """Selects a coach."""
+    def SelectCoach(self, coach_index: int, player_index: int):
+        """
+        Selects a coach.
 
-        if 0 <= index <= len(self._COACH_LEVELS):
-            self._selected_coach = index
+        Possible coach indexes are 0, 1, 2, 3.
+        """
+
+        self._players[player_index].coach_level = self.COACH_LEVELS[coach_index]
 
     def SelectPlayer(self, index: Optional[int]):
         """Selects player for the next match."""
@@ -108,7 +130,3 @@ class DdClub:
         """Sets club controlled or uncontrolled by a human user."""
 
         self._is_controlled = val
-
-    @property
-    def _coach_skill(self):
-        return self._COACH_LEVELS[self._selected_coach]
