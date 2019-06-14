@@ -25,25 +25,57 @@ class _DdPlayerCoach:
         self.coach_level = coach_level
 
 
+class DdFameTracker:
+    """
+    A simple class to track club's fame over time.
+
+    Fame degrades with time.
+    """
+
+    _WEIGHTS: Tuple[float, ...] = (0.2, 0.4, 0.6, 0.8, 1.0)
+    _fame_queue: List[int]
+
+    def __init__(self):
+        self._fame_queue = [0 for _ in range(len(self._WEIGHTS))]
+
+    @property
+    def fame(self) -> int:
+        """Calculates current fame."""
+
+        return int(sum(f * w for f, w in zip(self._fame_queue, self._WEIGHTS)))
+
+    def AddFameValue(self, value):
+        """Adds new fame instance to the tracker."""
+
+        self._fame_queue.pop(0)
+        self._fame_queue.append(value)
+
+
 class DdClub:
     """A club in the tournament."""
 
     COACH_LEVELS = (0, 1, 2, 3)
 
+    _fame_tracker: DdFameTracker
     _is_controlled: bool
     _name: str
     _players: List[_DdPlayerCoach]
-    _selected_coach: int
     _selected_player: Optional[int]
     _surface: str
 
     def __init__(self, name: str, surface: str):
+        self._fame_tracker = DdFameTracker()
         self._is_controlled = False
         self._name = name
         self._players = []
-        self._selected_coach = 1
         self._selected_player = None
         self._surface = surface
+
+    @property
+    def fame(self):
+        """Club's fame."""
+
+        return self._fame_tracker.fame
 
     @property
     def is_controlled(self):
@@ -84,6 +116,11 @@ class DdClub:
         """Court surface where club plays its home matches."""
 
         return self._surface
+
+    def AddFame(self, value: int):
+        """Adds new fame instance to the club."""
+
+        self._fame_tracker.AddFameValue(value)
 
     def AddPlayer(self, player: DdPlayer):
         """Adds player to the club."""

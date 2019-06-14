@@ -87,6 +87,9 @@ class DdAbstractCompetition:
                     schedule.append(match)
         return schedule
 
+    def GetClubFame(self, club_pk: int) -> int:
+        """Fame earned by club in the competition."""
+
     def Update(self) -> Optional[List[DdMatchResult]]:
         """Updates the state of the competition."""
 

@@ -34,10 +34,13 @@ class DdRegularChampionship(DdAbstractCompetition):
 
     _params: DdChampionshipParams
     _results: List[List[DdMatchResult]]
+    _standings: Dict[int, List[DdStandingsRowStruct]]
 
     def __init__(self, clubs: Dict[int, DdClub], params: DdChampionshipParams):
         super().__init__(clubs, params)
         self._MakeSchedule()
+
+        self._standings = {}
 
     @property
     def is_over(self) -> bool:
@@ -45,6 +48,8 @@ class DdRegularChampionship(DdAbstractCompetition):
 
     @property
     def standings(self) -> List[DdStandingsRowStruct]:
+        if self._day in self._standings:
+            return self._standings[self._day]
         results = [DdStandingsRowStruct(i) for i in range(len(self._clubs))]
 
         for day in self._results:
@@ -55,11 +60,25 @@ class DdRegularChampionship(DdAbstractCompetition):
                 results[match.away_pk].sets_won += match.away_sets
                 results[match.away_pk].games_won += match.away_games
 
-        return results
+        self._standings[self._day] = sorted(
+            results,
+            key=lambda x: (x.sets_won, x.games_won),
+            reverse=True
+        )
+        return self._standings[self._day]
 
     @property
     def title(self):
         return "Championship"
+
+    def GetClubFame(self, club_pk):
+        def Asum(x, k, a):
+            y = max(x - a, 0)
+            return k * (y * (y - 1) // 2)
+
+        for pos, row in enumerate(self.standings):
+            if row.club_pk == club_pk:
+                return Asum(pos, -50, 10)
 
     def Update(self) -> Optional[List[DdMatchResult]]:
         if self.current_matches is None:

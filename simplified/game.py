@@ -46,6 +46,7 @@ class DdOpponentStruct:
     player: Optional[DdPlayer]
 
 
+
 class DdGameDuck:
     """
     A class that incapsulates the game logic.
@@ -65,6 +66,7 @@ class DdGameDuck:
     _history: List[Dict[str, Any]]
     _params: DdGameParams
     _player_factory: DdPlayerFactory
+    _season_fame: Dict[int, int]
     _results: List[DdMatchResult]
 
     def __init__(self, params: DdGameParams):
@@ -74,6 +76,7 @@ class DdGameDuck:
         self._results = []
 
         self._clubs = {}
+        self._season_fame = {}
 
         with open("configuration/clubs.json", "r") as data_file:
             club_data = json.load(data_file)
@@ -193,9 +196,11 @@ class DdGameDuck:
         self._Unselect()
 
         if self.season_over:
+            self._UpdateSeasonFame()
             self._NextSeason()
 
         if self._competition.is_over:
+            self._UpdateSeasonFame()
             self._SaveHistory()
             self._StartPlayoff()
         return True
@@ -242,13 +247,14 @@ class DdGameDuck:
                 age=age, level=i*2, speciality=choice(self._SURFACES)
             ))
         self._clubs[pk] = club
+        self._season_fame[pk] = 0
+
+    def _CollectCompetitionFame(self):
+        for pk in self._clubs:
+            self._season_fame[pk] = self._competition.GetClubFame(pk)
 
     def _NextSeason(self):
-        previous_standings = sorted(
-            self._history[-1]["Championship"],
-            key=lambda x: (x.sets_won, x.games_won),
-            reverse=True
-        )
+        previous_standings = self._history[-1]["Championship"]
         for i, row in enumerate(previous_standings):
             club: DdClub = self._clubs[row.club_pk]
             coach_index = 1 if i < len(previous_standings) // 2 else 2
@@ -257,6 +263,8 @@ class DdGameDuck:
                 slot.player.AfterSeasonRest()
                 if not club.is_controlled:
                     club.SelectCoach(coach_index=coach_index, player_index=j)
+            club.AddFame(self._season_fame[row.club_pk])
+            self._season_fame[row.club_pk] = 0
             club.ExpelRetiredPlayers()
 
             if club.is_controlled:
@@ -320,6 +328,10 @@ class DdGameDuck:
     def _Unselect(self):
         for club in self._clubs.values():
             club.SelectPlayer(None)
+
+    def _UpdateSeasonFame(self):
+        for pk in self._clubs:
+            self._season_fame[pk] += self._competition.GetClubFame(pk)
 
     def _GetOpponent(self, pk: int) -> Optional[DdOpponentStruct]:
         def ScheduleFilter(pair: DdScheduledMatchStruct):

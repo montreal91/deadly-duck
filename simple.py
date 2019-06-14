@@ -120,7 +120,9 @@ class DdSimplifiedApp:
         self._actions["u"] = self.__ActionUpcoming
         self._actions["upcoming"] = self.__ActionUpcoming
 
+        self._actions["_f"] = self.__ActionFame
         self._actions["_m"] = self.__ActionMeasure
+
 
     def _LoadGame(self):
         if os.path.isfile(self._save_path):
@@ -157,6 +159,10 @@ class DdSimplifiedApp:
             )
         except (AssertionError, ValueError) as error:
             print(error)
+
+    def __ActionFame(self):
+        for club in self._game._clubs.values():
+            print(f"{club.name:20s}", club.fame)
 
     def __ActionFire(self, index: str):
         try:
