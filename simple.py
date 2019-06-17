@@ -285,9 +285,15 @@ class DdSimplifiedApp:
         for res in self._game.context["last_results"]:
             exp = None
             if res.home_pk == uk:
-                exp = res.home_exp
+                exp = DdPlayer.CalculateNewExperience(
+                    res.home_sets,
+                    res.away_player_snapshot["level"]
+                )
             elif res.away_pk == uk:
-                exp = res.away_exp
+                exp = DdPlayer.CalculateNewExperience(
+                    res.away_sets,
+                    res.home_player_snapshot["level"]
+                )
 
             if exp is not None:
                 sys.stdout.write(BOLD)

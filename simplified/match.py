@@ -11,21 +11,14 @@ from enum import Enum
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import List
 from typing import NamedTuple
+from typing import Optional
+from typing import Tuple
 
 from configuration.config_game import sets_to_win
 from simplified.player import DdPlayer
 from stat_tools import LoadedToss
-
-
-DdSetResult = namedtuple(
-    "DdSetResult", [
-        "home_games",
-        "away_games",
-        "set_status",
-    ],
-    rename=True
-)
 
 
 class DdSetStatuses(Enum):
@@ -36,49 +29,95 @@ class DdSetStatuses(Enum):
     AWAY_RETIRED = 3
 
 
+class DdSetResult(NamedTuple):
+    """A class with results of a single set."""
+
+    away_games: int
+    home_games: int
+    set_status: DdSetStatuses
+
+    def __str__(self) -> str:
+        """String representation of the set result."""
+
+        if self.set_status == DdSetStatuses.REGULAR:
+            return f"{self.home_games}:{self.away_games}"
+        if self.set_status == DdSetStatuses.HOME_RETIRED:
+            return f"Ret:{self.away_games}"
+        if self.set_status == DdSetStatuses.AWAY_RETIRED:
+            return f"{self.home_games}:Ret"
+        raise Exception("Bad set result (wrong status).")
+
+    @property
+    def score(self) -> Tuple[int, int]:
+        """
+        Score of the set.
+
+        If the set is won by home player, returns (1, 0).
+        If the set is won by away player, returns (0, 1).
+        Any other way is not possible and an exception is raised.
+        """
+
+        if self.set_status == DdSetStatuses.REGULAR:
+            return (1, 0) if self.home_games > self.away_games else (0, 1)
+        if self.set_status == DdSetStatuses.HOME_RETIRED:
+            return (0, 1)
+        if self.set_status == DdSetStatuses.AWAY_RETIRED:
+            return (1, 0)
+        raise Exception("Bad set result (wrong status).")
+
+
+
 class DdMatchResult:
     """A class with results of a single match."""
 
-    def __init__(self):
+    _sets: List[DdSetResult]
+
+    def __init__(self, sets_to_win: int = 2):
         self.home_pk = None
         self.away_pk = None
         self.home_player_snapshot = None
         self.away_player_snapshot = None
         self.surface = None
-        self.home_games = 0
-        self.away_games = 0
-        self.home_exp = 0
-        self.away_exp = 0
-        self.home_stamina_lost = 0
-        self.away_stamina_lost = 0
+        self._sets_to_win = sets_to_win
+        self._sets = []
 
-        self._away_sets = 0
-        self._home_sets = 0
-        self._full_score = ""
-
+    def __len__(self) -> int:
+        return len(self._sets)
 
     def __repr__(self):
-        string = "<{score}, stamina: {home_stamina:2d}:{away_stamina:2d}>"
-        return string.format(
-            score=self._full_score,
-            home_stamina=self.home_stamina_lost,
-            away_stamina=self.away_stamina_lost,
+        return (
+            f"<# ({id(self)}) {self.home_pk} vs {self.away_pk} "
+            f"{self.full_score}"
+            " >"
         )
 
     @property
-    def away_sets(self):
-        return self._away_sets
+    def away_exp(self) -> int:
+        """Experience gained by away player."""
 
-    @away_sets.setter
-    def away_sets(self, value):
-        """
-        This setter should be used only to deal exceptional match result.
-        """
-        assert value >= 0, "Number of sets should be greater than 0."
-        assert value <= sets_to_win, (
-            "Number of sets should be lesser than %r." % sets_to_win
+        if self.home_player_snapshot is None:
+            return 0
+        return DdPlayer.CalculateNewExperience(
+            self.away_sets, self.home_player_snapshot["level"]
         )
-        self._away_sets = int(value)
+
+    @property
+    def away_games(self) -> int:
+        """Games won by away player."""
+
+        return sum(set_result.away_games for set_result in self._sets)
+
+    @property
+    def away_sets(self):
+        """Sets won by away player."""
+
+        bad_set = self._abnormal_set
+        if bad_set is None:
+            return sum(set_result.score[1] for set_result in self._sets)
+
+        if bad_set.score[1] == 1:
+            return self._sets_to_win
+        return 0
 
     @property
     def csv(self) -> str:
@@ -97,36 +136,55 @@ class DdMatchResult:
 
     @property
     def full_score(self):
-        return self._full_score
+        """Full score of the match."""
+
+        return " ".join(str(res) for res in self._sets)
+
+    @property
+    def home_exp(self):
+        """Experience gained by home player."""
+
+        if self.away_player_snapshot is None:
+            return 0
+        return DdPlayer.CalculateNewExperience(
+            self.home_sets, self.away_player_snapshot["level"]
+        )
+
+    @property
+    def home_games(self) -> int:
+        """Games won by home player."""
+
+        return sum(set_result.home_games for set_result in self._sets)
 
     @property
     def home_sets(self):
-        return self._home_sets
+        """Sets won by home player."""
 
-    @home_sets.setter
-    def home_sets(self, value):
-        """
-        This setter should be used only to deal exceptional match result.
-        """
-        assert value >= 0, "Number of sets should be greater than 0."
-        assert value <= sets_to_win, (
-            "Number of sets should be lesser than %r." % sets_to_win
-        )
-        self._home_sets = int(value)
+        bad_set = self._abnormal_set
+        if bad_set is None:
+            return sum(set_result.score[0] for set_result in self._sets)
 
-    def AppendSetToFullScore(self, set_result):
-        s = "{0:d}:{1:d}".format(set_result.home_games, set_result.away_games)
-        if set_result.set_status == DdSetStatuses.HOME_RETIRED:
-            s += " Rt:W"
-        elif set_result.set_status == DdSetStatuses.AWAY_RETIRED:
-            s += " W:Rt"
+        if bad_set.score[0] == 1:
+            return self._sets_to_win
+        return 0
 
-        if self._full_score:
-            self._full_score += " "
-        self._full_score += s
+    def AddSetResult(self, set_result: DdSetResult):
+        """Adds set result to the match result."""
+
+        self._sets.append(set_result)
+
+    @property
+    def _abnormal_set(self) -> Optional[DdSetResult]:
+        abnormal_ends = (DdSetStatuses.HOME_RETIRED, DdSetStatuses.AWAY_RETIRED)
+        for result in self._sets:
+            if result.set_status in abnormal_ends:
+                return result
+        return None
 
 
 class DdMatchParams(NamedTuple):
+    """Passive class to store basic match parameters."""
+
     exhaustion_function: Callable[[int], int]
     probability_function: Callable[[float, float], float]
     reputation_function: Callable[[int], int]
@@ -144,10 +202,15 @@ class DdMatchProcessor:
     _match_surface: str
     _res: DdMatchResult
     _params: DdMatchParams
+    _stamina_counter: Dict[str, int]
 
     def __init__(self, params: DdMatchParams):
         self._res = DdMatchResult()
         self._params = params
+        self._stamina_counter = {
+            "home": 0,
+            "away": 0,
+        }
 
     def ProcessMatch(
         self, home_player: DdPlayer, away_player: DdPlayer
@@ -165,24 +228,8 @@ class DdMatchProcessor:
                 away_player
             )
             sets_played += 1
-            self._res.home_games += set_result.home_games
-            self._res.away_games += set_result.away_games
-            self._res.AppendSetToFullScore(
-                set_result
-            )
-            if set_result.home_games > set_result.away_games:
-                self._res.home_sets += 1
-            else:
-                self._res.away_sets += 1
+            self._res.AddSetResult(set_result)
 
-            if set_result.set_status == DdSetStatuses.HOME_RETIRED:
-                self._res.away_sets = sets_to_win
-                self._res.home_sets = 0
-                break
-            elif set_result.set_status == DdSetStatuses.AWAY_RETIRED:
-                self._res.home_sets = sets_to_win
-                self._res.away_sets = 0
-                break
             home_player.AddReputation(
                 self._reputation_function(set_result.home_games) * sets_played
             )
@@ -190,22 +237,13 @@ class DdMatchProcessor:
                 self._reputation_function(set_result.away_games) * sets_played
             )
 
-        self._res.home_exp = DdPlayer.CalculateNewExperience(
-            self._res.home_sets, away_player
-        )
-        self._res.away_exp = DdPlayer.CalculateNewExperience(
-            self._res.away_sets, home_player
-        )
-
         home_player.AddExperience(self._res.home_exp)
         away_player.AddExperience(self._res.away_exp)
 
-        home_player.RemoveStaminaLostInMatch(self._res.home_stamina_lost)
-        away_player.RemoveStaminaLostInMatch(self._res.away_stamina_lost)
+        home_player.RemoveStaminaLostInMatch(self._stamina_counter["home"])
+        away_player.RemoveStaminaLostInMatch(self._stamina_counter["away"])
 
-        exhaustion = self._exhaustion_function(
-            self._res.home_sets + self._res.away_sets
-        )
+        exhaustion = self._exhaustion_function(sets_played)
 
         home_player.AddExhaustion(exhaustion)
         away_player.AddExhaustion(exhaustion)
@@ -233,10 +271,10 @@ class DdMatchProcessor:
 
     def _IsSetOver(self, hgames: int, agames: int) -> bool:
         games_to_win = self._params.games_to_win
-        c1 = hgames >= games_to_win and hgames - agames >= self._GAP
-        c2 = agames >= games_to_win and agames - hgames >= self._GAP
+        cond1 = hgames >= games_to_win and hgames - agames >= self._GAP
+        cond2 = agames >= games_to_win and agames - hgames >= self._GAP
 
-        return c1 or c2
+        return cond1 or cond2
 
     def _IsMatchOver(self) -> bool:
         home_won = self._res.home_sets == self._params.sets_to_win
@@ -248,11 +286,11 @@ class DdMatchProcessor:
         while not self._IsSetOver(home_games, away_games):
             home_stamina = self._CalculateActualStamina(
                 home_player,
-                lost_stamina=self._res.home_stamina_lost
+                lost_stamina=self._stamina_counter["home"]
             )
             away_stamina = self._CalculateActualStamina(
                 away_player,
-                lost_stamina=self._res.away_stamina_lost
+                lost_stamina=self._stamina_counter["away"]
             )
             home_actual_skill = self._CalculateActualSkill(
                 home_player, home_stamina
@@ -283,8 +321,8 @@ class DdMatchProcessor:
             else:
                 away_games += 1
 
-            self._res.home_stamina_lost += self._CalculateStaminaLostInGame()
-            self._res.away_stamina_lost += self._CalculateStaminaLostInGame()
+            self._stamina_counter["home"] += self._CalculateStaminaLostInGame()
+            self._stamina_counter["away"] += self._CalculateStaminaLostInGame()
 
         return DdSetResult(
             home_games=home_games,

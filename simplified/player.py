@@ -213,10 +213,10 @@ class DdPlayer:
         self._current_stamina -= lost_stamina
 
     @staticmethod
-    def CalculateNewExperience(sets_won: int, opponent: "DdPlayer") -> int:
+    def CalculateNewExperience(sets_won: int, opponent_level: int) -> int:
         base = DdGameplayConstants.EXPERIENCE_COEFFICIENT.value * sets_won
         factor = DdGameplayConstants.EXPERIENCE_LEVEL_FACTOR.value
-        factor *= opponent.level
+        factor *= opponent_level
         factor /= 100   # 100%
         factor += 1
         return int(round(base * factor))

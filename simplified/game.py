@@ -31,7 +31,7 @@ from simplified.regular_championship import DdRegularChampionship
 
 
 class DdGameParams(NamedTuple):
-    """Passive class to store game parameters"""
+    """Passive class to store game parameters."""
 
     championship_params: DdChampionshipParams
     playoff_params: DdPlayoffParams
