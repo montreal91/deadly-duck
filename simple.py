@@ -10,9 +10,12 @@ import pickle
 import sys
 
 from typing import Any
-from typing import Dict
 from typing import Callable
+from typing import Dict
+from typing import Optional
 
+from simplified.attendance import DdAttendanceParams
+from simplified.attendance import DdCourt
 from simplified.game import DdGameDuck
 from simplified.game import DdGameParams
 from simplified.game import DdOpponentStruct
@@ -28,6 +31,19 @@ from simplified.regular_championship import DdChampionshipParams
 
 BOLD = "\033[;1m"
 RESET = "\033[0;0m"
+
+
+def UserAction(fun: Callable) -> Callable:
+    """Helper decorator to handle user input."""
+
+    def res(*args, **kwargs):
+        try:
+            return fun(*args, **kwargs)
+        except (AssertionError, ValueError) as error:
+            print(error)
+        except TypeError:
+            print("Incorrect number of arguments.")
+    return res
 
 
 class DdSimplifiedApp:
@@ -61,10 +77,18 @@ class DdSimplifiedApp:
                 reputation_function=DdPlayerReputationCalculator(6, 5),
                 probability_function=LinearProbabilityFunction,
             )
+            attendance_params = DdAttendanceParams(
+                price=-100,
+                home_fame=200,
+                away_fame=100,
+                reputation=10,
+                importance=1000,
+            )
             championship_params = DdChampionshipParams(
                 match_params=match_params,
                 recovery_day=4,
                 rounds=2,
+                match_importance=1,
             )
             playoff_params = DdPlayoffParams(
                 series_matches_pattern=(
@@ -73,13 +97,25 @@ class DdSimplifiedApp:
                 length=8,
                 gap_days=1,
                 match_params=match_params,
+                match_importance=2,
             )
             self._game = DdGameDuck(DdGameParams(
+                attendance_params=attendance_params,
                 championship_params=championship_params,
                 playoff_params=playoff_params,
                 recovery_function=ExhaustedLinearRecovery,
                 starting_club=starting_club,
-
+                starting_balance=100000,
+                starting_players=6,
+                courts=dict(
+                    default=DdCourt(capacity=1000, rent_cost=1000),
+                    tiny=DdCourt(capacity=1000, rent_cost=1000),
+                    small=DdCourt(capacity=2000, rent_cost=5000),
+                    medium=DdCourt(capacity=4000, rent_cost=10000),
+                    big=DdCourt(capacity=8000, rent_cost=50000),
+                    huge=DdCourt(capacity=16000, rent_cost=100000)
+                ),
+                is_hard=False,
             ))
         self._actions = {}
         self._is_running = True
@@ -96,6 +132,7 @@ class DdSimplifiedApp:
     def _InitActions(self):
         self._actions["?"] = self.__ActionHelp
         self._actions["coach"] = self.__ActionCoach
+        self._actions["court"] = self.__ActionCourt
         self._actions["fire"] = self.__ActionFire
         self._actions["hire"] = self.__ActionHire
         self._actions["h"] = self.__ActionHistory
@@ -117,11 +154,14 @@ class DdSimplifiedApp:
         self._actions["show"] = self.__ActionShow
         self._actions["st"] = self.__ActionStandings
         self._actions["standings"] = self.__ActionStandings
+        self._actions["t"] = self.__ActionTicket
+        self._actions["ticket"] = self.__ActionTicket
         self._actions["u"] = self.__ActionUpcoming
         self._actions["upcoming"] = self.__ActionUpcoming
 
-        self._actions["_f"] = self.__ActionFame
-        self._actions["_m"] = self.__ActionMeasure
+        self._actions["_$"] = self.__Action_Finances
+        self._actions["_f"] = self.__Action_Fame
+        self._actions["_m"] = self.__Action_Measure
 
 
     def _LoadGame(self):
@@ -136,6 +176,7 @@ class DdSimplifiedApp:
     def _PrintMain(self):
         ctx = self._game.context
         print("\nDay: {0:2d}".format(ctx["day"]))
+        print("Balance: {0:d}$".format(ctx["balance"]))
         print()
 
     def _ProcessInput(self):
@@ -145,70 +186,85 @@ class DdSimplifiedApp:
         )
 
         action = self._actions[user_input[0]]
-        if len(user_input) - 1 in range(*_GetNumberOfArguments(action)):
-            action(*user_input[1:])
-        else:
-            print("Your input is incorrect.")
+        action(*user_input[1:])
 
-    def __ActionCoach(self, player_index: str, coach_index: str):
-        try:
-            pi = int(player_index)
-            ci = int(coach_index)
-            self._game.SelectCoachForPlayer(
-                coach_index=ci, player_index=pi, pk=self._club_pk
-            )
-        except (AssertionError, ValueError) as error:
-            print(error)
+    @UserAction
+    def __Action_Finances(self):
+        for club in self._game._clubs.values():
+            print(f"{club.name:20s}", club.account.balance)
 
-    def __ActionFame(self):
+    @UserAction
+    def __Action_Fame(self):
         for club in self._game._clubs.values():
             print(f"{club.name:20s}", club.fame)
 
-    def __ActionFire(self, index: str):
-        try:
-            i = int(index)
-            self._game.FirePlayer(i, self._club_pk)
-        except (AssertionError, ValueError) as error:
-            print(error)
+    @UserAction
+    def __Action_Measure(self):
+        import time
+        dt1 = time.time()
+        self._game.context
+        dt2 = time.time()
 
+        print(f"Time to calculate context: {dt2 - dt1:.4f}")
+
+    @UserAction
+    def __ActionCoach(self, player_index: str, coach_index: str):
+        self._game.SelectCoachForPlayer(
+            coach_index=int(coach_index),
+            player_index=int(player_index),
+            pk=self._club_pk
+        )
+
+    @UserAction
+    def __ActionCourt(self, court: Optional[str] = None):
+        if court is not None:
+            self._game.SelectCourt(pk=self._club_pk, court=court)
+        else:
+            court = self._game.context["court"]
+            print("Capacity:    ", court["capacity"])
+            print("Rent cost:   ", court["rent_cost"])
+            print("Ticket price:", court["ticket_price"])
+
+    @UserAction
+    def __ActionFire(self, index: str):
+        self._game.FirePlayer(int(index), self._club_pk)
+
+    @UserAction
     def __ActionHelp(self):
         with open("simplified/help.txt") as help_file:
             print(help_file.read())
 
+    @UserAction
     def __ActionHire(self, surface: str):
-        try:
-            self._game.HirePlayer(surface, self._club_pk)
-        except AssertionError as error:
-            print(error)
+        self._game.HirePlayer(surface, self._club_pk)
 
+    @UserAction
     def __ActionHistory(self, season: str):
-        try:
-            s = int(season)
-            ctx = self._game.context
-            history = ctx["history"]
+        s = int(season)
+        ctx = self._game.context
+        history = ctx["history"]
 
-            if s > len(history) or history[s - 1] == {}:
-                print(f"Season {s} is not finished yet.")
-                return
-            if s < 1:
-                print(f"Season should be a positive integer")
-                return
-            _PrintRegularStandings(
-                standings=history[s - 1]["Championship"],
-                club_names=ctx["clubs"],
-                users_club=ctx["users_club"],
+        if s > len(history) or history[s - 1] == {}:
+            print(f"Season {s} is not finished yet.")
+            return
+        if s < 1:
+            print(f"Season should be a positive integer")
+            return
+        _PrintRegularStandings(
+            standings=history[s - 1]["Championship"],
+            club_names=ctx["clubs"],
+            users_club=ctx["users_club"],
+        )
+        if "Cup" in history[s - 1]:
+            print("=" * 50)
+            _PrintCupStandings(
+                history[s-1]["Cup"],
+                ctx["clubs"],
+                ctx["users_club"],
+                3,
             )
-            if "Cup" in history[s - 1]:
-                print("=" * 50)
-                _PrintCupStandings(
-                    history[s-1]["Cup"],
-                    ctx["clubs"],
-                    ctx["users_club"],
-                    3,
-                )
-        except ValueError:
-            print("Season should be a valid integer.")
 
+    @UserAction
     def __ActionList(self):
         print(" #| Age| Technique|Stm|Exh| Spec| Coach | Name")
         print("__|____|__________|___|___|_____|_______|_____________")
@@ -242,14 +298,7 @@ class DdSimplifiedApp:
             print(plr.json["first_name"], plr.json["last_name"], end="")
             print()
 
-    def __ActionMeasure(self):
-        import time
-        t1 = time.time()
-        context = self._game.context
-        t2 = time.time()
-
-        print(f"Time to calculate context: {t2 - t1:.4f}")
-
+    @UserAction
     def __ActionNext(self):
         res = self._game.Update()
         if not res:
@@ -258,6 +307,7 @@ class DdSimplifiedApp:
 
         self.__ActionResults()
 
+    @UserAction
     def __ActionOpponent(self):
         opponent: DdOpponentStruct = self._game.context["opponent"]
         if opponent is None:
@@ -273,23 +323,26 @@ class DdSimplifiedApp:
         if opponent.player is not None:
             _PrintPlayer(opponent.player, False)
 
+    @UserAction
     def __ActionProceed(self):
         self._game.ProceedToNextCompetition()
 
+    @UserAction
     def __ActionQuit(self):
         self._is_running = False
 
+    @UserAction
     def __ActionResults(self):
         clubs = self._game.context["clubs"]
-        uk = self._game.context["users_club"]
+        pk = self._game.context["users_club"]
         for res in self._game.context["last_results"]:
             exp = None
-            if res.home_pk == uk:
+            if res.home_pk == pk:
                 exp = DdPlayer.CalculateNewExperience(
                     res.home_sets,
                     res.away_player_snapshot["level"]
                 )
-            elif res.away_pk == uk:
+            elif res.away_pk == pk:
                 exp = DdPlayer.CalculateNewExperience(
                     res.away_sets,
                     res.home_player_snapshot["level"]
@@ -309,32 +362,32 @@ class DdSimplifiedApp:
 
             if exp is not None:
                 print("Gained exp:", exp)
+                if res.home_pk == pk:
+                    print("\nAttendance:", res.attendance)
+                    print("Income:    ", res.income)
                 sys.stdout.write(RESET)
             print()
 
+    @UserAction
     def __ActionSave(self):
         with open(self._save_path, "wb") as save_file:
             pickle.dump(self._game, save_file)
             print("The game is saved.")
 
+    @UserAction
     def __ActionSelect(self, index="0"):
-        try:
-            self._game.SelectPlayer(int(index), self._club_pk)
-        except AssertionError:
-            print("Your input is incorrect (wrong index).")
-        except ValueError:
-            print("Please, input a correct integer.")
+        self._game.SelectPlayer(int(index), self._club_pk)
 
+    @UserAction
     def __ActionShow(self, index="0"):
         try:
             index = int(index)
             player: DdPlayer = self._game.context["user_players"][index].player
             _PrintPlayer(player, own=True)
-        except AssertionError:
-            print("Your input is incorrect (wrong index).")
-        except ValueError:
-            print("Please, input a correct integer.")
+        except IndexError:
+            raise AssertionError("Incorrect player index.")
 
+    @UserAction
     def __ActionStandings(self):
         context = self._game.context
         if context["title"] == "Cup":
@@ -351,6 +404,11 @@ class DdSimplifiedApp:
                 context["users_club"]
             )
 
+    @UserAction
+    def __ActionTicket(self, ticket_price):
+        self._game.SetTicketPrice(pk=self._club_pk, price=int(ticket_price))
+
+    @UserAction
     def __ActionUpcoming(self):
         context = self._game.context
         for match in context["remaining_matches"][:5]:
@@ -364,15 +422,6 @@ class DdSimplifiedApp:
             "\nRemaining matches:",
             len(context["remaining_matches"]),
         )
-
-
-
-def _GetNumberOfArguments(function):
-    max_ = function.__code__.co_argcount
-    min_ = max_
-    if function.__defaults__ is not None:
-        min_ -= len(function.__defaults__)
-    return min_ - 1, max_
 
 
 def _GetPlayerName(player_json: Dict[str, Any]) -> str:
@@ -469,7 +518,7 @@ if __name__ == '__main__':
         action="store_true"
     )
 
-    args = parser.parse_args()
+    arguments = parser.parse_args()
 
-    app = DdSimplifiedApp(args.club, args.savename, args.load)
+    app = DdSimplifiedApp(arguments.club, arguments.savename, arguments.load)
     app.Run()

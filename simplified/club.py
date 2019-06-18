@@ -10,6 +10,8 @@ from typing import Optional
 from typing import Tuple
 
 from configuration.config_game import DdGameplayConstants
+from simplified.attendance import DdCourt
+from simplified.financial import DdFinancialAccount
 from simplified.player import DdPlayer
 from simplified.player import PlayerModelComparator
 
@@ -42,7 +44,7 @@ class DdFameTracker:
     def fame(self) -> int:
         """Calculates current fame."""
 
-        return int(sum(f * w for f, w in zip(self._fame_queue, self._WEIGHTS)))
+        return int(sum(x * y for x, y in zip(self._fame_queue, self._WEIGHTS)))
 
     def AddFameValue(self, value):
         """Adds new fame instance to the tracker."""
@@ -52,10 +54,18 @@ class DdFameTracker:
 
 
 class DdClub:
-    """A club in the tournament."""
+    """
+    A club in the tournament.
+
+    This class does not make any decisions, its sole purpose is bookkeeping of
+    players, coaches, stadiums and stuff. 'AI' or open interface for 'AI'
+    should be implemented somewhere else.
+    """
 
     COACH_LEVELS = (0, 1, 2, 3)
 
+    _account: DdFinancialAccount
+    _court: DdCourt
     _fame_tracker: DdFameTracker
     _is_controlled: bool
     _name: str
@@ -63,13 +73,31 @@ class DdClub:
     _selected_player: Optional[int]
     _surface: str
 
-    def __init__(self, name: str, surface: str):
+    def __init__(self, name: str, surface: str, court: DdCourt):
+        self._account = DdFinancialAccount()
+        self._court = court
         self._fame_tracker = DdFameTracker()
         self._is_controlled = False
         self._name = name
         self._players = []
         self._selected_player = None
         self._surface = surface
+
+    @property
+    def account(self) -> DdFinancialAccount:
+        """Club's financial accout."""
+
+        return self._account
+
+    @property
+    def court(self) -> DdCourt:
+        """Court where club's next home match will be held."""
+
+        return self._court
+
+    @court.setter
+    def court(self, value: DdCourt):
+        self._court = value
 
     @property
     def fame(self):

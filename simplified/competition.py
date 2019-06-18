@@ -55,6 +55,10 @@ class DdAbstractCompetition:
         """Checks if competition is over"""
 
     @property
+    def match_importance(self) -> int:
+        """Returns an importance factor of current matches."""
+
+    @property
     def results_(self) -> Generator[List[DdMatchResult], None, None]:
         """
         List of match results.

@@ -32,6 +32,7 @@ class DdPlayoffParams(NamedTuple):
     length: int
     gap_days: int
     match_params: DdMatchParams
+    match_importance: int
 
 
 class DdPlayoffSeries:
@@ -168,7 +169,7 @@ class DdPlayoff(DdAbstractCompetition):
             reverse=True,
         )
 
-        self._round = 0
+        self._round = 1
         self._series = []
         self._past_series = []
         self._MakeNewRound()
@@ -186,6 +187,12 @@ class DdPlayoff(DdAbstractCompetition):
             return False
         last_day = self._day == len(self._schedule)
         return self._series[0].winner is not None and last_day
+
+    @property
+    def match_importance(self) -> int:
+        import ipdb
+        ipdb.set_trace()
+        return self._params.match_importance ** self._round
 
     @property
     def standings(self):
@@ -280,6 +287,7 @@ class DdPlayoff(DdAbstractCompetition):
         if not self._series:
             self._MakeInitialRound()
         else:
+            self._round += 1
             self._past_series.extend(self._series)
             new_round = []
             for i in range(0, len(self._series), 2):

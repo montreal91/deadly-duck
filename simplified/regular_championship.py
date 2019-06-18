@@ -27,6 +27,7 @@ class DdChampionshipParams(NamedTuple):
     match_params: DdMatchParams
     recovery_day: int
     rounds: int
+    match_importance: int
 
 
 class DdRegularChampionship(DdAbstractCompetition):
@@ -45,6 +46,10 @@ class DdRegularChampionship(DdAbstractCompetition):
     @property
     def is_over(self) -> bool:
         return self._day >= len(self._schedule)
+
+    @property
+    def match_importance(self) -> int:
+        return self._params.match_importance
 
     @property
     def standings(self) -> List[DdStandingsRowStruct]:
@@ -72,8 +77,8 @@ class DdRegularChampionship(DdAbstractCompetition):
         return "Championship"
 
     def GetClubFame(self, club_pk):
-        def Asum(x, k, a):
-            y = max(x - a, 0)
+        def Asum(x, k, wtf):
+            y = max(x - wtf, 0)
             return k * (y * (y - 1) // 2)
 
         for pos, row in enumerate(self.standings):
@@ -102,15 +107,14 @@ class DdRegularChampionship(DdAbstractCompetition):
         return day_results
 
     def _MakeFullSchedule(self, pk_list: List[int]):
+        # Alias to shorten length of code lines
+        _Match = DdScheduledMatchStruct
+
         def MirrorDay(matches: List[DdScheduledMatchStruct]):
-            return [
-                DdScheduledMatchStruct(m.away_pk, m.home_pk) for m in matches
-            ]
+            return [_Match(m.away_pk, m.home_pk) for m in matches]
 
         def CopyDay(matches):
-            return [
-                DdScheduledMatchStruct(m.home_pk, m.away_pk) for m in matches
-            ]
+            return [_Match(m.home_pk, m.away_pk) for m in matches]
 
         def ComposeDays(matches: List[DdScheduledMatchStruct], num: int):
             res = []
@@ -157,7 +161,9 @@ def _MakeBasicSchedule(pk_list: List[int]):
     def MakePairs(lst: List[int]) -> ScheduleDay:
         num = len(lst) - 1
         mid = len(lst) // 2
-        return [DdScheduledMatchStruct(lst[i], lst[num-i]) for i in range(mid)]
+        return [
+            DdScheduledMatchStruct(lst[i], lst[num-i]) for i in range(mid)
+        ]
 
     def Shift(lst: List[int], num: int) -> List[int]:
         if num == 0:

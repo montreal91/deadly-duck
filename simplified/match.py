@@ -78,6 +78,8 @@ class DdMatchResult:
         self.home_player_snapshot = None
         self.away_player_snapshot = None
         self.surface = None
+        self.attendance = 0
+        self.income = 0
         self._sets_to_win = sets_to_win
         self._sets = []
 

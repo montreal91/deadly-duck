@@ -7,7 +7,9 @@ Created Apr 09, 2019
 
 import json
 
+from copy import deepcopy
 from random import choice
+from random import randint
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -16,8 +18,12 @@ from typing import NamedTuple
 from typing import Optional
 
 from configuration.config_game import DdGameplayConstants
+from simplified.attendance import DdAttendanceParams
+from simplified.attendance import DdAttendanceCalculator
+from simplified.attendance import DdCourt
 from simplified.club import DdClub
 from simplified.competition import DdAbstractCompetition
+from simplified.financial import DdTransaction
 from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
 from simplified.match import DdStandingsRowStruct
@@ -33,10 +39,18 @@ from simplified.regular_championship import DdRegularChampionship
 class DdGameParams(NamedTuple):
     """Passive class to store game parameters."""
 
+    # Various parameters
+    attendance_params: DdAttendanceParams
     championship_params: DdChampionshipParams
     playoff_params: DdPlayoffParams
+
+    # Other data
+    courts: Dict[str, DdCourt]
+    is_hard: bool
     recovery_function: Callable[[DdPlayer], int]
+    starting_balance: int
     starting_club: int
+    starting_players: int
 
 
 class DdOpponentStruct:
@@ -44,7 +58,6 @@ class DdOpponentStruct:
     club_name: str
     match_surface: str
     player: Optional[DdPlayer]
-
 
 
 class DdGameDuck:
@@ -61,6 +74,7 @@ class DdGameDuck:
         DdCourtSurface.HARD,
     )
 
+    _attendance_calculator: Callable
     _clubs: Dict[int, DdClub]
     _competition: DdAbstractCompetition
     _history: List[Dict[str, Any]]
@@ -74,6 +88,15 @@ class DdGameDuck:
         self._params = params
         self._player_factory = DdPlayerFactory()
         self._results = []
+
+        self._attendance_calculator = DdAttendanceCalculator(
+            price=self._params.attendance_params.price,
+            home_fame=self._params.attendance_params.away_fame,
+            away_fame=self._params.attendance_params.away_fame,
+            reputation=self._params.attendance_params.reputation,
+            importance=self._params.attendance_params.importance,
+            hard=self._params.is_hard
+        )
 
         self._clubs = {}
         self._season_fame = {}
@@ -97,18 +120,20 @@ class DdGameDuck:
         """A dictionary with information available for user."""
 
         return dict(
+            balance=self._clubs[self._params.starting_club].account.balance,
             day=self._competition.day,
             clubs=[club.name for club in self._clubs.values()],
+            court=self._clubs[self._params.starting_club].court.json,
+            history=self._history,
             last_results=self._last_results,
             opponent=self._GetOpponent(self._params.starting_club),
             remaining_matches=self._competition.GetClubSchedule(
                 self._params.starting_club
             ),
             standings=self._standings,
-            user_players=self._user_players,
-            users_club=self._params.starting_club,
-            history=self._history,
             title=self._competition.title,
+            users_club=self._params.starting_club,
+            user_players=self._user_players,
         )
 
     @property
@@ -172,6 +197,18 @@ class DdGameDuck:
             coach_index=coach_index, player_index=player_index
         )
 
+    def SelectCourt(self, pk: int, court: str):
+        """Selects court for club from available options."""
+
+        assert pk in self._clubs, "Incorrect club pk."
+        possible_courts = "|".join(self._params.courts)
+        assert court in self._params.courts, (
+            "Incorrect court type.\n"
+            f"Possible correct types: {possible_courts}"
+        )
+
+        self._clubs[pk].court = deepcopy(self._params.courts[court])
+
     def SelectPlayer(self, i: int, pk: int):
         """Sets selected player for user."""
 
@@ -181,6 +218,14 @@ class DdGameDuck:
         )
         self._clubs[pk].SelectPlayer(i)
 
+    def SetTicketPrice(self, pk: int, price: int):
+        """Sets ticket price on club's court."""
+
+        assert pk in self._clubs, "Incorrect club pk."
+        assert price >= 0, "Ticket price can't be negative."
+
+        self._clubs[pk].court.ticket_price = price
+
     def Update(self):
         """
         Updates game state.
@@ -189,8 +234,12 @@ class DdGameDuck:
         All scheduled matches are performed.
         """
 
-        if self._decision_required:
-            return False
+        assert not self._decision_required, (
+            "You have to select player for the next match."
+        )
+        assert self._court_check, (
+            "You have insufficient funds to play on this court."
+        )
 
         self._PlayOneDay()
         self._Unselect()
@@ -203,6 +252,25 @@ class DdGameDuck:
             self._UpdateSeasonFame()
             self._SaveHistory()
             self._StartPlayoff()
+        return True
+
+    @property
+    def _court_check(self):
+        if self._competition.current_matches is None:
+            return True
+
+        def HasHomeMatch(pk):
+            for match in self._competition.current_matches:
+                if match.home_pk == pk:
+                    return True
+            return False
+
+        for pk, club in self._clubs.items():
+            if not club.is_controlled:
+                continue
+            if club.court.rent_cost > club.account.balance and HasHomeMatch(pk):
+                return False
+
         return True
 
     @property
@@ -238,20 +306,64 @@ class DdGameDuck:
         return []
 
     def _AddClub(self, pk: int, club_name: str, surface: str):
-        club = DdClub(name=club_name, surface=surface)
-        max_players = 5
-        for i in range(max_players):
-            age = DdGameplayConstants.STARTING_AGE.value + i
+        club = DdClub(
+            name=club_name,
+            surface=surface,
+            court=deepcopy(self._params.courts["default"])
+        )
+        for i in range(self._params.starting_players):
+            age = randint(
+                DdGameplayConstants.STARTING_AGE.value,
+                DdGameplayConstants.RETIREMENT_AGE.value - 1,
+            )
 
             club.AddPlayer(self._player_factory.CreatePlayer(
                 age=age, level=i*2, speciality=choice(self._SURFACES)
             ))
+
+        club.account.ProcessTransaction(DdTransaction(
+            self._params.starting_balance,
+            "Initial balance",
+        ))
+
         self._clubs[pk] = club
         self._season_fame[pk] = 0
 
     def _CollectCompetitionFame(self):
         for pk in self._clubs:
             self._season_fame[pk] = self._competition.GetClubFame(pk)
+
+    def _CalculateMatchIncome(self, results: Optional[List[DdMatchResult]]):
+        if results is None:
+            return
+
+        for result in results:
+            home_club: DdClub = self._clubs[result.home_pk]
+            attendance = self._attendance_calculator(
+                ticket_price=home_club.court.ticket_price,
+                home_fame=home_club.fame,
+                away_fame=self._clubs[result.away_pk].fame,
+                reputation=result.home_player_snapshot["reputation"],
+                match_importance=self._competition.match_importance,
+            )
+            income = home_club.court.GetMatchIncome(attendance=attendance)
+
+            result.income = income
+            result.attendance = min(attendance, home_club.court.capacity)
+
+            home_club.account.ProcessTransaction(DdTransaction(
+                value=-home_club.court.rent_cost,
+                comment="Court rent cost."
+            ))
+
+            home_club.account.ProcessTransaction(DdTransaction(
+                value=income,
+                comment=(
+                    f"{self._competition.title}, {self._competition.day}, "
+                    f"attendance: {attendance}, "
+                    f"ticket price: {home_club.court.ticket_price}."
+                ),
+            ))
 
     def _NextSeason(self):
         previous_standings = self._history[-1]["Championship"]
@@ -304,6 +416,8 @@ class DdGameDuck:
 
     def _PlayOneDay(self):
         self._results = self._competition.Update()
+
+        self._CalculateMatchIncome(self._results)
 
         if self._results is None and self._competition.title == "Championship":
             self._PerformPractice()
