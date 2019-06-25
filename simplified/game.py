@@ -1,5 +1,9 @@
 
 """
+The actual game.
+
+AssertionErrors are largely used by this module as a GameLogicExceptions.
+
 Created Apr 09, 2019
 
 @author montreal91
@@ -22,7 +26,9 @@ from simplified.attendance import DdAttendanceParams
 from simplified.attendance import DdAttendanceCalculator
 from simplified.attendance import DdCourt
 from simplified.club import DdClub
+from simplified.club import DdClubPlayerSlot
 from simplified.competition import DdAbstractCompetition
+from simplified.financial import DdContractCalculator
 from simplified.financial import DdTransaction
 from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
@@ -45,12 +51,14 @@ class DdGameParams(NamedTuple):
     playoff_params: DdPlayoffParams
 
     # Other data
+    contract_coefficient: int
     courts: Dict[str, DdCourt]
     is_hard: bool
     recovery_function: Callable[[DdPlayer], int]
     starting_balance: int
     starting_club: int
     starting_players: int
+    years_to_simulate: int = 10
 
 
 class DdOpponentStruct:
@@ -58,6 +66,7 @@ class DdOpponentStruct:
     club_name: str
     match_surface: str
     player: Optional[DdPlayer]
+    fame: Optional[int]
 
 
 class DdGameDuck:
@@ -91,7 +100,7 @@ class DdGameDuck:
 
         self._attendance_calculator = DdAttendanceCalculator(
             price=self._params.attendance_params.price,
-            home_fame=self._params.attendance_params.away_fame,
+            home_fame=self._params.attendance_params.home_fame,
             away_fame=self._params.attendance_params.away_fame,
             reputation=self._params.attendance_params.reputation,
             importance=self._params.attendance_params.importance,
@@ -100,6 +109,9 @@ class DdGameDuck:
 
         self._clubs = {}
         self._season_fame = {}
+        self._contract_calculator = DdContractCalculator(
+            self._params.contract_coefficient
+        )
 
         with open("configuration/clubs.json", "r") as data_file:
             club_data = json.load(data_file)
@@ -109,11 +121,12 @@ class DdGameDuck:
                 pk=pk, club_name=club["name"], surface=club["surface"]
             )
 
-        self._clubs[self._params.starting_club].SetControlled(True)
-
         self._competition = DdRegularChampionship(
             self._clubs, self._params.championship_params
         )
+
+        self._Simulate(self._params.years_to_simulate)
+        self._clubs[self._params.starting_club].SetControlled(True)
 
     @property
     def context(self) -> Dict[str, Any]:
@@ -158,18 +171,29 @@ class DdGameDuck:
 
         assert 0 <= pk < len(self._clubs), "Incorrect club index."
 
+        cost = self._contract_calculator(0)
         choices = "|".join(self._SURFACES)
         assert surface in self._SURFACES, (
-            "You can't choose such speciality. "
+            "You can't choose such speciality.\n"
             "Choices are: "
             f"{choices}"
         )
+        assert self._clubs[pk].account.balance >= cost, (
+            "Insufficient funds.\n"
+            f"You need at least ${cost}."
+        )
+
         player = self._player_factory.CreatePlayer(
             level=0,
             age=DdGameplayConstants.STARTING_AGE.value,
             speciality=surface
         )
         self._clubs[pk].AddPlayer(player)
+        self._clubs[pk].account.ProcessTransaction(DdTransaction(
+            -cost,
+            f"New player contract with {player.initials} "
+            f"speciality {player.speciality}."
+        ))
 
     def ProceedToNextCompetition(self):
         """Updates game while player action is not required."""
@@ -226,6 +250,37 @@ class DdGameDuck:
 
         self._clubs[pk].court.ticket_price = price
 
+    def SignPlayer(self, pk: int, i: int):
+        """Signs a new contract with a player for the next season."""
+
+        assert 0 <= pk < len(self._clubs), "Incorrect club pk."
+
+        club = self._clubs[pk]
+        players = self._clubs[pk].players
+        assert 0 <= i < len(players), (
+            "Incorrect player index."
+        )
+        assert not players[i].player.has_next_contract, (
+            "This player already has a contract for the next season."
+        )
+        assert (
+            players[i].player.age < DdGameplayConstants.RETIREMENT_AGE.value
+        ), (
+            f"{players[i].player.initials} is too old to play next season."
+        )
+
+        cost = self._contract_calculator(players[i].player.level)
+        assert self._clubs[pk].account.balance >= cost, (
+            "Insufficient funds.\n"
+            f"You need at least ${cost}."
+        )
+
+        club.ContractPlayer(i)
+        club.account.ProcessTransaction(DdTransaction(
+            -cost,
+            f"Renewed player contract with {players[i].player.initials} "
+        ))
+
     def Update(self):
         """
         Updates game state.
@@ -245,6 +300,7 @@ class DdGameDuck:
         self._Unselect()
 
         if self.season_over:
+            self._CheckContracts()
             self._UpdateSeasonFame()
             self._NextSeason()
 
@@ -255,7 +311,23 @@ class DdGameDuck:
         return True
 
     @property
-    def _court_check(self):
+    def _contract_check(self) -> bool:
+        def CheckClub(club: DdClub):
+            for slot in club.players:
+                if not slot.player.has_next_contract:
+                    return False
+            return True
+
+        for club in self._clubs.values():
+            if not club.is_controlled:
+                continue
+            if not CheckClub(club):
+                return False
+
+        return True
+
+    @property
+    def _court_check(self) -> bool:
         if self._competition.current_matches is None:
             return True
 
@@ -300,9 +372,13 @@ class DdGameDuck:
 
     @property
     def _user_players(self) -> List[DdPlayer]:
+        def SetContractPrices(slot: DdClubPlayerSlot):
+            slot.contract_cost = self._contract_calculator(slot.player.level)
+            return slot
+
         for club in self._clubs.values():
             if club.is_controlled:
-                return club.players
+                return [SetContractPrices(slot) for slot in club.players]
         return []
 
     def _AddClub(self, pk: int, club_name: str, surface: str):
@@ -318,7 +394,7 @@ class DdGameDuck:
             )
 
             club.AddPlayer(self._player_factory.CreatePlayer(
-                age=age, level=i*2, speciality=choice(self._SURFACES)
+                age=age, level=randint(0, 10), speciality=choice(self._SURFACES)
             ))
 
         club.account.ProcessTransaction(DdTransaction(
@@ -328,10 +404,6 @@ class DdGameDuck:
 
         self._clubs[pk] = club
         self._season_fame[pk] = 0
-
-    def _CollectCompetitionFame(self):
-        for pk in self._clubs:
-            self._season_fame[pk] = self._competition.GetClubFame(pk)
 
     def _CalculateMatchIncome(self, results: Optional[List[DdMatchResult]]):
         if results is None:
@@ -365,6 +437,17 @@ class DdGameDuck:
                 ),
             ))
 
+    def _CollectCompetitionFame(self):
+        for pk in self._clubs:
+            self._season_fame[pk] = self._competition.GetClubFame(pk)
+
+    def _CheckContracts(self):
+        if not self._contract_check:
+            raise AssertionError(
+                "Your club has uncontracted players.\n"
+                "You should wether contract them or fire."
+            )
+
     def _NextSeason(self):
         previous_standings = self._history[-1]["Championship"]
         for i, row in enumerate(previous_standings):
@@ -373,6 +456,7 @@ class DdGameDuck:
             for j, slot in enumerate(club.players):
                 slot.player.AgeUp()
                 slot.player.AfterSeasonRest()
+                slot.player.has_next_contract = False
                 if not club.is_controlled:
                     club.SelectCoach(coach_index=coach_index, player_index=j)
             club.AddFame(self._season_fame[row.club_pk])
@@ -407,13 +491,6 @@ class DdGameDuck:
         for club in self._clubs.values():
             club.PerformPractice()
 
-    def _Recover(self):
-        for club in self._clubs.values():
-            for player_coach in club.players:
-                player_coach.player.RecoverStamina(
-                    self._params.recovery_function(player_coach.player)
-                )
-
     def _PlayOneDay(self):
         self._results = self._competition.Update()
 
@@ -424,13 +501,24 @@ class DdGameDuck:
 
         self._Recover()
 
+    def _Recover(self):
+        for club in self._clubs.values():
+            for player_coach in club.players:
+                player_coach.player.RecoverStamina(
+                    self._params.recovery_function(player_coach.player)
+                )
+
     def _SaveHistory(self):
         self._history[-1][self._competition.title] = self._competition.standings
 
         # This is done for collecting match statistics.
-        with open("simplified/results.csv", "a") as results_file:
+        with open("simplified/.logs/results.csv", "a") as results_file:
             for match in self._competition.results_:
                 print(match.csv, file=results_file)
+
+    def _Simulate(self, years):
+        while len(self._history) < years:
+            self.Update()
 
     def _StartPlayoff(self):
         self._competition = DdPlayoff(
@@ -453,6 +541,9 @@ class DdGameDuck:
                 return True
             return pair.away_pk == pk
 
+        if self._competition.is_over:
+            return None
+
         schedule = self._competition.current_matches
 
         # Just in case
@@ -470,6 +561,7 @@ class DdGameDuck:
             res.club_name = opponent_club.name
             res.match_surface = self._clubs[pk].surface
             res.player = opponent_club.selected_player
+            res.fame = opponent_club.fame
             return res
         if actual_match.away_pk == pk:
             # Away case
@@ -478,5 +570,6 @@ class DdGameDuck:
             res.club_name = opponent_club.name
             res.match_surface = opponent_club.surface
             res.player = None
+            res.fame = None
             return res
         raise Exception("Bad schedule.")

@@ -16,15 +16,17 @@ from simplified.player import DdPlayer
 from simplified.player import PlayerModelComparator
 
 
-class _DdPlayerCoach:
+class DdClubPlayerSlot:
     """A passive data structure to bind player and coach level."""
 
     player: DdPlayer
     coach_level: int
+    contract_cost: int
 
     def __init__(self, player: DdPlayer, coach_level: int):
         self.player = player
         self.coach_level = coach_level
+        self.contract_cost = 0
 
 
 class DdFameTracker:
@@ -69,7 +71,7 @@ class DdClub:
     _fame_tracker: DdFameTracker
     _is_controlled: bool
     _name: str
-    _players: List[_DdPlayerCoach]
+    _players: List[DdClubPlayerSlot]
     _selected_player: Optional[int]
     _surface: str
 
@@ -124,7 +126,7 @@ class DdClub:
         return self._is_controlled and self._selected_player is None
 
     @property
-    def players(self) -> List[_DdPlayerCoach]:
+    def players(self) -> List[DdClubPlayerSlot]:
         """List of club players."""
         return self._players
 
@@ -153,13 +155,18 @@ class DdClub:
     def AddPlayer(self, player: DdPlayer):
         """Adds player to the club."""
 
-        self._players.append(_DdPlayerCoach(player, 0))
+        self._players.append(DdClubPlayerSlot(player, 0))
+
+    def ContractPlayer(self, player_pk):
+        """Marks that a player has a contract for the next season."""
+
+        self._players[player_pk].player.has_next_contract = True
 
     def ExpelRetiredPlayers(self):
         """Removes players from the club which are too old to play."""
 
         retirement_age = DdGameplayConstants.RETIREMENT_AGE.value
-        def AgeCheck(player_slot: _DdPlayerCoach):
+        def AgeCheck(player_slot: DdClubPlayerSlot):
             return player_slot.player.age < retirement_age
 
         self._players = [p for p in self._players if AgeCheck(p)]

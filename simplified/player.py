@@ -53,6 +53,7 @@ class DdPlayer:
     _age: int
 
     _reputation: int
+    _has_next_contract: bool
 
     def __init__(
         self,
@@ -76,6 +77,8 @@ class DdPlayer:
         self._experience = 0
         self._current_stamina = self.max_stamina
         self._reputation = 0
+
+        self._has_next_contract = False
 
     @property
     def age(self):
@@ -112,6 +115,18 @@ class DdPlayer:
         """Player's current experience."""
 
         return self._experience
+
+    @property
+    def has_next_contract(self) -> bool:
+        """Shows if player has a contract for the next season."""
+
+        return self._has_next_contract
+
+    @has_next_contract.setter
+    def has_next_contract(self, value: bool):
+        """Sets value if player has a contract for the next season."""
+
+        self._has_next_contract = value
 
     @property
     def initials(self) -> str:
@@ -161,6 +176,7 @@ class DdPlayer:
     @property
     def reputation(self) -> int:
         """Shows player reputation level among audience."""
+
         return self._reputation
 
     @property
@@ -177,7 +193,8 @@ class DdPlayer:
         self._exhaustion += value
 
     def AddExperience(self, experience: int):
-        """Adds new experience.
+        """
+        Adds new experience.
 
         If necessary, levels up player.
         """

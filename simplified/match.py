@@ -5,7 +5,6 @@ Created Apr 09, 2019
 @author montreal91
 """
 
-from collections import namedtuple
 from copy import deepcopy
 from enum import Enum
 from typing import Any
@@ -16,7 +15,6 @@ from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 
-from configuration.config_game import sets_to_win
 from simplified.player import DdPlayer
 from stat_tools import LoadedToss
 
@@ -399,19 +397,19 @@ def NaiveProbabilityFunction(home_skill: float, away_skill: float) -> float:
     return home_skill / total_skill
 
 
-def LinearProbabilityFunction(home_skill: float, away_skill: float) -> float:
-    """Probability of winnig a game by home player.
+class DdLinearProbabilityCalculator:
+    """
+    Probability of winnig a game by home player.
 
     This function grows linearly on [-50, 50] interval depending on the
     difference between home and away skills. It takes values from
     0.05 to 0.95 at the ends of the interval and 0.5 in the middle.
     """
-    delta = home_skill - away_skill
+    def __call__(self, home_skill: float, away_skill: float) -> float:
+        delta = home_skill - away_skill
 
-    if -50 <= delta <= 50:
-        return round(0.009 * delta + 0.5, 6)
-    elif delta < -50:
-        return 0.05
-    elif delta > 50:
-        return 0.95
-    return 0
+        val = round(self._koefficient * delta + 0.5, 6)
+        return min(max(val, 0.05), 0.95)
+
+    def __init__(self, koefficient: float):
+        self._koefficient = koefficient

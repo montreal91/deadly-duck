@@ -42,7 +42,9 @@ class DdAbstractCompetition:
     def current_matches(self) -> Optional[ScheduleDay]:
         """List of current matches."""
 
-        return self._schedule[self._day]
+        if self._day < len(self._schedule):
+            return self._schedule[self._day]
+        return None
 
     @property
     def day(self):

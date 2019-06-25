@@ -168,7 +168,6 @@ class DdPlayoff(DdAbstractCompetition):
             key=lambda x: (x.sets_won, x.games_won),
             reverse=True,
         )
-
         self._round = 1
         self._series = []
         self._past_series = []
@@ -185,14 +184,12 @@ class DdPlayoff(DdAbstractCompetition):
     def is_over(self):
         if len(self._series) > 1:
             return False
-        last_day = self._day == len(self._schedule)
+        last_day = self._day >= len(self._schedule)
         return self._series[0].winner is not None and last_day
 
     @property
     def match_importance(self) -> int:
-        import ipdb
-        ipdb.set_trace()
-        return self._params.match_importance ** self._round
+        return self._params.match_importance * self._round
 
     @property
     def standings(self):
@@ -222,6 +219,9 @@ class DdPlayoff(DdAbstractCompetition):
         return Apow(wins, 125)
 
     def Update(self):
+        if self.is_over:
+            return None
+
         if self.current_matches is None:
             self._day += 1
             if self._day == len(self._schedule) and not self.is_over:

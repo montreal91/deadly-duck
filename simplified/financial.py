@@ -62,3 +62,13 @@ class DdFinancialAccount:
             return False
         self._transactions.append(transaction)
         return True
+
+
+class DdContractCalculator:
+    """Callable class that calculates player contract price based on level."""
+
+    def __call__(self, level: int) -> int:
+        return self._coefficient * (level + 1) ** 2
+
+    def __init__(self, coefficient):
+        self._coefficient = coefficient

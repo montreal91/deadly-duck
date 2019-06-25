@@ -87,9 +87,6 @@ class DdAttendanceCalculator:
             ticket_price, home_fame, away_fame, reputation, match_importance
         )
         asdfg = zip(self._coefficients, arguments, self._powers)
-        import ipdb
-        if ticket_price > 0:
-            ipdb.set_trace()
         return int(sum(k * x ** y for k, x, y in asdfg))
 
     def __init__(

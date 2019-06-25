@@ -16,12 +16,13 @@ from typing import Optional
 
 from simplified.attendance import DdAttendanceParams
 from simplified.attendance import DdCourt
+from simplified.financial import DdTransaction
 from simplified.game import DdGameDuck
 from simplified.game import DdGameParams
 from simplified.game import DdOpponentStruct
 from simplified.match import DdExhaustionCalculator
 from simplified.match import DdMatchParams
-from simplified.match import LinearProbabilityFunction
+from simplified.match import DdLinearProbabilityCalculator
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerReputationCalculator
 from simplified.player import ExhaustedLinearRecovery
@@ -70,18 +71,18 @@ class DdSimplifiedApp:
             self._LoadGame()
         else:
             match_params = DdMatchParams(
-                speciality_bonus=11,
+                speciality_bonus=5,
                 games_to_win=6,
                 sets_to_win=2,
                 exhaustion_function=DdExhaustionCalculator(3),
                 reputation_function=DdPlayerReputationCalculator(6, 5),
-                probability_function=LinearProbabilityFunction,
+                probability_function=DdLinearProbabilityCalculator(0.002),
             )
             attendance_params = DdAttendanceParams(
-                price=-100,
-                home_fame=200,
-                away_fame=100,
-                reputation=10,
+                price=-0.045,
+                home_fame=2,
+                away_fame=1.5,
+                reputation=1,
                 importance=1000,
             )
             championship_params = DdChampionshipParams(
@@ -97,7 +98,7 @@ class DdSimplifiedApp:
                 length=8,
                 gap_days=1,
                 match_params=match_params,
-                match_importance=2,
+                match_importance=1.5,
             )
             self._game = DdGameDuck(DdGameParams(
                 attendance_params=attendance_params,
@@ -111,11 +112,13 @@ class DdSimplifiedApp:
                     default=DdCourt(capacity=1000, rent_cost=1000),
                     tiny=DdCourt(capacity=1000, rent_cost=1000),
                     small=DdCourt(capacity=2000, rent_cost=5000),
-                    medium=DdCourt(capacity=4000, rent_cost=10000),
-                    big=DdCourt(capacity=8000, rent_cost=50000),
-                    huge=DdCourt(capacity=16000, rent_cost=100000)
+                    medium=DdCourt(capacity=4000, rent_cost=16000),
+                    big=DdCourt(capacity=8000, rent_cost=44000),
+                    huge=DdCourt(capacity=16000, rent_cost=112000)
                 ),
-                is_hard=False,
+                is_hard=True,
+                years_to_simulate=0,
+                contract_coefficient=10000,
             ))
         self._actions = {}
         self._is_running = True
@@ -123,7 +126,8 @@ class DdSimplifiedApp:
         self._InitActions()
 
     def Run(self):
-        """Runs game."""
+        """Runs the game."""
+
         print("Type ? for help.")
         while self._is_running:
             self._PrintMain()
@@ -152,6 +156,7 @@ class DdSimplifiedApp:
         self._actions["select"] = self.__ActionSelect
         self._actions["sh"] = self.__ActionShow
         self._actions["show"] = self.__ActionShow
+        self._actions["sign"] = self.__ActionSign
         self._actions["st"] = self.__ActionStandings
         self._actions["standings"] = self.__ActionStandings
         self._actions["t"] = self.__ActionTicket
@@ -160,7 +165,9 @@ class DdSimplifiedApp:
         self._actions["upcoming"] = self.__ActionUpcoming
 
         self._actions["_$"] = self.__Action_Finances
+        self._actions["_d"] = self.__Action_DropAccounts
         self._actions["_f"] = self.__Action_Fame
+        self._actions["_l"] = self.__Action_Levels
         self._actions["_m"] = self.__Action_Measure
 
 
@@ -175,8 +182,8 @@ class DdSimplifiedApp:
 
     def _PrintMain(self):
         ctx = self._game.context
-        print("\nDay: {0:2d}".format(ctx["day"]))
-        print("Balance: {0:d}$".format(ctx["balance"]))
+        print("\nDay:   {0:d}".format(ctx["day"]))
+        print("Balance: ${0:d}".format(ctx["balance"]))
         print()
 
     def _ProcessInput(self):
@@ -189,14 +196,32 @@ class DdSimplifiedApp:
         action(*user_input[1:])
 
     @UserAction
-    def __Action_Finances(self):
+    def __Action_DropAccounts(self):
         for club in self._game._clubs.values():
-            print(f"{club.name:20s}", club.account.balance)
+            balance = club.account.balance
+            balance = -balance + self._game._params.starting_balance
+            club.account.ProcessTransaction(DdTransaction(balance, "Drop"))
 
     @UserAction
     def __Action_Fame(self):
         for club in self._game._clubs.values():
             print(f"{club.name:20s}", club.fame)
+
+    @UserAction
+    def __Action_Finances(self):
+        for club in self._game._clubs.values():
+            print(f"{club.name:20s}", club.account.balance)
+
+    @UserAction
+    def __Action_Levels(self):
+        for pk, club in self._game._clubs.items():
+            level_sum = sum(slot.player.level for slot in club.players)
+            level_max = max(slot.player.level for slot in club.players)
+            if pk == self._club_pk:
+                sys.stdout.write(BOLD)
+            print(f"{club.name:20s} {level_sum:3d} {level_max:2d}")
+            if pk == self._club_pk:
+                sys.stdout.write(RESET)
 
     @UserAction
     def __Action_Measure(self):
@@ -317,6 +342,8 @@ class DdSimplifiedApp:
         print("({})".format(
             "home" if opponent.player is not None else "away"
         ))
+        if opponent.fame is not None:
+            print("Fame:", opponent.fame)
         print("Match surface:", opponent.match_surface)
         print("_" * 30)
 
@@ -329,6 +356,7 @@ class DdSimplifiedApp:
 
     @UserAction
     def __ActionQuit(self):
+        self.__ActionSave()
         self._is_running = False
 
     @UserAction
@@ -379,13 +407,18 @@ class DdSimplifiedApp:
         self._game.SelectPlayer(int(index), self._club_pk)
 
     @UserAction
-    def __ActionShow(self, index="0"):
-        try:
-            index = int(index)
-            player: DdPlayer = self._game.context["user_players"][index].player
-            _PrintPlayer(player, own=True)
-        except IndexError:
-            raise AssertionError("Incorrect player index.")
+    def __ActionShow(self, index):
+        index = int(index)
+        players = self._game.context["user_players"]
+        _PrintPlayer(
+            players[index].player,
+            own=True,
+            contract_cost=players[index].contract_cost
+        )
+
+    @UserAction
+    def __ActionSign(self, player_index: str):
+        self._game.SignPlayer(pk=self._club_pk, i=int(player_index))
 
     @UserAction
     def __ActionStandings(self):
@@ -462,7 +495,11 @@ def _PrintCupStandings(series, club_names, users_club, rounds):
         print()
 
 
-def _PrintPlayer(player: DdPlayer, own=False):
+def _PrintPlayer(
+    player: DdPlayer,
+    own: bool = False,
+    contract_cost: Optional[int] = None
+):
     string = (
         "{initials:s} [{level:d}]\n"
         "Technique:  {actual_technique:3.1f} / {technique:3.1f}\n"
@@ -485,6 +522,8 @@ def _PrintPlayer(player: DdPlayer, own=False):
     if own:
         print(f"Exp: {player.experience} / {player.next_level_exp}")
         print(f"Rep: {player.reputation}")
+        if not player.has_next_contract:
+            print(f"\nConract cost: ${contract_cost}")
 
 
 def _PrintRegularStandings(standings, club_names, users_club):
