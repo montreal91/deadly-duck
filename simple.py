@@ -118,7 +118,8 @@ class DdSimplifiedApp:
                 ),
                 is_hard=True,
                 years_to_simulate=0,
-                contract_coefficient=10000,
+                contract_coefficient=7500,
+                training_coefficient=100,
             ))
         self._actions = {}
         self._is_running = True

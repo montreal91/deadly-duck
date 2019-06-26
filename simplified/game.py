@@ -29,6 +29,7 @@ from simplified.club import DdClub
 from simplified.club import DdClubPlayerSlot
 from simplified.competition import DdAbstractCompetition
 from simplified.financial import DdContractCalculator
+from simplified.financial import DdTrainingCalculator
 from simplified.financial import DdTransaction
 from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
@@ -58,7 +59,8 @@ class DdGameParams(NamedTuple):
     starting_balance: int
     starting_club: int
     starting_players: int
-    years_to_simulate: int = 10
+    training_coefficient: int
+    years_to_simulate: int
 
 
 class DdOpponentStruct:
@@ -86,11 +88,13 @@ class DdGameDuck:
     _attendance_calculator: Callable
     _clubs: Dict[int, DdClub]
     _competition: DdAbstractCompetition
+    _contract_calculator: DdContractCalculator
     _history: List[Dict[str, Any]]
     _params: DdGameParams
     _player_factory: DdPlayerFactory
     _season_fame: Dict[int, int]
     _results: List[DdMatchResult]
+    _training_calculator: DdTrainingCalculator
 
     def __init__(self, params: DdGameParams):
         self._history = [{}]
@@ -111,6 +115,9 @@ class DdGameDuck:
         self._season_fame = {}
         self._contract_calculator = DdContractCalculator(
             self._params.contract_coefficient
+        )
+        self._training_calculator = DdTrainingCalculator(
+            self._params.training_coefficient
         )
 
         with open("configuration/clubs.json", "r") as data_file:
@@ -264,7 +271,7 @@ class DdGameDuck:
             "This player already has a contract for the next season."
         )
         assert (
-            players[i].player.age < DdGameplayConstants.RETIREMENT_AGE.value
+            players[i].player.age + 1 < DdGameplayConstants.RETIREMENT_AGE.value
         ), (
             f"{players[i].player.initials} is too old to play next season."
         )
@@ -295,7 +302,11 @@ class DdGameDuck:
         assert self._court_check, (
             "You have insufficient funds to play on this court."
         )
+        assert self._training_check, (
+            "You have insufficient funds to perform such kind of training."
+        )
 
+        self._PerformPractice()
         self._PlayOneDay()
         self._Unselect()
 
@@ -311,8 +322,14 @@ class DdGameDuck:
         return True
 
     @property
+    def _can_practice(self) -> bool:
+        if self._competition.current_matches is not None:
+            return False
+        return self._competition.title == "Championship"
+
+    @property
     def _contract_check(self) -> bool:
-        def CheckClub(club: DdClub):
+        def CheckClub(club: DdClub) -> bool:
             for slot in club.players:
                 if not slot.player.has_next_contract:
                     return False
@@ -371,6 +388,23 @@ class DdGameDuck:
         return [DdStandingsRowStruct(i) for i in range(len(self._clubs))]
 
     @property
+    def _training_check(self) -> bool:
+        if self._competition.current_matches is not None:
+            return True
+        if self._competition.title != "Championship":
+            return True
+
+        def CheckClub(club: DdClub) -> bool:
+            return self._CalculateClubTrainingCost(club) <= club.account.balance
+
+        for club in self._clubs.values():
+            if not club.is_controlled:
+                continue
+            if not CheckClub(club):
+                return False
+        return True
+
+    @property
     def _user_players(self) -> List[DdPlayer]:
         def SetContractPrices(slot: DdClubPlayerSlot):
             slot.contract_cost = self._contract_calculator(slot.player.level)
@@ -404,6 +438,10 @@ class DdGameDuck:
 
         self._clubs[pk] = club
         self._season_fame[pk] = 0
+
+    def _CalculateClubTrainingCost(self, club: DdClub) -> int:
+        slots = [(s.player.level, s.coach_level) for s in club.players]
+        return sum(self._training_calculator(*slot) for slot in slots)
 
     def _CalculateMatchIncome(self, results: Optional[List[DdMatchResult]]):
         if results is None:
@@ -448,6 +486,53 @@ class DdGameDuck:
                 "You should wether contract them or fire."
             )
 
+    def _GetOpponent(self, pk: int) -> Optional[DdOpponentStruct]:
+        def ScheduleFilter(pair: DdScheduledMatchStruct):
+            if pair.home_pk == pk:
+                return True
+            return pair.away_pk == pk
+
+        if self._competition.is_over:
+            return None
+
+        schedule = self._competition.current_matches
+
+        # Just in case
+        if schedule is None:
+            return None
+        planned_match = [pair for pair in schedule if ScheduleFilter(pair)]
+
+        if not planned_match:
+            return None
+        actual_match = planned_match[0]
+        if actual_match.home_pk == pk:
+            # Home case
+            res = DdOpponentStruct()
+            opponent_club: DdClub = self._clubs[actual_match.away_pk]
+            res.club_name = opponent_club.name
+            res.match_surface = self._clubs[pk].surface
+            res.player = opponent_club.selected_player
+            res.fame = opponent_club.fame
+            return res
+        if actual_match.away_pk == pk:
+            # Away case
+            res = DdOpponentStruct()
+            opponent_club = self._clubs[actual_match.home_pk]
+            res.club_name = opponent_club.name
+            res.match_surface = opponent_club.surface
+            res.player = None
+            res.fame = None
+            return res
+        raise Exception("Bad schedule.")
+
+    def _LogTrainingCosts(self, club: DdClub):
+        with open("simplified/.logs/trainings.csv", "a") as log_file:
+            cost = self._CalculateClubTrainingCost(club)
+            print(
+                f"{len(self._history) + 1},{self._competition.day},{cost}",
+                file=log_file
+            )
+
     def _NextSeason(self):
         previous_standings = self._history[-1]["Championship"]
         for i, row in enumerate(previous_standings):
@@ -488,17 +573,24 @@ class DdGameDuck:
         self._history.append({})
 
     def _PerformPractice(self):
+        if not self._can_practice:
+            return
+
         for club in self._clubs.values():
+            # This cruft is for debugging/balance adjusting reasons.
+            if club.is_controlled:
+                self._LogTrainingCosts(club)
+
             club.PerformPractice()
+            if club.is_controlled:
+                club.account.ProcessTransaction(DdTransaction(
+                    -self._CalculateClubTrainingCost(club),
+                    f"Training on day {self._competition.day}"
+                ))
 
     def _PlayOneDay(self):
         self._results = self._competition.Update()
-
         self._CalculateMatchIncome(self._results)
-
-        if self._results is None and self._competition.title == "Championship":
-            self._PerformPractice()
-
         self._Recover()
 
     def _Recover(self):
@@ -534,42 +626,3 @@ class DdGameDuck:
     def _UpdateSeasonFame(self):
         for pk in self._clubs:
             self._season_fame[pk] += self._competition.GetClubFame(pk)
-
-    def _GetOpponent(self, pk: int) -> Optional[DdOpponentStruct]:
-        def ScheduleFilter(pair: DdScheduledMatchStruct):
-            if pair.home_pk == pk:
-                return True
-            return pair.away_pk == pk
-
-        if self._competition.is_over:
-            return None
-
-        schedule = self._competition.current_matches
-
-        # Just in case
-        if schedule is None:
-            return None
-        planned_match = [pair for pair in schedule if ScheduleFilter(pair)]
-
-        if not planned_match:
-            return None
-        actual_match = planned_match[0]
-        if actual_match.home_pk == pk:
-            # Home case
-            res = DdOpponentStruct()
-            opponent_club: DdClub = self._clubs[actual_match.away_pk]
-            res.club_name = opponent_club.name
-            res.match_surface = self._clubs[pk].surface
-            res.player = opponent_club.selected_player
-            res.fame = opponent_club.fame
-            return res
-        if actual_match.away_pk == pk:
-            # Away case
-            res = DdOpponentStruct()
-            opponent_club = self._clubs[actual_match.home_pk]
-            res.club_name = opponent_club.name
-            res.match_surface = opponent_club.surface
-            res.player = None
-            res.fame = None
-            return res
-        raise Exception("Bad schedule.")

@@ -67,8 +67,22 @@ class DdFinancialAccount:
 class DdContractCalculator:
     """Callable class that calculates player contract price based on level."""
 
+    _coefficient: int
+
     def __call__(self, level: int) -> int:
         return self._coefficient * (level + 1) ** 2
 
-    def __init__(self, coefficient):
+    def __init__(self, coefficient: int):
+        self._coefficient = coefficient
+
+
+class DdTrainingCalculator:
+    """Callable class that calculates training price."""
+
+    _coefficient: int
+
+    def __call__(self, player_level: int, coach_level: int) -> int:
+        return self._coefficient * player_level * coach_level ** 2
+
+    def __init__(self, coefficient: int):
         self._coefficient = coefficient
