@@ -331,6 +331,9 @@ class DdGameDuck:
     def _contract_check(self) -> bool:
         def CheckClub(club: DdClub) -> bool:
             for slot in club.players:
+                next_age = slot.player.age + 1
+                if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
+                    continue
                 if not slot.player.has_next_contract:
                     return False
             return True
