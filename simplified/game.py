@@ -41,6 +41,7 @@ from simplified.playoffs import DdPlayoff
 from simplified.playoffs import DdPlayoffParams
 from simplified.regular_championship import DdChampionshipParams
 from simplified.regular_championship import DdRegularChampionship
+from simplified.serialization import DdJsonDecoder
 
 
 class DdGameParams(NamedTuple):
@@ -120,13 +121,13 @@ class DdGameDuck:
             self._params.training_coefficient
         )
 
+        decoder = DdJsonDecoder()
+        decoder.Register(DdPlayer)
         with open("configuration/clubs.json", "r") as data_file:
-            club_data = json.load(data_file)
+            club_data = json.load(data_file, object_hook=decoder)
 
         for pk, club in enumerate(club_data):
-            self._AddClub(
-                pk=pk, club_name=club["name"], surface=club["surface"]
-            )
+            self._AddClub(pk=pk, club_data=club)
 
         self._competition = DdRegularChampionship(
             self._clubs, self._params.championship_params
@@ -418,24 +419,21 @@ class DdGameDuck:
                 return [SetContractPrices(slot) for slot in club.players]
         return []
 
-    def _AddClub(self, pk: int, club_name: str, surface: str):
+    def _AddClub(self, pk: int, club_data: Dict[str, Any]):
         club = DdClub(
-            name=club_name,
-            surface=surface,
+            name=club_data["name"],
+            surface=club_data["surface"],
             court=deepcopy(self._params.courts["default"])
         )
-        for i in range(self._params.starting_players):
-            age = randint(
-                DdGameplayConstants.STARTING_AGE.value,
-                DdGameplayConstants.RETIREMENT_AGE.value - 1,
-            )
 
-            club.AddPlayer(self._player_factory.CreatePlayer(
-                age=age, level=randint(0, 10), speciality=choice(self._SURFACES)
-            ))
+        for value in club_data["fame"]:
+            club.AddFame(value)
+
+        for player in club_data["players"]:
+            club.AddPlayer(player)
 
         club.account.ProcessTransaction(DdTransaction(
-            self._params.starting_balance,
+            club_data["balance"],
             "Initial balance",
         ))
 

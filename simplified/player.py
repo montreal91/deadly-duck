@@ -14,9 +14,12 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
+from typing import Union
 
 from configuration.config_game import DdPlayerSkills
 from configuration.config_game import DdGameplayConstants
+from simplified.serialization import DdField
+from simplified.serialization import DdJsonable
 
 
 _ENDURANCE_FACTOR = DdPlayerSkills.ENDURANCE_FACTOR
@@ -36,8 +39,26 @@ class DdCourtSurface:
     HARD = "hard"
 
 
-class DdPlayer:
+_PlayerData = Union[bool, str, int]
+
+
+class DdPlayer(DdJsonable):
     """A class that describes a tennis player."""
+
+    _FIELD_MAP = (
+        DdField("_first_name", "first_name"),
+        DdField("_second_name", "second_name"),
+        DdField("_last_name", "last_name"),
+        DdField("_technique", "technique"),
+        DdField("_endurance", "endurance"),
+        DdField("_exhaustion", "exhaustion"),
+        DdField("_experience", "experience"),
+        DdField("_speciality", "speciality"),
+        DdField("_current_stamina", "current_stamina"),
+        DdField("_age", "age"),
+        DdField("_reputation", "reputation"),
+        DdField("_has_next_contract", "has_next_contract"),
+    )
 
     _first_name: str
     _second_name: str
@@ -55,14 +76,15 @@ class DdPlayer:
     _reputation: int
     _has_next_contract: bool
 
+
     def __init__(
         self,
-        first_name: str,
-        second_name: str,
-        last_name: str,
-        technique: int,
-        endurance: int,
-        age: int,
+        first_name: str = "Joan",
+        second_name: str = "Katelyn",
+        last_name: str = "Rowling",
+        technique: int = 1,
+        endurance: int = 1,
+        age: int = 30,
         speciality: str = DdCourtSurface.HARD,
     ):
         self._first_name = first_name
