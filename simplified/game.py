@@ -35,6 +35,7 @@ from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
 from simplified.match import DdStandingsRowStruct
 from simplified.player import DdCourtSurface
+from simplified.player import DdExhaustedLinearRecovery
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerFactory
 from simplified.playoffs import DdPlayoff
@@ -55,8 +56,8 @@ class DdGameParams(NamedTuple):
     # Other data
     contract_coefficient: int
     courts: Dict[str, DdCourt]
+    exhaustion_factor: int
     is_hard: bool
-    recovery_function: Callable[[DdPlayer], int]
     starting_balance: int
     starting_club: int
     starting_players: int
@@ -595,10 +596,13 @@ class DdGameDuck:
         self._Recover()
 
     def _Recover(self):
+        recovery_function = DdExhaustedLinearRecovery(
+            self._params.exhaustion_factor
+        )
         for club in self._clubs.values():
-            for player_coach in club.players:
-                player_coach.player.RecoverStamina(
-                    self._params.recovery_function(player_coach.player)
+            for slot in club.players:
+                slot.player.RecoverStamina(
+                    recovery_function(slot.player)
                 )
 
     def _SaveHistory(self):

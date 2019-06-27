@@ -25,8 +25,6 @@ from simplified.serialization import DdJsonable
 _ENDURANCE_FACTOR = DdPlayerSkills.ENDURANCE_FACTOR
 _PRECISION = 1
 
-_EXHAUSTION_BOUNDS = tuple(range(0, 400, 20))
-
 
 class DdCourtSurface:
     """
@@ -114,15 +112,6 @@ class DdPlayer(DdJsonable):
     @property
     def current_stamina(self) -> int:
         return self._current_stamina
-
-    @property
-    def days_to_recover(self) -> int:
-        """Number of days to fully recover."""
-
-        i = 0
-        while self._exhaustion >= _EXHAUSTION_BOUNDS[i]:
-            i += 1
-        return i
 
     @property
     def endurance(self) -> float:
@@ -316,13 +305,19 @@ def ExhaustedRecovery(player: DdPlayer) -> int:
     return int(round(res))
 
 
-def ExhaustedLinearRecovery(player: DdPlayer) -> int:
-    """Player recovery function that involves exhaustion.
+class DdExhaustedLinearRecovery:
+    """
+    Callable class of recovery functions that involve exhaustion.
 
     Linear exhaustion, i.e. dependency of days to fully recover from exhaustion
     is linear.
     """
-    return int(round(player.max_stamina / player.days_to_recover))
+    def __call__(self, player: DdPlayer) -> int:
+        days_to_recover = player.exhaustion // self._exhaustion_factor + 1
+        return int(round(player.max_stamina / days_to_recover))
+
+    def __init__(self, exhaustion_factor):
+        self._exhaustion_factor = exhaustion_factor
 
 
 def PlayerModelComparator(player_model):

@@ -25,7 +25,6 @@ from simplified.match import DdMatchParams
 from simplified.match import DdLinearProbabilityCalculator
 from simplified.player import DdPlayer
 from simplified.player import DdPlayerReputationCalculator
-from simplified.player import ExhaustedLinearRecovery
 from simplified.playoffs import DdPlayoffParams
 from simplified.regular_championship import DdChampionshipParams
 
@@ -74,7 +73,7 @@ class DdSimplifiedApp:
                 speciality_bonus=5,
                 games_to_win=6,
                 sets_to_win=2,
-                exhaustion_function=DdExhaustionCalculator(3),
+                exhaustion_function=DdExhaustionCalculator(1),
                 reputation_function=DdPlayerReputationCalculator(6, 5),
                 probability_function=DdLinearProbabilityCalculator(0.002),
             )
@@ -103,8 +102,8 @@ class DdSimplifiedApp:
             self._game = DdGameDuck(DdGameParams(
                 attendance_params=attendance_params,
                 championship_params=championship_params,
+                exhaustion_factor=10,
                 playoff_params=playoff_params,
-                recovery_function=ExhaustedLinearRecovery,
                 starting_club=starting_club,
                 starting_balance=100000,
                 starting_players=6,
