@@ -58,9 +58,6 @@ class DdGameParams(NamedTuple):
     courts: Dict[str, DdCourt]
     exhaustion_factor: int
     is_hard: bool
-    starting_balance: int
-    starting_club: int
-    starting_players: int
     training_coefficient: int
     years_to_simulate: int
 
@@ -135,28 +132,6 @@ class DdGameDuck:
         )
 
         self._Simulate(self._params.years_to_simulate)
-        self._clubs[self._params.starting_club].SetControlled(True)
-
-    @property
-    def context(self) -> Dict[str, Any]:
-        """A dictionary with information available for user."""
-
-        return dict(
-            balance=self._clubs[self._params.starting_club].account.balance,
-            day=self._competition.day,
-            clubs=[club.name for club in self._clubs.values()],
-            court=self._clubs[self._params.starting_club].court.json,
-            history=self._history,
-            last_results=self._last_results,
-            opponent=self._GetOpponent(self._params.starting_club),
-            remaining_matches=self._competition.GetClubSchedule(
-                self._params.starting_club
-            ),
-            standings=self._standings,
-            title=self._competition.title,
-            users_club=self._params.starting_club,
-            user_players=self._user_players,
-        )
 
     @property
     def season_over(self) -> bool:
@@ -174,6 +149,25 @@ class DdGameDuck:
             "There is no player with such index in your club."
         )
         self._clubs[pk].PopPlayer(i)
+
+    def GetContext(self, pk: int) -> Dict[str, Any]:
+        """A dictionary with information available for user."""
+
+        assert 0 <= pk < len(self._clubs), "Incorrect club index."
+
+        return dict(
+            balance=self._clubs[pk].account.balance,
+            day=self._competition.day,
+            clubs=[club.name for club in self._clubs.values()],
+            court=self._clubs[pk].court.json,
+            history=self._history,
+            last_results=self._last_results,
+            opponent=self._GetOpponent(pk),
+            remaining_matches=self._competition.GetClubSchedule(pk),
+            standings=self._standings,
+            title=self._competition.title,
+            user_players=self._GetUserPlayers(pk),
+        )
 
     def HirePlayer(self, surface: str, pk: int):
         """Hires a new player for user's club."""
@@ -250,6 +244,12 @@ class DdGameDuck:
             "Incorrect player index."
         )
         self._clubs[pk].SelectPlayer(i)
+
+    def SetControlled(self, pk: int, is_controlled: bool):
+        """Sets flag wether club is controlled by user or not."""
+
+        assert 0 <= pk < len(self._clubs), "Incorrect club pk."
+        self._clubs[pk].SetControlled(is_controlled)
 
     def SetTicketPrice(self, pk: int, price: int):
         """Sets ticket price on club's court."""
@@ -409,17 +409,6 @@ class DdGameDuck:
                 return False
         return True
 
-    @property
-    def _user_players(self) -> List[DdPlayer]:
-        def SetContractPrices(slot: DdClubPlayerSlot):
-            slot.contract_cost = self._contract_calculator(slot.player.level)
-            return slot
-
-        for club in self._clubs.values():
-            if club.is_controlled:
-                return [SetContractPrices(slot) for slot in club.players]
-        return []
-
     def _AddClub(self, pk: int, club_data: Dict[str, Any]):
         club = DdClub(
             name=club_data["name"],
@@ -526,6 +515,14 @@ class DdGameDuck:
             res.fame = None
             return res
         raise Exception("Bad schedule.")
+
+    def _GetUserPlayers(self, pk: int) -> List[DdPlayer]:
+
+        def SetContractPrices(slot: DdClubPlayerSlot) -> DdClubPlayerSlot:
+            slot.contract_cost = self._contract_calculator(slot.player.level)
+            return slot
+
+        return [SetContractPrices(slot) for slot in self._clubs[pk].players]
 
     def _LogTrainingCosts(self, club: DdClub):
         with open("simplified/.logs/trainings.csv", "a") as log_file:

@@ -385,11 +385,13 @@ class DdStandingsRowStruct:
 class DdExhaustionCalculator:
     """Callable class to calculate exhaustion gained in a match."""
 
-    def __call__(self, sets):
-        return self._k * sets
+    _coefficient: int
 
-    def __init__(self, k):
-        self._k = k
+    def __call__(self, sets: int) -> int:
+        return self._coefficient * sets
+
+    def __init__(self, coefficient: int):
+        self._coefficient = coefficient
 
 
 def NaiveProbabilityFunction(home_skill: float, away_skill: float) -> float:
