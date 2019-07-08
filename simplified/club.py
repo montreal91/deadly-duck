@@ -166,7 +166,7 @@ class DdClub:
         """Removes players from the club which are too old to play."""
 
         retirement_age = DdGameplayConstants.RETIREMENT_AGE.value
-        def AgeCheck(player_slot: DdClubPlayerSlot):
+        def AgeCheck(player_slot: DdClubPlayerSlot) -> bool:
             return player_slot.player.age < retirement_age
 
         self._players = [p for p in self._players if AgeCheck(p)]
@@ -179,10 +179,10 @@ class DdClub:
                 plr.player.current_stamina * plr.coach_level
             )
 
-    def PopPlayer(self, index: int):
+    def PopPlayer(self, index: int) -> DdPlayer:
         """Removes player from the club."""
 
-        self._players.pop(index)
+        return self._players.pop(index).player
 
     def SelectCoach(self, coach_index: int, player_index: int):
         """

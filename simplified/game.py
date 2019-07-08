@@ -45,6 +45,9 @@ from simplified.regular_championship import DdRegularChampionship
 from simplified.serialization import DdJsonDecoder
 
 
+_CLUB_INDEX_ERROR = "Incorrect club index."
+
+
 class DdGameParams(NamedTuple):
     """Passive class to store game parameters."""
 
@@ -88,6 +91,7 @@ class DdGameDuck:
     _clubs: Dict[int, DdClub]
     _competition: DdAbstractCompetition
     _contract_calculator: DdContractCalculator
+    _free_agents: List[DdPlayer]
     _history: List[Dict[str, Any]]
     _params: DdGameParams
     _player_factory: DdPlayerFactory
@@ -96,6 +100,7 @@ class DdGameDuck:
     _training_calculator: DdTrainingCalculator
 
     def __init__(self, params: DdGameParams):
+        self._free_agents = []
         self._history = [{}]
         self._params = params
         self._player_factory = DdPlayerFactory()
@@ -142,18 +147,23 @@ class DdGameDuck:
     def FirePlayer(self, i: int, pk: int):
         """Fires the selected player from user's club."""
 
-        assert 0 <= pk < len(self._clubs), "Incorrect club index."
+        assert 0 <= pk < len(self._clubs), _CLUB_INDEX_ERROR
 
         assert i >= 0, "Player index should be positive."
         assert i < len(self._clubs[pk].players), (
             "There is no player with such index in your club."
         )
-        self._clubs[pk].PopPlayer(i)
+
+        player = self._clubs[pk].PopPlayer(i)
+        player.has_next_contract = False
+        player.RecoverStamina(player.max_stamina)
+
+        self._free_agents.append(player)
 
     def GetContext(self, pk: int) -> Dict[str, Any]:
         """A dictionary with information available for user."""
 
-        assert 0 <= pk < len(self._clubs), "Incorrect club index."
+        assert 0 <= pk < len(self._clubs), _CLUB_INDEX_ERROR
 
         return dict(
             balance=self._clubs[pk].account.balance,
@@ -169,34 +179,32 @@ class DdGameDuck:
             user_players=self._GetUserPlayers(pk),
         )
 
-    def HirePlayer(self, surface: str, pk: int):
-        """Hires a new player for user's club."""
+    def HireFreeAgent(self, club_pk: int, player_pk: int):
+        """Hires a free agent for the given club."""
 
-        assert 0 <= pk < len(self._clubs), "Incorrect club index."
+        assert player_pk in range(len(self._free_agents)), (
+            "There is no free agent with such pk."
+        )
 
-        cost = self._contract_calculator(0)
+        player = self._free_agents[player_pk]
+        self._ProcessPlayerHire(club_pk=club_pk, player=player)
+        self._free_agents.pop(player_pk)
+
+    def HireNewPlayer(self, surface: str, pk: int):
+        """Hires a new player for the given club."""
+
         choices = "|".join(self._SURFACES)
         assert surface in self._SURFACES, (
             "You can't choose such speciality.\n"
             "Choices are: "
             f"{choices}"
         )
-        assert self._clubs[pk].account.balance >= cost, (
-            "Insufficient funds.\n"
-            f"You need at least ${cost}."
-        )
-
         player = self._player_factory.CreatePlayer(
             level=0,
             age=DdGameplayConstants.STARTING_AGE.value,
             speciality=surface
         )
-        self._clubs[pk].AddPlayer(player)
-        self._clubs[pk].account.ProcessTransaction(DdTransaction(
-            -cost,
-            f"New player contract with {player.initials} "
-            f"speciality {player.speciality}."
-        ))
+        self._ProcessPlayerHire(club_pk=pk, player=player)
 
     def ProceedToNextCompetition(self):
         """Updates game while player action is not required."""
@@ -212,7 +220,7 @@ class DdGameDuck:
         Selects a coach (bad, normal, or good) for the player in the club.
         """
 
-        assert pk in self._clubs, "Incorrect club pk."
+        assert pk in self._clubs, _CLUB_INDEX_ERROR
         assert 0 <= player_index < len(self._clubs[pk].players), (
             "Incorrect player index."
         )
@@ -227,7 +235,7 @@ class DdGameDuck:
     def SelectCourt(self, pk: int, court: str):
         """Selects court for club from available options."""
 
-        assert pk in self._clubs, "Incorrect club pk."
+        assert pk in self._clubs, _CLUB_INDEX_ERROR
         possible_courts = "|".join(self._params.courts)
         assert court in self._params.courts, (
             "Incorrect court type.\n"
@@ -254,7 +262,7 @@ class DdGameDuck:
     def SetTicketPrice(self, pk: int, price: int):
         """Sets ticket price on club's court."""
 
-        assert pk in self._clubs, "Incorrect club pk."
+        assert pk in self._clubs, _CLUB_INDEX_ERROR
         assert price >= 0, "Ticket price can't be negative."
 
         self._clubs[pk].court.ticket_price = price
@@ -466,16 +474,16 @@ class DdGameDuck:
                 ),
             ))
 
-    def _CollectCompetitionFame(self):
-        for pk in self._clubs:
-            self._season_fame[pk] = self._competition.GetClubFame(pk)
-
     def _CheckContracts(self):
         if not self._contract_check:
             raise AssertionError(
                 "Your club has uncontracted players.\n"
                 "You should wether contract them or fire."
             )
+
+    def _CollectCompetitionFame(self):
+        for pk in self._clubs:
+            self._season_fame[pk] = self._competition.GetClubFame(pk)
 
     def _GetOpponent(self, pk: int) -> Optional[DdOpponentStruct]:
         def ScheduleFilter(pair: DdScheduledMatchStruct):
@@ -564,6 +572,16 @@ class DdGameDuck:
             ))
             club.SelectCoach(coach_index=coach_index, player_index=-1)
 
+        def AgeCheck(player: DdPlayer) -> bool:
+            return player.age < DdGameplayConstants.RETIREMENT_AGE.value
+
+        for agent in self._free_agents:
+            agent.AgeUp()
+
+        self._free_agents = [
+            agent for agent in self._free_agents if AgeCheck(agent)
+        ]
+
         self._SaveHistory()
         self._competition = DdRegularChampionship(
             self._clubs,
@@ -591,6 +609,22 @@ class DdGameDuck:
         self._results = self._competition.Update()
         self._CalculateMatchIncome(self._results)
         self._Recover()
+
+    def _ProcessPlayerHire(self, club_pk: int, player: DdPlayer):
+        assert club_pk in self._clubs, _CLUB_INDEX_ERROR
+
+        cost = self._contract_calculator(player.level)
+
+        assert self._clubs[club_pk].account.balance >= cost, (
+            "Insufficient funds.\n"
+            f"You need at least ${cost}."
+        )
+        self._clubs[club_pk].AddPlayer(player)
+        self._clubs[club_pk].account.ProcessTransaction(DdTransaction(
+            -cost,
+            f"New player contract with {player.initials} "
+            f"speciality {player.speciality}."
+        ))
 
     def _Recover(self):
         recovery_function = DdExhaustedLinearRecovery(

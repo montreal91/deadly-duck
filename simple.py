@@ -214,7 +214,7 @@ class DdSimplifiedApp:
 
     @UserAction
     def __ActionHire(self, surface: str):
-        self._game.HirePlayer(surface, self._club_pk)
+        self._game.HireNewPlayer(surface, self._club_pk)
 
     @UserAction
     def __ActionHistory(self, season: str):
