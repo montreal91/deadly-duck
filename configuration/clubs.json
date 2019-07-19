@@ -177,7 +177,7 @@
     "name":"Dandenong Pianists",
     "surface":"hard",
     "fame":[-500, -150, -300, -500, -50],
-    "balance":100000,
+    "balance":250000,
     "players":[
       {
         "DdPlayer":true,
@@ -192,7 +192,7 @@
         "current_stamina":80,
         "age":19,
         "reputation":550,
-        "has_next_contract":false
+        "has_next_contract":true
       },
       {
         "DdPlayer":true,
@@ -207,7 +207,7 @@
         "current_stamina":95,
         "age":18,
         "reputation":857,
-        "has_next_contract":false
+        "has_next_contract":true
       },
       {
         "DdPlayer":true,
@@ -245,7 +245,7 @@
     "name":"Melbourne Rockets",
     "surface":"hard",
     "fame":[0, 0, 0, 250, 1000],
-    "balance":100000,
+    "balance":1120000,
     "players":[
       {
         "DdPlayer":true,
@@ -670,7 +670,7 @@
     "name":"Southern Raiders",
     "surface":"grass",
     "fame":[1000, 500, 0, 500, 0],
-    "balance":100000,
+    "balance":550000,
     "players":[
       {
         "DdPlayer":true,
@@ -700,7 +700,7 @@
         "current_stamina":80,
         "age":18,
         "reputation":1200,
-        "has_next_contract":false
+        "has_next_contract":true
       }
     ]
   },

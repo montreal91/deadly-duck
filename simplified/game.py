@@ -141,6 +141,12 @@ class DdGameDuck:
         self._GenerateFreeAgents()
 
     @property
+    def is_over(self) -> bool:
+        """Indicates if game is over."""
+
+        return not any(club.is_controlled for club in self._clubs.values())
+
+    @property
     def season_over(self) -> bool:
         """Checks if season is over."""
 
@@ -308,6 +314,11 @@ class DdGameDuck:
         Proceeds to the next day if possible.
         All scheduled matches are performed.
         """
+
+        for club_pk in self._clubs:
+            if not self._IsClubValid(club_pk):
+                self._clubs[club_pk].SetControlled(False)
+        assert not self.is_over, ("The game is over.")
 
         assert not self._decision_required, (
             "You have to select player for the next match."
@@ -564,14 +575,35 @@ class DdGameDuck:
                 continue
             techs = [slot.player.actual_technique < 5 for slot in club.players]
             if all(techs):
-                print("-" * 80)
-                print("Exhaustion hit!", club.name)
                 new_player = self._player_factory.CreatePlayer(
                     level=0,
                     age=DdGameplayConstants.STARTING_AGE.value,
                     speciality=club.surface
                 )
                 club.AddPlayer(new_player)
+
+    def _IsClubValid(self, pk: int) -> bool:
+        opponent = self._GetOpponent(pk)
+        club: DdClub = self._clubs[pk]
+        if opponent is None or not club.is_controlled:
+            return True
+
+        best_player = max(
+            [slot.player.actual_technique for slot in club.players],
+            default=0,
+        )
+
+        min_player_contract = self._contract_calculator(level=0)
+        if best_player <= 0 and club.account.balance < min_player_contract:
+            return False
+
+        if opponent.player is None:
+            return True
+
+        if club.account.balance < self._params.courts["default"].rent_cost:
+            return False
+
+        return True
 
     def _LogTrainingCosts(self, club: DdClub):
         with open("simplified/.logs/trainings.csv", "a") as log_file:

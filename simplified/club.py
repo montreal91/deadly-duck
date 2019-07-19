@@ -131,14 +131,13 @@ class DdClub:
         return self._players
 
     @property
-    def selected_player(self) -> DdPlayer:
+    def selected_player(self) -> Optional[DdPlayer]:
         """Player selected for the next match."""
 
-        def RawPlayers():
-            return [p.player for p in self._players]
+        raw_players = [p.player for p in self._players]
 
         if self._selected_player is None:
-            return max(RawPlayers(), key=PlayerModelComparator)
+            return max(raw_players, key=PlayerModelComparator, default=None)
         return self._players[self._selected_player].player
 
     @property

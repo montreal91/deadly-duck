@@ -83,7 +83,7 @@ class DdSimplifiedApp:
         """Runs the game."""
 
         print("Type ? for help.")
-        while self._is_running:
+        while self._is_running and not self._game.is_over:
             self._PrintMain()
             self._ProcessInput()
 
@@ -156,13 +156,22 @@ class DdSimplifiedApp:
     def __Action_DropAccounts(self):
         for club in self._game._clubs.values():
             balance = club.account.balance
-            balance = -balance + self._game._params.starting_balance
+            balance = -balance + 100000
             club.account.ProcessTransaction(DdTransaction(balance, "Drop"))
 
     @UserAction
     def __Action_Fame(self):
-        for club in self._game._clubs.values():
-            print(f"{club.name:20s}", club.fame)
+        clubs = sorted(
+            [(pk, club) for pk, club in self._game._clubs.items()],
+            key=lambda club: club[1].fame,
+            reverse=True
+        )
+        for club in clubs:
+            if club[0] == self._club_pk:
+                print(BOLD, end="")
+            print(f"{club[1].name:20s}", club[1].fame)
+            if club[0] == self._club_pk:
+                print(RESET, end="")
 
     @UserAction
     def __Action_Finances(self):
