@@ -13,7 +13,9 @@ import sys
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Tuple
 
 from simplified.attendance import DdAttendanceParams
 from simplified.attendance import DdCourt
@@ -87,7 +89,9 @@ class DdSimplifiedApp:
 
     def _InitActions(self):
         self._actions["?"] = self.__ActionHelp
+        self._actions["agents"] = self.__ActionAgents
         self._actions["coach"] = self.__ActionCoach
+        self._actions["c"] = self.__ActionCourt
         self._actions["court"] = self.__ActionCourt
         self._actions["fire"] = self.__ActionFire
         self._actions["hire"] = self.__ActionHire
@@ -186,6 +190,46 @@ class DdSimplifiedApp:
         print(f"Time to calculate context: {dt2 - dt1:.4f}")
 
     @UserAction
+    def __ActionAgents(self, sub_action: str, index: Optional[str] = None):
+        assert sub_action in ("list", "hire")
+        if sub_action == "hire":
+            self._game.HireFreeAgent(
+                club_pk=self._club_pk,
+                player_pk=int(index)
+            )
+            return
+
+        agents: List[Tuple[DdPlayer, int]] = self._game.GetContext(
+            self._club_pk
+        )["free_agents"]
+        print(" #| Age| Technique|Stm|Exh| Spec| Contract | Name")
+        print("__|____|__________|___|___|_____|__________|_____________")
+        for i, agent_tuple in enumerate(agents):
+            agent, contract = agent_tuple
+            print(f"{i:2d}|", end="")
+            print(" {0:2d} |".format(agent.json["age"]), end="")
+            print(
+                "{0:4.1f} /{1:4.1f}|".format(
+                    round(agent.json["actual_technique"] / 10, 1),
+                    round(agent.json["technique"] / 10, 1)
+                ),
+                end="",
+            )
+            print(
+                "{0:3d}|".format(agent.json["current_stamina"]),
+                end="",
+            )
+            print(
+                "{0:3d}|".format(agent.json["exhaustion"]),
+                end=""
+            )
+            print("{0:5s}|".format(agent.json["speciality"]), end="")
+            print(f" {contract:7d}$ |", end="")
+            print(agent.json["first_name"], agent.json["last_name"], end="")
+            print()
+
+
+    @UserAction
     def __ActionCoach(self, player_index: str, coach_index: str):
         self._game.SelectCoachForPlayer(
             coach_index=int(coach_index),
@@ -198,10 +242,10 @@ class DdSimplifiedApp:
         if court is not None:
             self._game.SelectCourt(pk=self._club_pk, court=court)
         else:
-            court = self._game.GetContext(self._club_pk)["court"]
-            print("Capacity:    ", court["capacity"])
-            print("Rent cost:   ", court["rent_cost"])
-            print("Ticket price:", court["ticket_price"])
+            courts = self._game.GetContext(self._club_pk)["court"]
+            print("Capacity:    ", courts["capacity"])
+            print("Rent cost:   ", courts["rent_cost"])
+            print("Ticket price:", courts["ticket_price"])
 
     @UserAction
     def __ActionFire(self, index: str):

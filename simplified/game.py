@@ -20,6 +20,7 @@ from typing import Dict
 from typing import List
 from typing import NamedTuple
 from typing import Optional
+from typing import Tuple
 
 from configuration.config_game import DdGameplayConstants
 from simplified.attendance import DdAttendanceParams
@@ -137,6 +138,7 @@ class DdGameDuck:
         )
 
         self._Simulate(self._params.years_to_simulate)
+        self._GenerateFreeAgents()
 
     @property
     def season_over(self) -> bool:
@@ -170,6 +172,7 @@ class DdGameDuck:
             day=self._competition.day,
             clubs=[club.name for club in self._clubs.values()],
             court=self._clubs[pk].court.json,
+            free_agents=self._GetFreeAgents(),
             history=self._history,
             last_results=self._last_results,
             opponent=self._GetOpponent(pk),
@@ -485,6 +488,29 @@ class DdGameDuck:
         for pk in self._clubs:
             self._season_fame[pk] = self._competition.GetClubFame(pk)
 
+    def _GenerateFreeAgents(self):
+        new_agents = []
+        for _ in range(randint(3, 10)):
+            new_agents.append(self._player_factory.CreatePlayer(
+                age=randint(
+                    DdGameplayConstants.STARTING_AGE.value,
+                    DdGameplayConstants.RETIREMENT_AGE.value - 1
+                ),
+                level=randint(1, 10),
+                speciality=choice(self._SURFACES),
+            ))
+        new_agents.sort(
+            key=lambda x: (x.speciality, x.level),
+            reverse=True,
+        )
+        self._free_agents = new_agents
+
+    def _GetFreeAgents(self) -> List[Tuple[DdPlayer, int]]:
+        res = []
+        for agent in self._free_agents:
+            res.append((agent, self._contract_calculator(agent.level),))
+        return res
+
     def _GetOpponent(self, pk: int) -> Optional[DdOpponentStruct]:
         def ScheduleFilter(pair: DdScheduledMatchStruct):
             if pair.home_pk == pk:
@@ -532,6 +558,21 @@ class DdGameDuck:
 
         return [SetContractPrices(slot) for slot in self._clubs[pk].players]
 
+    def _HirePlayersIfNeeded(self):
+        for club in self._clubs.values():
+            if club.is_controlled:
+                continue
+            techs = [slot.player.actual_technique < 5 for slot in club.players]
+            if all(techs):
+                print("-" * 80)
+                print("Exhaustion hit!", club.name)
+                new_player = self._player_factory.CreatePlayer(
+                    level=0,
+                    age=DdGameplayConstants.STARTING_AGE.value,
+                    speciality=club.surface
+                )
+                club.AddPlayer(new_player)
+
     def _LogTrainingCosts(self, club: DdClub):
         with open("simplified/.logs/trainings.csv", "a") as log_file:
             cost = self._CalculateClubTrainingCost(club)
@@ -544,13 +585,10 @@ class DdGameDuck:
         previous_standings = self._history[-1]["Championship"]
         for i, row in enumerate(previous_standings):
             club: DdClub = self._clubs[row.club_pk]
-            coach_index = 1 if i < len(previous_standings) // 2 else 2
             for j, slot in enumerate(club.players):
                 slot.player.AgeUp()
                 slot.player.AfterSeasonRest()
                 slot.player.has_next_contract = False
-                if not club.is_controlled:
-                    club.SelectCoach(coach_index=coach_index, player_index=j)
             club.AddFame(self._season_fame[row.club_pk])
             self._season_fame[row.club_pk] = 0
             club.ExpelRetiredPlayers()
@@ -563,24 +601,9 @@ class DdGameDuck:
                 level=0,
                 speciality=club.surface
             ))
-            club.SelectCoach(coach_index=coach_index, player_index=-1)
+            club.SelectCoach(coach_index=1, player_index=-1)
 
-            club.AddPlayer(self._player_factory.CreatePlayer(
-                age=DdGameplayConstants.STARTING_AGE.value,
-                level=0,
-                speciality=choice(self._SURFACES),
-            ))
-            club.SelectCoach(coach_index=coach_index, player_index=-1)
-
-        def AgeCheck(player: DdPlayer) -> bool:
-            return player.age < DdGameplayConstants.RETIREMENT_AGE.value
-
-        for agent in self._free_agents:
-            agent.AgeUp()
-
-        self._free_agents = [
-            agent for agent in self._free_agents if AgeCheck(agent)
-        ]
+        self._GenerateFreeAgents()
 
         self._SaveHistory()
         self._competition = DdRegularChampionship(
@@ -609,6 +632,7 @@ class DdGameDuck:
         self._results = self._competition.Update()
         self._CalculateMatchIncome(self._results)
         self._Recover()
+        self._HirePlayersIfNeeded()
 
     def _ProcessPlayerHire(self, club_pk: int, player: DdPlayer):
         assert club_pk in self._clubs, _CLUB_INDEX_ERROR
