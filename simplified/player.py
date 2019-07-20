@@ -37,9 +37,6 @@ class DdCourtSurface:
     HARD = "hard"
 
 
-_PlayerData = Union[bool, str, int]
-
-
 class DdPlayer(DdJsonable):
     """A class that describes a tennis player."""
 
@@ -55,7 +52,6 @@ class DdPlayer(DdJsonable):
         DdField("_current_stamina", "current_stamina"),
         DdField("_age", "age"),
         DdField("_reputation", "reputation"),
-        DdField("_has_next_contract", "has_next_contract"),
     )
 
     _first_name: str
@@ -72,8 +68,6 @@ class DdPlayer(DdJsonable):
     _age: int
 
     _reputation: int
-    _has_next_contract: bool
-
 
     def __init__(
         self,
@@ -97,8 +91,6 @@ class DdPlayer(DdJsonable):
         self._experience = 0
         self._current_stamina = self.max_stamina
         self._reputation = 0
-
-        self._has_next_contract = False
 
     @property
     def age(self):
@@ -128,20 +120,14 @@ class DdPlayer(DdJsonable):
         return self._experience
 
     @property
-    def has_next_contract(self) -> bool:
-        """Shows if player has a contract for the next season."""
+    def full_name(self) -> str:
+        """Full name of the player."""
 
-        return self._has_next_contract
-
-    @has_next_contract.setter
-    def has_next_contract(self, value: bool):
-        """Sets value if player has a contract for the next season."""
-
-        self._has_next_contract = value
+        return f"{self._first_name} {self._second_name} {self._last_name}"
 
     @property
     def initials(self) -> str:
-        """Returns the name of the player in form of 'J. K. Rowling'."""
+        """The name of the player in form of 'J. K. Rowling'."""
 
         return "{0:s}. {1:s}. {2:s}".format(
             self._first_name[0],

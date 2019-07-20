@@ -127,6 +127,7 @@ class DdGameDuck:
 
         decoder = DdJsonDecoder()
         decoder.Register(DdPlayer)
+        decoder.Register(DdClubPlayerSlot)
         with open("configuration/clubs.json", "r") as data_file:
             club_data = json.load(data_file, object_hook=decoder)
 
@@ -263,7 +264,7 @@ class DdGameDuck:
         self._clubs[pk].SelectPlayer(i)
 
     def SetControlled(self, pk: int, is_controlled: bool):
-        """Sets flag wether club is controlled by user or not."""
+        """Sets flag wether club is controlled by a user or not."""
 
         assert 0 <= pk < len(self._clubs), "Incorrect club pk."
         self._clubs[pk].SetControlled(is_controlled)
@@ -286,7 +287,7 @@ class DdGameDuck:
         assert 0 <= i < len(players), (
             "Incorrect player index."
         )
-        assert not players[i].player.has_next_contract, (
+        assert not players[i].has_next_contract, (
             "This player already has a contract for the next season."
         )
         assert (
@@ -358,7 +359,7 @@ class DdGameDuck:
                 next_age = slot.player.age + 1
                 if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
                     continue
-                if not slot.player.has_next_contract:
+                if not slot.has_next_contract:
                     return False
             return True
 
@@ -441,8 +442,10 @@ class DdGameDuck:
         for value in club_data["fame"]:
             club.AddFame(value)
 
-        for player in club_data["players"]:
-            club.AddPlayer(player)
+        for i, slot in enumerate(club_data["player_data"]):
+            club.AddPlayer(slot.player)
+            if slot.has_next_contract:
+                club.ContractPlayer(player_pk=i)
 
         club.account.ProcessTransaction(DdTransaction(
             club_data["balance"],

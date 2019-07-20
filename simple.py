@@ -417,13 +417,15 @@ class DdSimplifiedApp:
         self._game.SelectPlayer(int(index), self._club_pk)
 
     @UserAction
-    def __ActionShow(self, index):
+    def __ActionShow(self, index: str):
         index = int(index)
-        players = self._game.GetContext(self._club_pk)["user_players"]
+        players_data = self._game.GetContext(self._club_pk)["user_players"]
+        assert 0 <= index < len(players_data), "Incorrect player index"
         _PrintPlayer(
-            players[index].player,
+            players_data[index].player,
             own=True,
-            contract_cost=players[index].contract_cost
+            contract_cost=players_data[index].contract_cost,
+            next_contract=players_data[index].has_next_contract,
         )
 
     @UserAction
@@ -568,11 +570,16 @@ def _PrintCupStandings(series, club_names, users_club, rounds):
 
 def _PrintPlayer(
     player: DdPlayer,
+    next_contract: bool,
     own: bool = False,
     contract_cost: Optional[int] = None
 ):
     string = (
-        "{initials:s} [{level:d}]\n"
+        "Level {level:d}\n"
+        "{bold}"
+        "{full_name:s}\n\n"
+        "{reset}"
+        "Age:        {age:d}\n"
         "Technique:  {actual_technique:3.1f} / {technique:3.1f}\n"
         "Endurance:  {endurance:3.1f}\n"
         "Stamina:    {current_stamina:d} / {max_stamina:d}\n"
@@ -580,20 +587,23 @@ def _PrintPlayer(
         "Speciality: {speciality:s}\n"
     )
     print(string.format(
-        initials=player.initials,
+        full_name=player.full_name,
         level=player.level,
         actual_technique=round(player.actual_technique / 10, 1),
         technique=round(player.technique / 10, 1),
         endurance=player.endurance,
         exhaustion=player.exhaustion,
+        age=player.age,
         speciality=player.speciality,
         current_stamina=player.current_stamina,
         max_stamina=player.max_stamina,
+        bold=BOLD,
+        reset=RESET,
     ))
     if own:
         print(f"Exp: {player.experience} / {player.next_level_exp}")
         print(f"Rep: {player.reputation}")
-        if not player.has_next_contract:
+        if not next_contract:
             print(f"\nConract cost: ${contract_cost}")
 
 

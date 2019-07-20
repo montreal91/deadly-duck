@@ -26,8 +26,8 @@ class DdJsonable:
     """
     Base class for all json serializable and deserializable objects.
 
-    Every descendant object should declare its own `_FIELD_MAP` tuple for
-    correct serialization and deserialization.
+    Every descendant object should declare its own `_FIELD_MAP` tuple and
+    "default" constructor for correct serialization and deserialization.
     """
 
     _FIELD_MAP: Tuple[DdField, ...]

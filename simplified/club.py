@@ -14,19 +14,30 @@ from simplified.attendance import DdCourt
 from simplified.financial import DdFinancialAccount
 from simplified.player import DdPlayer
 from simplified.player import PlayerModelComparator
+from simplified.serialization import DdField
+from simplified.serialization import DdJsonable
 
 
-class DdClubPlayerSlot:
-    """A passive data structure to bind player and coach level."""
+class DdClubPlayerSlot(DdJsonable):
+    """A passive data structure to store player-related data."""
 
-    player: DdPlayer
+    player: Optional[DdPlayer]
     coach_level: int
     contract_cost: int
+    has_next_contract: bool
 
-    def __init__(self, player: DdPlayer, coach_level: int):
+    _FIELD_MAP = (
+        DdField("player", "player"),
+        DdField("coach_level", "coach_level"),
+        DdField("contract_cost", "contract_cost"),
+        DdField("has_next_contract", "has_next_contract"),
+    )
+
+    def __init__(self, player: Optional[DdPlayer] = None, coach_level: int = 0):
         self.player = player
         self.coach_level = coach_level
         self.contract_cost = 0
+        self.has_next_contract = False
 
 
 class DdFameTracker:
@@ -159,7 +170,7 @@ class DdClub:
     def ContractPlayer(self, player_pk):
         """Marks that a player has a contract for the next season."""
 
-        self._players[player_pk].player.has_next_contract = True
+        self._players[player_pk].has_next_contract = True
 
     def ExpelRetiredPlayers(self):
         """Removes players from the club which are too old to play."""
