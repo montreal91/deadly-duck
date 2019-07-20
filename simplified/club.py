@@ -38,6 +38,7 @@ class DdClubPlayerSlot(DdJsonable):
         self.coach_level = coach_level
         self.contract_cost = 0
         self.has_next_contract = False
+        self.is_selected = False
 
 
 class DdFameTracker:
@@ -206,7 +207,13 @@ class DdClub:
     def SelectPlayer(self, index: Optional[int]):
         """Selects player for the next match."""
 
+        if self._selected_player is not None:
+            self._players[self._selected_player].is_selected = False
+
         self._selected_player = index
+
+        if index is not None:
+            self._players[index].is_selected = True
 
     def SetControlled(self, val: bool):
         """Sets club controlled or uncontrolled by a human user."""

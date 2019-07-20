@@ -300,9 +300,11 @@ class DdSimplifiedApp:
         print(" #| Age| Technique|Stm|Exh| Spec| Coach | Name")
         print("__|____|__________|___|___|_____|_______|_____________")
         ctx = self._game.GetContext(self._club_pk)
-        for i in range(len(ctx["user_players"])):
+        for i, data in enumerate(ctx["user_players"]):
+            if data.is_selected:
+                print(BOLD, end="")
             print("{0:2}|".format(i), end="")
-            plr: DdPlayer = ctx["user_players"][i].player
+            plr: DdPlayer = data.player
             print(" {0:2d} |".format(plr.json["age"]), end="")
             print(
                 "{0:4.1f} /{1:4.1f}|".format(
@@ -327,6 +329,8 @@ class DdSimplifiedApp:
                 end=""
             )
             print(plr.json["first_name"], plr.json["last_name"], end="")
+            if data.is_selected:
+                print(RESET, end="")
             print()
 
     @UserAction
