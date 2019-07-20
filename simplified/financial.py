@@ -76,8 +76,8 @@ class DdContractCalculator:
         self._coefficient = coefficient
 
 
-class DdTrainingCalculator:
-    """Callable class that calculates training price."""
+class DdPracticeCalculator:
+    """Callable class that calculates the cost of practice."""
 
     _coefficient: int
 

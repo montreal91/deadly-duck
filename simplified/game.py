@@ -30,7 +30,7 @@ from simplified.club import DdClub
 from simplified.club import DdClubPlayerSlot
 from simplified.competition import DdAbstractCompetition
 from simplified.financial import DdContractCalculator
-from simplified.financial import DdTrainingCalculator
+from simplified.financial import DdPracticeCalculator
 from simplified.financial import DdTransaction
 from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
@@ -98,7 +98,7 @@ class DdGameDuck:
     _player_factory: DdPlayerFactory
     _season_fame: Dict[int, int]
     _results: List[DdMatchResult]
-    _training_calculator: DdTrainingCalculator
+    _practice_calculator: DdPracticeCalculator
 
     def __init__(self, params: DdGameParams):
         self._free_agents = []
@@ -121,7 +121,7 @@ class DdGameDuck:
         self._contract_calculator = DdContractCalculator(
             self._params.contract_coefficient
         )
-        self._training_calculator = DdTrainingCalculator(
+        self._practice_calculator = DdPracticeCalculator(
             self._params.training_coefficient
         )
 
@@ -183,6 +183,7 @@ class DdGameDuck:
             history=self._history,
             last_results=self._last_results,
             opponent=self._GetOpponent(pk),
+            practice_cost=self._CalculateClubPracticeCost(club=self._clubs[pk]),
             remaining_matches=self._competition.GetClubSchedule(pk),
             standings=self._standings,
             title=self._competition.title,
@@ -423,7 +424,7 @@ class DdGameDuck:
             return True
 
         def CheckClub(club: DdClub) -> bool:
-            return self._CalculateClubTrainingCost(club) <= club.account.balance
+            return self._CalculateClubPracticeCost(club) <= club.account.balance
 
         for club in self._clubs.values():
             if not club.is_controlled:
@@ -455,9 +456,9 @@ class DdGameDuck:
         self._clubs[pk] = club
         self._season_fame[pk] = 0
 
-    def _CalculateClubTrainingCost(self, club: DdClub) -> int:
+    def _CalculateClubPracticeCost(self, club: DdClub) -> int:
         slots = [(s.player.level, s.coach_level) for s in club.players]
-        return sum(self._training_calculator(*slot) for slot in slots)
+        return sum(self._practice_calculator(*slot) for slot in slots)
 
     def _CalculateMatchIncome(self, results: Optional[List[DdMatchResult]]):
         if results is None:
@@ -610,7 +611,7 @@ class DdGameDuck:
 
     def _LogTrainingCosts(self, club: DdClub):
         with open("simplified/.logs/trainings.csv", "a") as log_file:
-            cost = self._CalculateClubTrainingCost(club)
+            cost = self._CalculateClubPracticeCost(club)
             print(
                 f"{len(self._history) + 1},{self._competition.day},{cost}",
                 file=log_file
@@ -659,8 +660,8 @@ class DdGameDuck:
             club.PerformPractice()
             if club.is_controlled:
                 club.account.ProcessTransaction(DdTransaction(
-                    -self._CalculateClubTrainingCost(club),
-                    f"Training on day {self._competition.day}"
+                    -self._CalculateClubPracticeCost(club),
+                    f"Practice on day {self._competition.day}"
                 ))
 
     def _PlayOneDay(self):

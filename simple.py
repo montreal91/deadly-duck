@@ -333,6 +333,8 @@ class DdSimplifiedApp:
                 print(RESET, end="")
             print()
 
+        print("\nCurrent practice price:", "$" + str(ctx["practice_cost"]))
+
     @UserAction
     def __ActionNext(self):
         res = self._game.Update()
