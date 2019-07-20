@@ -7,6 +7,7 @@ Created Jun 17, 2019
 
 from typing import List
 from typing import NamedTuple
+from typing import Tuple
 
 
 class DdTransaction(NamedTuple):
@@ -64,8 +65,12 @@ class DdFinancialAccount:
         return True
 
 
-class DdContractCalculator:
-    """Callable class that calculates player contract price based on level."""
+class DdQuadraticContractCalculator:
+    """
+    Callable class that calculates player contract price based on level.
+
+    Implements the quadratic growth of the contract price.
+    """
 
     _coefficient: int
 
@@ -74,6 +79,24 @@ class DdContractCalculator:
 
     def __init__(self, coefficient: int):
         self._coefficient = coefficient
+
+
+class DdStaticContractCalculator:
+    """
+    Callable class that calculates player contract price based on level.
+
+    Contract prices are stored in special immutable list.
+    """
+
+    _prices: Tuple[int]
+
+    def __call__(self, level: int) -> int:
+        if level in range(len(self._prices)):
+            return self._prices[level]
+        return max(self._prices)
+
+    def __init__(self, prices: List[int]):
+        self._prices = tuple(prices)
 
 
 class DdPracticeCalculator:

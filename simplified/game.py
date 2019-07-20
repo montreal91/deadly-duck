@@ -29,8 +29,8 @@ from simplified.attendance import DdCourt
 from simplified.club import DdClub
 from simplified.club import DdClubPlayerSlot
 from simplified.competition import DdAbstractCompetition
-from simplified.financial import DdContractCalculator
 from simplified.financial import DdPracticeCalculator
+from simplified.financial import DdStaticContractCalculator
 from simplified.financial import DdTransaction
 from simplified.match import DdMatchResult
 from simplified.match import DdScheduledMatchStruct
@@ -58,7 +58,7 @@ class DdGameParams(NamedTuple):
     playoff_params: DdPlayoffParams
 
     # Other data
-    contract_coefficient: int
+    contracts: List[int]
     courts: Dict[str, DdCourt]
     exhaustion_factor: int
     is_hard: bool
@@ -91,7 +91,7 @@ class DdGameDuck:
     _attendance_calculator: Callable
     _clubs: Dict[int, DdClub]
     _competition: DdAbstractCompetition
-    _contract_calculator: DdContractCalculator
+    _contract_calculator: Callable[[int], int]
     _free_agents: List[DdPlayer]
     _history: List[Dict[str, Any]]
     _params: DdGameParams
@@ -118,8 +118,8 @@ class DdGameDuck:
 
         self._clubs = {}
         self._season_fame = {}
-        self._contract_calculator = DdContractCalculator(
-            self._params.contract_coefficient
+        self._contract_calculator = DdStaticContractCalculator(
+            self._params.contracts
         )
         self._practice_calculator = DdPracticeCalculator(
             self._params.training_coefficient
@@ -619,12 +619,12 @@ class DdGameDuck:
 
     def _NextSeason(self):
         previous_standings = self._history[-1]["Championship"]
-        for i, row in enumerate(previous_standings):
+        for row in previous_standings:
             club: DdClub = self._clubs[row.club_pk]
-            for j, slot in enumerate(club.players):
+            for slot in club.players:
                 slot.player.AgeUp()
                 slot.player.AfterSeasonRest()
-                slot.player.has_next_contract = False
+                slot.has_next_contract = False
             club.AddFame(self._season_fame[row.club_pk])
             self._season_fame[row.club_pk] = 0
             club.ExpelRetiredPlayers()
@@ -657,12 +657,12 @@ class DdGameDuck:
             if club.is_controlled:
                 self._LogTrainingCosts(club)
 
-            club.PerformPractice()
             if club.is_controlled:
                 club.account.ProcessTransaction(DdTransaction(
                     -self._CalculateClubPracticeCost(club),
                     f"Practice on day {self._competition.day}"
                 ))
+            club.PerformPractice()
 
     def _PlayOneDay(self):
         self._results = self._competition.Update()

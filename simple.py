@@ -6,6 +6,7 @@ Created Apr 09, 2019
 """
 
 import configparser
+import json
 import os.path
 import pickle
 import sys
@@ -352,7 +353,7 @@ class DdSimplifiedApp:
         if opponent is None:
             print("No opponents today.")
             return
-        print(opponent.club_name, end=" ")
+        print(f"{BOLD}{opponent.club_name}{RESET}", end=" ")
         print("({})".format(
             "home" if opponent.player is not None else "away"
         ))
@@ -528,7 +529,7 @@ def _GetParams(path: str) -> DdGameParams:
             big=DdCourt(capacity=8000, rent_cost=44000),
             huge=DdCourt(capacity=16000, rent_cost=112000)
         ),
-        contract_coefficient=config["game"].getint("contract_coefficient", 0),
+        contracts=json.loads(config.get("game", "contracts")),
         exhaustion_factor=config["game"].getint("exhaustion_factor", 0),
         is_hard=config["game"].getboolean("is_hard", True),
         training_coefficient=config["game"].getint("training_coefficient", 0),
