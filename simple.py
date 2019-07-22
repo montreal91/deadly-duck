@@ -18,19 +18,19 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-from simplified.attendance import DdAttendanceParams
-from simplified.attendance import DdCourt
-from simplified.financial import DdTransaction
-from simplified.game import DdGameDuck
-from simplified.game import DdGameParams
-from simplified.game import DdOpponentStruct
-from simplified.match import DdExhaustionCalculator
-from simplified.match import DdMatchParams
-from simplified.match import DdLinearProbabilityCalculator
-from simplified.player import DdPlayer
-from simplified.player import DdPlayerReputationCalculator
-from simplified.playoffs import DdPlayoffParams
-from simplified.regular_championship import DdChampionshipParams
+from core.attendance import DdAttendanceParams
+from core.attendance import DdCourt
+from core.financial import DdTransaction
+from core.game import DdGameDuck
+from core.game import DdGameParams
+from core.game import DdOpponentStruct
+from core.match import DdExhaustionCalculator
+from core.match import DdMatchParams
+from core.match import DdLinearProbabilityCalculator
+from core.player import DdPlayer
+from core.player import DdPlayerReputationCalculator
+from core.playoffs import DdPlayoffParams
+from core.regular_championship import DdChampionshipParams
 
 
 BOLD = "\033[;1m"
@@ -266,7 +266,7 @@ class DdSimplifiedApp:
 
     @UserAction
     def __ActionHelp(self):
-        with open("simplified/help.txt") as help_file:
+        with open("core/help.txt") as help_file:
             print(help_file.read())
 
     @UserAction

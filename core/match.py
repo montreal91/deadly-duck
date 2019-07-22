@@ -15,7 +15,7 @@ from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 
-from simplified.player import DdPlayer
+from core.player import DdPlayer
 from stat_tools import LoadedToss
 
 

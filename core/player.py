@@ -18,8 +18,8 @@ from typing import Union
 
 from configuration.config_game import DdPlayerSkills
 from configuration.config_game import DdGameplayConstants
-from simplified.serialization import DdField
-from simplified.serialization import DdJsonable
+from core.serialization import DdField
+from core.serialization import DdJsonable
 
 
 _ENDURANCE_FACTOR = DdPlayerSkills.ENDURANCE_FACTOR

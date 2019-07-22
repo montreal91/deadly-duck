@@ -13,10 +13,10 @@ from typing import Generator
 from typing import List
 from typing import Optional
 
-from simplified.club import DdClub
-from simplified.match import DdMatchProcessor
-from simplified.match import DdMatchResult
-from simplified.match import DdScheduledMatchStruct
+from core.club import DdClub
+from core.match import DdMatchProcessor
+from core.match import DdMatchResult
+from core.match import DdScheduledMatchStruct
 
 
 ScheduleDay = List[DdScheduledMatchStruct]

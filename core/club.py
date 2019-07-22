@@ -10,12 +10,12 @@ from typing import Optional
 from typing import Tuple
 
 from configuration.config_game import DdGameplayConstants
-from simplified.attendance import DdCourt
-from simplified.financial import DdFinancialAccount
-from simplified.player import DdPlayer
-from simplified.player import PlayerModelComparator
-from simplified.serialization import DdField
-from simplified.serialization import DdJsonable
+from core.attendance import DdCourt
+from core.financial import DdFinancialAccount
+from core.player import DdPlayer
+from core.player import PlayerModelComparator
+from core.serialization import DdField
+from core.serialization import DdJsonable
 
 
 class DdClubPlayerSlot(DdJsonable):

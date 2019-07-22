@@ -1,8 +1,0 @@
-<label for="dd_faculty_input" class="col-sm-2 control-label">Faculty</label>
-<div class="col-sm-10">  
-  <select class="form-control" name="dd_faculty_input">
-    {% for faculty in faculties %}
-      <option value="{{ faculty.pk }}">{{ faculty.name_c }}</option>
-    {% endfor %}
-  </select>
-</div>

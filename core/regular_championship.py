@@ -12,13 +12,13 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 
-from simplified.club import DdClub
-from simplified.competition import DdAbstractCompetition
-from simplified.competition import ScheduleDay
-from simplified.match import DdMatchParams
-from simplified.match import DdMatchResult
-from simplified.match import DdScheduledMatchStruct
-from simplified.match import DdStandingsRowStruct
+from core.club import DdClub
+from core.competition import DdAbstractCompetition
+from core.competition import ScheduleDay
+from core.match import DdMatchParams
+from core.match import DdMatchResult
+from core.match import DdScheduledMatchStruct
+from core.match import DdStandingsRowStruct
 
 
 class DdChampionshipParams(NamedTuple):

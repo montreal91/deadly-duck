@@ -23,27 +23,27 @@ from typing import Optional
 from typing import Tuple
 
 from configuration.config_game import DdGameplayConstants
-from simplified.attendance import DdAttendanceParams
-from simplified.attendance import DdAttendanceCalculator
-from simplified.attendance import DdCourt
-from simplified.club import DdClub
-from simplified.club import DdClubPlayerSlot
-from simplified.competition import DdAbstractCompetition
-from simplified.financial import DdPracticeCalculator
-from simplified.financial import DdStaticContractCalculator
-from simplified.financial import DdTransaction
-from simplified.match import DdMatchResult
-from simplified.match import DdScheduledMatchStruct
-from simplified.match import DdStandingsRowStruct
-from simplified.player import DdCourtSurface
-from simplified.player import DdExhaustedLinearRecovery
-from simplified.player import DdPlayer
-from simplified.player import DdPlayerFactory
-from simplified.playoffs import DdPlayoff
-from simplified.playoffs import DdPlayoffParams
-from simplified.regular_championship import DdChampionshipParams
-from simplified.regular_championship import DdRegularChampionship
-from simplified.serialization import DdJsonDecoder
+from core.attendance import DdAttendanceParams
+from core.attendance import DdAttendanceCalculator
+from core.attendance import DdCourt
+from core.club import DdClub
+from core.club import DdClubPlayerSlot
+from core.competition import DdAbstractCompetition
+from core.financial import DdPracticeCalculator
+from core.financial import DdStaticContractCalculator
+from core.financial import DdTransaction
+from core.match import DdMatchResult
+from core.match import DdScheduledMatchStruct
+from core.match import DdStandingsRowStruct
+from core.player import DdCourtSurface
+from core.player import DdExhaustedLinearRecovery
+from core.player import DdPlayer
+from core.player import DdPlayerFactory
+from core.playoffs import DdPlayoff
+from core.playoffs import DdPlayoffParams
+from core.regular_championship import DdChampionshipParams
+from core.regular_championship import DdRegularChampionship
+from core.serialization import DdJsonDecoder
 
 
 _CLUB_INDEX_ERROR = "Incorrect club index."
@@ -616,7 +616,7 @@ class DdGameDuck:
         return True
 
     def _LogTrainingCosts(self, club: DdClub):
-        with open("simplified/.logs/trainings.csv", "a") as log_file:
+        with open(".logs/trainings.csv", "a") as log_file:
             cost = self._CalculateClubPracticeCost(club)
             print(
                 f"{len(self._history) + 1},{self._competition.day},{cost}",
@@ -706,7 +706,7 @@ class DdGameDuck:
         self._history[-1][self._competition.title] = self._competition.standings
 
         # This is done for collecting match statistics.
-        with open("simplified/.logs/results.csv", "a") as results_file:
+        with open(".logs/results.csv", "a") as results_file:
             for match in self._competition.results_:
                 print(match.csv, file=results_file)
 
