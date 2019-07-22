@@ -340,6 +340,7 @@ class DdGameDuck:
             self._CheckContracts()
             self._UpdateSeasonFame()
             self._NextSeason()
+            self._DropStats()
 
         if self._competition.is_over:
             self._UpdateSeasonFame()
@@ -502,6 +503,11 @@ class DdGameDuck:
     def _CollectCompetitionFame(self):
         for pk in self._clubs:
             self._season_fame[pk] = self._competition.GetClubFame(pk)
+
+    def _DropStats(self):
+        for club in self._clubs.values():
+            for data in club.players:
+                data.player.DropStats()
 
     def _GenerateFreeAgents(self):
         new_agents = []

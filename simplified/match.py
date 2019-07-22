@@ -248,6 +248,9 @@ class DdMatchProcessor:
         home_player.AddExhaustion(exhaustion)
         away_player.AddExhaustion(exhaustion)
 
+        self._UpdateStats(player=home_player, is_home=True)
+        self._UpdateStats(player=away_player, is_home=False)
+
         return deepcopy(self._res)
 
     def SetMatchSurface(self, surface: str):
@@ -329,6 +332,21 @@ class DdMatchProcessor:
             away_games=away_games,
             set_status=DdSetStatuses.REGULAR,
         )
+
+    def _UpdateStats(self, player: DdPlayer, is_home: bool):
+        sets_won = self._res.home_sets if is_home else self._res.away_sets
+
+        home_won = int(self._res.home_sets > self._res.away_sets)
+        away_won = int(self._res.home_sets < self._res.away_sets)
+        matches_won = home_won if is_home else away_won
+
+        player.stats.matches_played += 1
+        player.stats.sets_played += (
+            self._res.home_sets + self._res.away_sets
+        )
+
+        player.stats.matches_won += matches_won
+        player.stats.sets_won += sets_won
 
     @property
     def _exhaustion_function(self) -> Callable[[int], int]:

@@ -37,6 +37,28 @@ class DdCourtSurface:
     HARD = "hard"
 
 
+class DdPlayerStats(DdJsonable):
+    """A passive data structure to store player stats."""
+
+    sets_played: int
+    sets_won: int
+    matches_played: int
+    matches_won: int
+
+    _FIELD_MAP = (
+        DdField("sets_played", "sets_played"),
+        DdField("sets_won", "sets_won"),
+        DdField("matches_played", "matches_played"),
+        DdField("matches_won", "matches_won"),
+    )
+
+    def __init__(self):
+        self.sets_played = 0
+        self.sets_won = 0
+        self.matches_played = 0
+        self.matches_won = 0
+
+
 class DdPlayer(DdJsonable):
     """A class that describes a tennis player."""
 
@@ -68,6 +90,7 @@ class DdPlayer(DdJsonable):
     _age: int
 
     _reputation: int
+    _stats: DdPlayerStats
 
     def __init__(
         self,
@@ -91,6 +114,7 @@ class DdPlayer(DdJsonable):
         self._experience = 0
         self._current_stamina = self.max_stamina
         self._reputation = 0
+        self._stats = DdPlayerStats()
 
     @property
     def age(self):
@@ -181,6 +205,10 @@ class DdPlayer(DdJsonable):
         return self._speciality
 
     @property
+    def stats(self) -> DdPlayerStats:
+        return self._stats
+
+    @property
     def technique(self):
         return self._technique
 
@@ -218,6 +246,9 @@ class DdPlayer(DdJsonable):
 
     def AgeUp(self):
         self._age += 1
+
+    def DropStats(self):
+        self._stats = DdPlayerStats()
 
     def RecoverStamina(self, recovered_stamina: int):
         self._current_stamina += recovered_stamina

@@ -542,8 +542,8 @@ def _GetParams(path: str) -> DdGameParams:
 
 def _GetPlayerName(player_json: Dict[str, Any]) -> str:
     return (
-        f"{player_json['first_name']} "
-        f"{player_json['second_name']} "
+        f"{player_json['first_name'][0]}. "
+        f"{player_json['second_name'][0]}. "
         f"{player_json['last_name']}"
     )
 
@@ -589,12 +589,13 @@ def _PrintPlayer(
         "{bold}"
         "{full_name:s}\n\n"
         "{reset}"
-        "Age:        {age:d}\n"
-        "Technique:  {actual_technique:3.1f} / {technique:3.1f}\n"
-        "Endurance:  {endurance:3.1f}\n"
-        "Stamina:    {current_stamina:d} / {max_stamina:d}\n"
-        "Exhaustion: {exhaustion:d}\n\n"
-        "Speciality: {speciality:s}\n"
+        "Age:         {age:d}\n"
+        "Technique:   {actual_technique:3.1f}/{technique:3.1f}\n"
+        "Stamina:     {current_stamina:d}/{max_stamina:d}\n"
+        "Exhaustion:  {exhaustion:d}\n\n"
+        "Speciality:  {speciality:s}\n\n"
+        "Sets won:    {sets_won:d}/{sets_played:d}\n"
+        "Matches won: {matches_won:d}/{matches_played:d}\n"
     )
     print(string.format(
         full_name=player.full_name,
@@ -607,6 +608,10 @@ def _PrintPlayer(
         speciality=player.speciality,
         current_stamina=player.current_stamina,
         max_stamina=player.max_stamina,
+        sets_won=player.stats.sets_won,
+        sets_played=player.stats.sets_played,
+        matches_won=player.stats.matches_won,
+        matches_played=player.stats.matches_played,
         bold=BOLD,
         reset=RESET,
     ))
