@@ -64,6 +64,7 @@ class DdSimplifiedApp:
     def __init__(
         self,
         starting_club: int,
+        config_filename: str,
         save_filename: str,
         load: bool = False
     ):
@@ -73,7 +74,9 @@ class DdSimplifiedApp:
         if load:
             self._LoadGame()
         else:
-            self._game = DdGameDuck(_GetParams("configuration/short.ini"))
+            self._game = DdGameDuck(_GetParams(
+                f"configuration/{config_filename}.ini"
+            ))
             self._game.SetControlled(starting_club, True)
         self._actions = {}
         self._is_running = True
@@ -637,15 +640,37 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description="Short description.")
-    parser.add_argument("--club", type=int, choices=range(16), default=0)
-    parser.add_argument("--savename", type=str, default="default")
+    parser.add_argument(
+        "--club",
+        type=int,
+        choices=range(16),
+        default=0,
+        help="Selects a specific club."
+    )
+    parser.add_argument(
+        "--savename",
+        type=str,
+        default="default",
+        help="The name of the file for save/load game."
+    )
+    parser.add_argument(
+        "--length",
+        choices=("short", "long"),
+        default="short",
+        help="The length of the championship."
+    )
     parser.add_argument(
         "--load",
-        help="Loads previously saved game if possible.",
+        help=(
+            "Loads previously saved game from the specified filename if "
+            "possible."
+        ),
         action="store_true"
     )
 
     arguments = parser.parse_args()
 
-    app = DdSimplifiedApp(arguments.club, arguments.savename, arguments.load)
+    app = DdSimplifiedApp(
+        arguments.club, arguments.length, arguments.savename, arguments.load
+    )
     app.Run()
