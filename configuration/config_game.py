@@ -1,35 +1,13 @@
 
 from enum import Enum
 
-club_names = {
-    1: [
-        "Auckland Aces",
-        "Brisbane Broncos",
-        "Canberra Masters",
-        "Dandenong Pianists",
-        "Melbourne Rockets",
-        "Sydney Storm",
-        "Sydney Volts",
-        "Tasmanian Devils",
-    ],
-    2: [
-        "Adelaide Falcons",
-        "Bunbury Ravens",
-        "Darwin Ducks",
-        "Mandurah Turtles",
-        "Perth Penguins",
-        "Rockingham Rocks",
-        "Southern Raiders",
-        "Western Fury",
-    ]
-}
 
 number_of_recent_matches = 5
 sets_to_win = 2
 
 
 class DdGameplayConstants(Enum):
-    EXHAUSTION_PER_GAME = 10
+    EXHAUSTION_PER_SET = 4
     EXHAUSTION_PER_TRAINING = 5
     EXPERIENCE_COEFFICIENT = 50
     EXPERIENCE_LEVEL_FACTOR = 5
@@ -50,6 +28,7 @@ class DdLeagueConfig:
     SETS_TO_WIN = 2
     MATCHES_TO_WIN = 4
     GAP_DAYS = 2
+    REST_DAY = 3
     SERIES_TOP_HOME_PATTERN = (True, True, False, False, True, False, True)
 
 
@@ -77,7 +56,7 @@ class DdRatingsParamerers:
 
 
 class DdMiscConstants(Enum):
-    CURRENT_VERSION = "3.0 (alpha)"
+    CURRENT_VERSION = "MVP 3.0"
 
 
 class DdTrainingTypes(Enum):

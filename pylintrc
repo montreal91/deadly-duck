@@ -63,6 +63,8 @@ confidence=
 # --disable=W"
 disable=
     # disabled by me,
+    bad-continuation,
+    too-few-public-methods
     # locally-disabled,
     # missing-docstring,
     # fixme,
@@ -208,7 +210,7 @@ logging-modules=logging
 bad-functions=map,filter,input
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,e,s,_,fd,fp,pk
+good-names=i,j,k,n,e,s,_,fd,fp,pk,x,y
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata
@@ -341,20 +343,20 @@ ignored-classes=
 # system, and so shouldn't trigger E1101 when accessed. Python regular
 # expressions are accepted.
 generated-members=
-    # Column,
-    # String,
-    # Text,
-    # Integer,
-    # ForeignKey,
-    # DateTime,
-    # relationship,
-    # add,
-    # commit,
-    # table,
-    # backref,
-    # Boolean,
-    # Table,
-    # Numeric,
+    Column,
+    String,
+    Text,
+    Integer,
+    ForeignKey,
+    DateTime,
+    relationship,
+    add,
+    commit,
+    table,
+    backref,
+    Boolean,
+    Table,
+    Numeric,
 
 
 [MISCELLANEOUS]

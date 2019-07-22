@@ -27,8 +27,8 @@ class DdConfig:
 
 
     @classmethod
-    def GetOauthCredentials(cls) -> Dict:
-        credentials = {}
+    def GetOauthCredentials(cls) -> Dict[str, str]:
+        credentials: Dict[str, str] = {}
 
         with open(cls.OAUTH_CREDENTIALS_FILE) as credentials_file:
             credentials = json.load(credentials_file)

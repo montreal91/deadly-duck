@@ -1,0 +1,105 @@
+
+Help
+
+Arguments to the actions are passed in the next form:
+action/arg_one/arg_two/arg_three
+
+Actions:
+    ? -- prints this text.
+
+    agents
+        Argument 1: sub-action {hire, list}.
+        [Optional] Argument 2: an index of an agent to hire.
+        Lists all available free agents or hires one.
+
+        Example to list:
+        agents/list
+
+        Example to hire:
+        agents/hire/0
+
+    coach
+        Argument 1: an index of a player.
+        Argument 2: a coach level {0, 1, 2, 3}.
+
+        Sets a coach for a player.
+
+        Example:
+        coach/1/3
+
+    c|court
+        [Optional] Argument 1: court size {tiny, small, medium, big, huge}
+        If argument is provided, sets specified court. Shows details of the
+        current court otherwise/
+
+    fire
+        Argument: an index of a player to fire.
+        Fires player from your club.
+
+        Example:
+        fire/2
+
+    hire
+        Argument: Player speciality {clay, grass, hard}.
+        Hires a player with given speciality.
+
+        Example:
+        hire/hard
+
+    h|history
+        Argument: season number
+        Prints standings for one of the previous seasons.
+
+        Example:
+        h/2
+
+    l|list
+        Prints list of accessible players.
+
+    n|next
+        Proceeds to the next day if possible.
+
+    o|opponent
+        Prints detailed information of the next opponent if possble.
+
+    proceed
+        Updates game while player action is not required.
+
+    q|quit
+        Saves the game and quits the program immediately.
+
+    res
+        List of most recent results.
+
+    save
+        Saves game state to the specified filename. If filename was not
+        specified, saves to default filename. If the game was loaded from the
+        given filename, this action overrides save file.
+
+    s|select
+        Argument: index of a player for the next match
+        Selects a player for the next match.
+
+        Example:
+        select/1
+
+    sh|show
+        Argument: index of a player to show
+        Prints detailed information of the given player.
+
+        Example:
+        show/3
+
+    st|standings
+        Prints current standings in the current competition.
+
+    t|ticket
+        Argument: ticket price.
+        Sets the ticket price.
+
+        Example:
+        ticket/32
+
+    u|upcoming
+        Prints short list of upcoming matches. And total number of remaining
+        matches.
