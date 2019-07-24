@@ -493,7 +493,7 @@ def _GetParams(path: str) -> DdGameParams:
             config["match"].getint("reputation_coefficient", 0)
         ),
         probability_function=DdLinearProbabilityCalculator(
-            config["match"].getfloat("probability_coefficiend", 0.0)
+            config["match"].getfloat("probability_coefficient", 0.0)
         ),
     )
     attendance_params = DdAttendanceParams(
