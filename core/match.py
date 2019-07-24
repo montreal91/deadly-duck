@@ -429,7 +429,7 @@ class DdLinearProbabilityCalculator:
         delta = home_skill - away_skill
 
         val = round(self._koefficient * delta + 0.5, 6)
-        return min(max(val, 0.05), 0.95)
+        return min(max(val, 0.005), 0.995)
 
     def __init__(self, koefficient: float):
         self._koefficient = koefficient
