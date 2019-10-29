@@ -18,5 +18,5 @@ Mako==1.0.1
 MarkupSafe==0.23
 SQLAlchemy==1.0.8
 uWSGI==2.0.14
-Werkzeug==0.10.4
+Werkzeug==0.15.3
 WTForms==2.0.2
