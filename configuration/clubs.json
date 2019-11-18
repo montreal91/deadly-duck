@@ -1,0 +1,830 @@
+[
+  {
+    "name":"Auckland Aces",
+    "surface":"grass",
+    "fame":[250, -50, 0, -150, 0],
+    "balance":100000,
+    "player_data":[
+      {
+        "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "player": {
+          "DdPlayer":true,
+          "first_name":"Amanda",
+          "second_name":"Helen",
+          "last_name":"Lisicki",
+          "technique":75,
+          "endurance":85,
+          "exhaustion":0,
+          "experience":3900,
+          "speciality":"grass",
+          "current_stamina":85,
+          "age":18,
+          "reputation":433
+        }
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "player":{
+          "DdPlayer":true,
+          "first_name":"Dinah",
+          "second_name":"Amanda",
+          "last_name":"van Tellingen",
+          "technique":95,
+          "endurance":80,
+          "exhaustion":0,
+          "experience":6000,
+          "speciality":"grass",
+          "current_stamina":80,
+          "age":18,
+          "reputation":1200
+        }
+      }
+    ]
+  },
+  {
+    "name":"Brisbane Broncos",
+    "surface":"clay",
+    "fame":[-150, 0, 0, 0, 500],
+    "balance":100000,
+    "player_data":[
+      {
+        "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": true,
+        "contract_cost": -1,
+        "player": {
+          "DdPlayer":true,
+          "first_name":"Inness",
+          "second_name":"Amanda",
+          "last_name":"Bernoulli",
+          "technique":70,
+          "endurance":85,
+          "exhaustion":0,
+          "experience":3300,
+          "speciality":"clay",
+          "current_stamina":85,
+          "age":19,
+          "reputation":412
+        }
+      },
+      {
+      "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "player": {
+          "DdPlayer":true,
+          "first_name":"Alina",
+          "second_name":"Justine",
+          "last_name":"Wessel",
+          "technique":85,
+          "endurance":85,
+          "exhaustion":0,
+          "experience":5250,
+          "speciality":"clay",
+          "current_stamina":85,
+          "age":18,
+          "reputation":750
+        }
+      }
+    ]
+  },
+  {
+    "name":"Canberra Masters",
+    "surface":"hard",
+    "fame":[250, 250, 250, 1000, 0],
+    "balance":1100000,
+    "player_data":[
+      {
+        "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "player": {
+          "DdPlayer":true,
+          "first_name":"Olivia",
+          "second_name":"Julia",
+          "last_name":"Proese",
+          "technique":95,
+          "endurance":70,
+          "exhaustion":0,
+          "experience":4550,
+          "speciality":"hard",
+          "current_stamina":70,
+          "age":19,
+          "reputation":758
+        }
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "player": {
+          "DdPlayer":true,
+          "first_name":"Alexandra",
+          "second_name":"Carina",
+          "last_name":"Tjandramulia",
+          "technique":95,
+          "endurance":60,
+          "exhaustion":0,
+          "experience":3300,
+          "speciality":"hard",
+          "current_stamina":60,
+          "age":18,
+          "reputation":330
+        }
+      }
+    ]
+  },
+  {
+    "name":"Dandenong Pianists",
+    "surface":"hard",
+    "fame":[-500, -150, -300, -500, -50],
+    "balance":500000,
+    "player_data":[
+      {
+        "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": true,
+        "contract_cost": -1,
+        "player": {
+          "DdPlayer":true,
+          "first_name":"Shelby",
+          "second_name":"Addyson",
+          "last_name":"Quick",
+          "technique":75,
+          "endurance":80,
+          "exhaustion":0,
+          "experience":3300,
+          "speciality":"hard",
+          "current_stamina":80,
+          "age":19,
+          "reputation":550
+        }
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": true,
+        "contract_cost": -1,
+        "player": {
+          "DdPlayer":true,
+          "first_name":"Linda",
+          "second_name":"Mirela",
+          "last_name":"Rueffer",
+          "technique":80,
+          "endurance":95,
+          "exhaustion":0,
+          "experience":6000,
+          "speciality":"hard",
+          "current_stamina":95,
+          "age":18,
+          "reputation":857
+        }
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "player": {
+          "DdPlayer":true,
+          "first_name":"Astra",
+          "second_name":"Johanna",
+          "last_name":"Green",
+          "technique":60,
+          "endurance":65,
+          "exhaustion":0,
+          "experience":750,
+          "speciality":"hard",
+          "current_stamina":65,
+          "age":16,
+          "reputation":0
+        }
+      }
+    ]
+  },
+  {
+    "name":"Melbourne Rockets",
+    "surface":"hard",
+    "fame":[0, 0, 0, 250, 1000],
+    "balance":1120000,
+    "player_data":[
+      {
+        "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "player": {
+          "DdPlayer":true,
+          "first_name":"Lucie",
+          "second_name":"Kaitleen",
+          "last_name":"Lee",
+          "technique":85,
+          "endurance":75,
+          "exhaustion":0,
+          "experience":3900,
+          "speciality":"hard",
+          "current_stamina":75,
+          "age":20,
+          "reputation":487
+        }
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "player": {
+          "DdPlayer":true,
+          "first_name":"Lucie",
+          "second_name":"Kaitleen",
+          "last_name":"Lee",
+          "technique":85,
+          "endurance":75,
+          "exhaustion":0,
+          "experience":3900,
+          "speciality":"hard",
+          "current_stamina":75,
+          "age":20,
+          "reputation":487
+        }
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "coach_level":0,
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "player": {
+          "DdPlayer":true,
+          "first_name":"Olivia",
+          "second_name":"Monique",
+          "last_name":"Sonne",
+          "technique":65,
+          "endurance":60,
+          "exhaustion":0,
+          "experience":750,
+          "speciality":"clay",
+          "current_stamina":50,
+          "age":16,
+          "reputation":0
+        }
+      }
+    ]
+  },
+  {
+    "name": "Sydney Storm",
+    "surface": "grass",
+    "fame": [0, 250, 0, 0, 250],
+    "balance": 100000,
+    "player_data": [
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Patricia",
+          "second_name": "Shari",
+          "last_name": "Prince",
+          "technique": 65,
+          "endurance": 100,
+          "exhaustion": 0,
+          "experience": 4550,
+          "speciality": "grass",
+          "current_stamina": 100,
+          "age": 20,
+          "reputation": 910
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Shelby",
+          "second_name": "Fiona",
+          "last_name": "Hannigan",
+          "technique": 95,
+          "endurance": 75,
+          "exhaustion": 0,
+          "experience": 5250,
+          "speciality": "grass",
+          "current_stamina": 75,
+          "age": 19,
+          "reputation": 875
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      }
+    ]
+  },
+  {
+    "name": "Sydney Volts",
+    "surface": "grass",
+    "fame": [500, 0, 250, 0, 0],
+    "balance": 100000,
+    "player_data": [
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Veronika",
+          "second_name": "Sara",
+          "last_name": "Fourlis",
+          "technique": 75,
+          "endurance": 80,
+          "exhaustion": 0,
+          "experience": 3300,
+          "speciality": "grass",
+          "current_stamina": 80,
+          "age": 20,
+          "reputation": 412
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Fiona",
+          "second_name": "Joana",
+          "last_name": "Winder",
+          "technique": 65,
+          "endurance": 90,
+          "exhaustion": 0,
+          "experience": 3300,
+          "speciality": "grass",
+          "current_stamina": 90,
+          "age": 19,
+          "reputation": 330
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      }
+    ]
+  },
+  {
+    "name": "Tasmanian Devils",
+    "surface": "hard",
+    "fame": [-50, 0, -500, 0, -300],
+    "balance": 100000,
+    "player_data": [
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Sara",
+          "second_name": "Arina",
+          "last_name": "Barthel",
+          "technique": 80,
+          "endurance": 85,
+          "exhaustion": 0,
+          "experience": 4550,
+          "speciality": "hard",
+          "current_stamina": 85,
+          "age": 20,
+          "reputation": 758
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Jaimee",
+          "second_name": "Christina",
+          "last_name": "Sully",
+          "technique": 75,
+          "endurance": 75,
+          "exhaustion": 0,
+          "experience": 2750,
+          "speciality": "hard",
+          "current_stamina": 75,
+          "age": 19,
+          "reputation": 275
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      }
+    ]
+  },
+  {
+    "name": "Adelaide Falcons",
+    "surface": "hard",
+    "fame": [0, 0, -50, 0, 0],
+    "balance": 100000,
+    "player_data": [
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Justine",
+          "second_name": "Taysiya",
+          "last_name": "Hering",
+          "technique": 70,
+          "endurance": 80,
+          "exhaustion": 0,
+          "experience": 2750,
+          "speciality": "hard",
+          "current_stamina": 80,
+          "age": 18,
+          "reputation": 550
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Shari",
+          "second_name": "Darya",
+          "last_name": "Grebs",
+          "technique": 85,
+          "endurance": 85,
+          "exhaustion": 0,
+          "experience": 5250,
+          "speciality": "hard",
+          "current_stamina": 85,
+          "age": 18,
+          "reputation": 656
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      }
+    ]
+  },
+  {
+    "name": "Bunbury Ravens",
+    "surface": "hard",
+    "fame": [0, 0, -150, -50, -150],
+    "balance": 100000,
+    "player_data": [
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Nora",
+          "second_name": "Andrea",
+          "last_name": "Grindstaff",
+          "technique": 105,
+          "endurance": 65,
+          "exhaustion": 0,
+          "experience": 5250,
+          "speciality": "hard",
+          "current_stamina": 65,
+          "age": 20,
+          "reputation": 1050
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Sally",
+          "second_name": "Bethanie",
+          "last_name": "Wallace",
+          "technique": 90,
+          "endurance": 80,
+          "exhaustion": 0,
+          "experience": 5250,
+          "speciality": "hard",
+          "current_stamina": 80,
+          "age": 18,
+          "reputation": 525
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      }
+    ]
+  },
+  {
+    "name": "Darwin Ducks",
+    "surface": "clay",
+    "fame": [0, 0, 0, 0, 0],
+    "balance": 40000,
+    "player_data": [
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Bellatrice",
+          "second_name": "Storm",
+          "last_name": "van Tellingen",
+          "technique": 75,
+          "endurance": 60,
+          "exhaustion": 0,
+          "experience": 1400,
+          "speciality": "hard",
+          "current_stamina": 60,
+          "age": 20,
+          "reputation": 200
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Chelsea",
+          "second_name": "Margaret",
+          "last_name": "Steur",
+          "technique": 80,
+          "endurance": 70,
+          "exhaustion": 0,
+          "experience": 2750,
+          "speciality": "clay",
+          "current_stamina": 70,
+          "age": 19,
+          "reputation": 675
+        },
+        "has_next_contract": true,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Veronika",
+          "second_name": "Aran",
+          "last_name": "Pishdadian",
+          "technique": 70,
+          "endurance": 80,
+          "exhaustion": 0,
+          "experience": 2750,
+          "speciality": "clay",
+          "current_stamina": 80,
+          "age": 19,
+          "reputation": 132
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Nora",
+          "second_name": "Carina",
+          "last_name": "Ardenne",
+          "technique": 60,
+          "endurance": 60,
+          "exhaustion": 0,
+          "experience": 500,
+          "speciality": "clay",
+          "current_stamina": 60,
+          "age": 16,
+          "reputation": 0
+        },
+        "has_next_contract": true,
+        "contract_cost": -1,
+        "coach_level": 0
+      }
+    ]
+  },
+  {
+    "name": "Mandurah Turtles",
+    "surface": "clay",
+    "fame": [-300, -500, 0, 0, 0],
+    "balance": 100000,
+    "player_data": [
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Anna-Lena",
+          "second_name": "Lisa",
+          "last_name": "Widman",
+          "technique": 95,
+          "endurance": 80,
+          "exhaustion": 0,
+          "experience": 6000,
+          "speciality": "clay",
+          "current_stamina": 80,
+          "age": 20,
+          "reputation": 750
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Annika",
+          "second_name": "Lilith",
+          "last_name": "McCune",
+          "technique": 80,
+          "endurance": 80,
+          "exhaustion": 0,
+          "experience": 3900,
+          "speciality": "clay",
+          "current_stamina": 80,
+          "age": 18,
+          "reputation": 487
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      }
+    ]
+  },
+  {
+    "name": "Perth Penguins",
+    "surface": "hard",
+    "fame": [0, 1000, 1000, 250, 0],
+    "balance": 100000,
+    "player_data": [
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Judith",
+          "second_name": "Jelena",
+          "last_name": "Siegemund",
+          "technique": 65,
+          "endurance": 95,
+          "exhaustion": 0,
+          "experience": 3900,
+          "speciality": "hard",
+          "current_stamina": 95,
+          "age": 19,
+          "reputation": 400
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Jaimee",
+          "second_name": "Caitlin",
+          "last_name": "Rittberger",
+          "technique": 95,
+          "endurance": 80,
+          "exhaustion": 0,
+          "experience": 6000,
+          "speciality": "hard",
+          "current_stamina": 80,
+          "age": 18,
+          "reputation": 666
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      }
+    ]
+  },
+  {
+    "name": "Rockingham Rocks",
+    "surface": "clay",
+    "fame": [0, 0, 500, -300, -500],
+    "balance": 100000,
+    "player_data": [
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Olivia",
+          "second_name": "Laura",
+          "last_name": "Proese",
+          "technique": 80,
+          "endurance": 100,
+          "exhaustion": 0,
+          "experience": 6800,
+          "speciality": "clay",
+          "current_stamina": 100,
+          "age": 19,
+          "reputation": 550
+        },
+        "has_next_contract": true,
+        "contract_cost": -1,
+        "coach_level": 0
+      }
+    ]
+  },
+  {
+    "name": "Southern Raiders",
+    "surface": "grass",
+    "fame": [1000, 500, 0, 500, 0],
+    "balance": 550000,
+    "player_data": [
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Jelena",
+          "second_name": "Marie",
+          "last_name": "Graf",
+          "technique": 85,
+          "endurance": 85,
+          "exhaustion": 0,
+          "experience": 5250,
+          "speciality": "grass",
+          "current_stamina": 85,
+          "age": 20,
+          "reputation": 1750
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Jaimee",
+          "second_name": "Caitlin",
+          "last_name": "Rittberger",
+          "technique": 95,
+          "endurance": 80,
+          "exhaustion": 0,
+          "experience": 6000,
+          "speciality": "grass",
+          "current_stamina": 80,
+          "age": 18,
+          "reputation": 1200
+        },
+        "has_next_contract": true,
+        "contract_cost": -1,
+        "coach_level": 0
+      }
+    ]
+  },
+  {
+    "name": "Western Fury",
+    "surface": "clay",
+    "fame": [0 ,-300 ,0 ,0 ,250],
+    "balance": 100000,
+    "player_data": [
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Kathleen",
+          "second_name": "Tatjana",
+          "last_name": "Williams",
+          "technique": 85,
+          "endurance": 80,
+          "exhaustion": 0,
+          "experience": 4550,
+          "speciality": "clay",
+          "current_stamina": 80,
+          "age": 20,
+          "reputation": 910
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      },
+      {
+        "DdClubPlayerSlot": true,
+        "player": {
+          "DdPlayer": true,
+          "first_name": "Justine",
+          "second_name": "Joana",
+          "last_name": "Lottner",
+          "technique": 85,
+          "endurance": 70,
+          "exhaustion": 0,
+          "experience": 3300,
+          "speciality": "clay",
+          "current_stamina": 70,
+          "age": 18,
+          "reputation": 550
+        },
+        "has_next_contract": false,
+        "contract_cost": -1,
+        "coach_level": 0
+      }
+    ]
+  }
+]

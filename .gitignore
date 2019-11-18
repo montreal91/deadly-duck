@@ -1,4 +1,5 @@
 /.idea
+/backups
 *.db
 *_ui.py
 *.pyc
@@ -7,3 +8,8 @@
 .project
 .pydevproject
 *.log
+.env
+configuration/oauth_*
+.mypy_cache/
+.saves
+*.csv
