@@ -1,23 +1,28 @@
 ## Deadly Duck Tennis Manager
 
-*It is new location.
-Currently I am building web interface for this game.*
+Current version: Prototype-3
 
-This game will let you manage your own semipro tennis club in one of fictional tennis leagues of the world. Unfortunately, currently only the  *Australian Tennis League* is availabe.
 
-Why tennis and not some classic command game like football or hockey? Well, just because me personally clearly understand how to simulate tennis match correctly enough.
+The basic idea of the game is to mix up some ideas of jRPG genre with sports
+manager.
+The achieved result is sort of interesting, but still needs some refinement.
 
-For now there is no gameplay, just pushing same commands again and again till the end of the regular tournament. Still there is no playoffs at the end of season, but this feature is for another day.
+The basic idea of the development is to apply Domain-Driven Design to game
+development.
 
-**game.py** runs game in text mode.
-Commands:
+### Requirements
+The only requirement is python 3.6+
 
-- *show* prints a list of today's matches if any;
-- *m* prints a match for managed club if any;
-- *s* selects random player from managed club;
-- *s [player_id]* selects a certain player from managed club if possible;
-- *mp* prints list of players;
-- *n* proceed to the next day (to proceed some player have to be selected)
-- *cs* print current league standings;
-- *cs div* print current division standings;
-- *cs div all* print standings in all divisions;
+### Installation
+Just download contents of this repository as an archive and then unpack it.
+
+### Quickstart
+Run `python simple.py` in your console.
+
+### Help and futher information
+Run `python simple.py --help` for detailed description of command-line
+interface.
+
+Enter `?` in-game for detailed description of game commands.
+
+More detailed description of the gameplay process is yet to be developed.
