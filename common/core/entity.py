@@ -8,11 +8,17 @@ Created 2019.12.09
 
 from unittest import TestCase
 
+from attr import Factory
+from attr import s
 
+
+@s(auto_attribs=True)
 class Entity:
     """Basic class for entities."""
 
-    key: str
+    NO_KEY = ""
+
+    key: str = Factory(str)
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.key == other.key
@@ -30,14 +36,10 @@ class EntityTestCase(TestCase):
         regardless of other entity attributes.
         """
 
-        e1 = Entity()
-        e1.key = "test_entity1"
+        e1 = Entity("test_entity1")
+        e2 = Entity("test_entity2")
 
-        e2 = Entity()
-        e2.key = "test_entity2"
-
-        same_as_e1 = Entity()
-        same_as_e1.key = "test_entity1"
+        same_as_e1 = Entity("test_entity1")
         same_as_e1.other_stuff = "Other Stuff"
 
         self.assertFalse(e1 == e2)

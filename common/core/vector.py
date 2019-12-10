@@ -11,11 +11,19 @@ from typing import Tuple
 
 from unittest import TestCase
 
+from attr import Factory
+from attr import s
 
+
+def _zero_vector():
+    return tuple([0])
+
+
+@s(auto_attribs=True)
 class Vector:
     """N-dimentional vector. Behaves almost like a mathematical vector."""
 
-    _vector: Tuple[float, ...]
+    _vector: Tuple[float, ...] = Factory(_zero_vector)
 
     def __add__(self, other: "Vector") -> "Vector":
         if len(self) != len(other):
@@ -95,6 +103,12 @@ class VectorTestCase(TestCase):
         Creates four different vectors and checks simple logic of length
         function and comparing operators.
         """
+        v00 = Vector()
+        v01 = Vector()
+        self.assertEqual(v00._vector, (0,))
+        self.assertEqual(v00, v01)
+        self.assertFalse(v00._vector is v01._vector)
+
         v1 = Vector((1, 2))
         v2 = Vector((1, 2, 3))
         v3 = Vector((1, 2, 4))
