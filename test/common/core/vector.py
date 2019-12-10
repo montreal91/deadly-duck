@@ -23,7 +23,7 @@ def TestArithmetic():
 
     assert v1 + v1 == Vector((2, 4))
     assert v1 - v1 == Vector((0, 0))
-    assert v1 + v2, Vector((3, 5))
+    assert v1 + v2 == Vector((3, 5))
 
     with raises(ValueError):
         v1 + v3
