@@ -97,6 +97,7 @@ class DdSimplifiedApp:
         self._actions["coach"] = self.__ActionCoach
         self._actions["c"] = self.__ActionCourt
         self._actions["court"] = self.__ActionCourt
+        self._actions["fame"] = self.__Action_Fame
         self._actions["fire"] = self.__ActionFire
         self._actions["hire"] = self.__ActionHire
         self._actions["h"] = self.__ActionHistory
