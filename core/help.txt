@@ -29,8 +29,11 @@ Actions:
 
     c|court
         [Optional] Argument 1: court size {tiny, small, medium, big, huge}
-        If argument is provided, sets specified court. Shows details of the
-        current court otherwise/
+        If argument is provided, sets the specified court. Shows details of the
+        current court otherwise.
+
+    fame
+        Prints current fame rating of clubs.
 
     fire
         Argument: an index of a player to fire.
@@ -69,7 +72,7 @@ Actions:
         Saves the game and quits the program immediately.
 
     res
-        List of most recent results.
+        List of the most recent results.
 
     save
         Saves game state to the specified filename. If filename was not
@@ -90,6 +93,13 @@ Actions:
         Example:
         show/3
 
+    sign
+        Argument: index of a player to sign a new contract
+        Signs a new contract for a player in a club.
+
+        Example:
+        sign/2
+
     st|standings
         Prints current standings in the current competition.
 
@@ -101,5 +111,5 @@ Actions:
         ticket/32
 
     u|upcoming
-        Prints short list of upcoming matches. And total number of remaining
+        Prints short list of upcoming matches. And a total number of remaining
         matches.
