@@ -438,6 +438,7 @@ class DdGameDuck:
         club = DdClub(
             name=club_data["name"],
             surface=club_data["surface"],
+            coach_power=club_data["coach_power"],
             court=deepcopy(self._params.courts["default"])
         )
 
@@ -445,7 +446,7 @@ class DdGameDuck:
             club.AddFame(value)
 
         for i, slot in enumerate(club_data["player_data"]):
-            club.AddPlayer(slot.player)
+            club.AddPlayer(slot.player, True)
             if slot.has_next_contract:
                 club.ContractPlayer(player_pk=i)
 
@@ -640,7 +641,7 @@ class DdGameDuck:
 
             club.AddPlayer(self._player_factory.CreatePlayer(
                 age=DdGameplayConstants.STARTING_AGE.value,
-                level=0,
+                level=randint(5, 10),
                 speciality=club.surface
             ))
             club.SelectCoach(coach_index=1, player_index=-1)

@@ -87,7 +87,7 @@ class DdClub:
     _selected_player: Optional[int]
     _surface: str
 
-    def __init__(self, name: str, surface: str, court: DdCourt):
+    def __init__(self, name: str, surface: str, court: DdCourt, coach_power: int):
         self._account = DdFinancialAccount()
         self._court = court
         self._fame_tracker = DdFameTracker()
@@ -96,6 +96,7 @@ class DdClub:
         self._players = []
         self._selected_player = None
         self._surface = surface
+        self._coach_power = coach_power
 
     @property
     def account(self) -> DdFinancialAccount:
@@ -163,10 +164,13 @@ class DdClub:
 
         self._fame_tracker.AddFameValue(value)
 
-    def AddPlayer(self, player: DdPlayer):
+    def AddPlayer(self, player: DdPlayer, ai=False):
         """Adds player to the club."""
-
-        self._players.append(DdClubPlayerSlot(player, 0))
+        if ai:
+            coach_level = self._coach_power
+        else:
+            coach_level = 0
+        self._players.append(DdClubPlayerSlot(player, coach_level))
 
     def ContractPlayer(self, player_pk):
         """Marks that a player has a contract for the next season."""
@@ -219,3 +223,6 @@ class DdClub:
         """Sets club controlled or uncontrolled by a human user."""
 
         self._is_controlled = val
+
+        for slot in self._players:
+            slot.coach_level = 0
