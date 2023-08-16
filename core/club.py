@@ -164,12 +164,12 @@ class DdClub:
 
         self._fame_tracker.AddFameValue(value)
 
-    def AddPlayer(self, player: DdPlayer, ai=False):
+    def AddPlayer(self, player: DdPlayer):
         """Adds player to the club."""
-        if ai:
-            coach_level = self._coach_power
-        else:
+        if self._is_controlled:
             coach_level = 0
+        else:
+            coach_level = self._coach_power
         self._players.append(DdClubPlayerSlot(player, coach_level))
 
     def ContractPlayer(self, player_pk):

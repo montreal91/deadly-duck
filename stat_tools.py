@@ -33,3 +33,17 @@ def GeneratePositiveGauss(a=0, sigma=1, max_n=10, precision=2):
 
 def LoadedToss(probability):
     return random() < probability
+
+
+def GetMaxIncome(home_fame, away_fame, importance):
+    def _attendance(price):
+        return -0.005 * (price ** 2) + 2 * home_fame + 1.5 * away_fame + importance
+
+    def _price_provider():
+        for i in range(101):
+            yield i * 10
+
+
+
+    prices = [(_attendance(p) * p, p, _attendance(p)) for p in _price_provider()]
+    return max(prices)

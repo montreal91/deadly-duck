@@ -446,7 +446,7 @@ class DdGameDuck:
             club.AddFame(value)
 
         for i, slot in enumerate(club_data["player_data"]):
-            club.AddPlayer(slot.player, True)
+            club.AddPlayer(slot.player)
             if slot.has_next_contract:
                 club.ContractPlayer(player_pk=i)
 
@@ -644,7 +644,6 @@ class DdGameDuck:
                 level=randint(5, 10),
                 speciality=club.surface
             ))
-            club.SelectCoach(coach_index=1, player_index=-1)
 
         self._GenerateFreeAgents()
 
