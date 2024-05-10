@@ -641,13 +641,14 @@ class DdGameDuck:
 
             club.AddPlayer(self._player_factory.CreatePlayer(
                 age=DdGameplayConstants.STARTING_AGE.value,
-                level=randint(5, 10),
+                level=randint(0, 5),
                 speciality=club.surface
             ))
 
         self._GenerateFreeAgents()
 
         self._SaveHistory()
+        self._ShuffleCoachPowers()
         self._competition = DdRegularChampionship(
             self._clubs,
             self._params.championship_params
@@ -709,6 +710,38 @@ class DdGameDuck:
         with open(".logs/results.csv", "a") as results_file:
             for match in self._competition.results_:
                 print(match.csv, file=results_file)
+
+    def _ShuffleCoachPowers(self):
+        from random import shuffle
+        strong_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 3 and not club.is_controlled]
+        medium_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 2 and not club.is_controlled]
+        weaksy_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 1 and not club.is_controlled]
+
+        shuffle(strong_clubs)
+        shuffle(medium_clubs)
+        shuffle(weaksy_clubs)
+
+        while len(strong_clubs) > 3:
+            medium_clubs.append(strong_clubs.pop())
+
+        while len(medium_clubs) > 5:
+            weaksy_clubs.append(medium_clubs.pop())
+
+        print("HUGS", strong_clubs)
+        print("HUGS", medium_clubs)locals()
+        print("HUGS", weaksy_clubs)
+
+        s, m, w = strong_clubs.pop(), medium_clubs.pop(), weaksy_clubs.pop()
+        print("HUGS", s, m, w)
+        s, m, w = m, w, s  # cycle
+        print("HUGS", s, m, w)
+        strong_clubs.append(s)
+        medium_clubs.append(m)
+        weaksy_clubs.append(w)
+
+        [self._clubs[pk].SetCoachPower(3) for pk in strong_clubs]
+        [self._clubs[pk].SetCoachPower(2) for pk in medium_clubs]
+        [self._clubs[pk].SetCoachPower(1) for pk in weaksy_clubs]
 
     def _Simulate(self, years):
         while len(self._history) < years:
