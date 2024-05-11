@@ -1,11 +1,9 @@
-
 """
 Created Apr 09, 2019
 
 @author montreal91
 """
 
-import configparser
 import json
 import os.path
 import pickle
@@ -18,10 +16,12 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+from configuration.application_context import ApplicationContext
+from configuration.application_context import get_application_context
 from core.attendance import DdAttendanceParams
 from core.attendance import DdCourt
 from core.financial import DdTransaction
-from core.game import DdGameDuck
+from core.game import Game
 from core.game import DdGameParams
 from core.game import DdOpponentStruct
 from core.match import DdExhaustionCalculator
@@ -31,7 +31,6 @@ from core.player import DdPlayer
 from core.player import DdPlayerReputationCalculator
 from core.playoffs import DdPlayoffParams
 from core.regular_championship import DdChampionshipParams
-
 
 BOLD = "\033[;1m"
 RESET = "\033[0;0m"
@@ -47,52 +46,49 @@ def UserAction(fun: Callable) -> Callable:
             print(error)
         except TypeError:
             print("Incorrect number of arguments.")
+
     return res
 
 
 class DdSimplifiedApp:
     """Simple client for a game that runs in the console."""
 
-    _SAVE_FOLDER = ".saves"
-
-    _club_pk: int
-    _actions: Dict[str, Callable]
-    _game: DdGameDuck
-    _is_running: bool
-    _save_filename: str
-
     def __init__(
-        self,
-        starting_club: int,
-        config_filename: str,
-        save_filename: str,
-        load: bool = False
+            self,
+            starting_club: int,
+            config_filename: str,
+            game_id: str,
+            load: bool = False
     ):
-        self._save_path = os.path.join(self._SAVE_FOLDER, save_filename)
-        self._club_pk = starting_club
+        self._manager_club_id = starting_club
+        self._game_id = game_id
+        self._game_service = get_application_context().game_service
 
         if load:
-            self._LoadGame()
+            # Weird, but okay for now
+            pass
         else:
-            self._game = DdGameDuck(_GetParams(
-                f"configuration/{config_filename}.ini"
-            ))
-            self._game.SetControlled(starting_club, True)
+            self._game_service.create_new_game(self._game_id, self._manager_club_id)
+
         self._actions = {}
         self._is_running = True
 
         self._InitActions()
 
-    def Run(self):
+    def run(self):
         """Runs the game."""
 
         print("Type ? for help.")
-        while self._is_running and not self._game.is_over:
+        while self._is_running and not self._game_is_over:
             self._PrintMain()
             self._ProcessInput()
 
+    @property
+    def _game_is_over(self) -> bool:
+        return self._game_service.game_is_over(self._game_id)
+
     def _InitActions(self):
-        self._actions["?"] = self.__ActionHelp
+        self._actions["?"] = self.__action_help
         self._actions["agents"] = self.__ActionAgents
         self._actions["coach"] = self.__ActionCoach
         self._actions["c"] = self.__ActionCourt
@@ -102,8 +98,8 @@ class DdSimplifiedApp:
         self._actions["hire"] = self.__ActionHire
         self._actions["h"] = self.__ActionHistory
         self._actions["history"] = self.__ActionHistory
-        self._actions["l"] = self.__ActionList
-        self._actions["list"] = self.__ActionList
+        self._actions["l"] = self.__action_list
+        self._actions["list"] = self.__action_list
         self._actions["n"] = self.__ActionNext
         self._actions["next"] = self.__ActionNext
         self._actions["o"] = self.__ActionOpponent
@@ -127,25 +123,18 @@ class DdSimplifiedApp:
 
         self._actions["_$"] = self.__Action_Finances
         self._actions["_d"] = self.__Action_DropAccounts
-        self._actions["_f"] = self.__Action_Fame
         self._actions["_l"] = self.__Action_Levels
         self._actions["_m"] = self.__Action_Measure
 
-
-    def _LoadGame(self):
-        if os.path.isfile(self._save_path):
-            with open(self._save_path, "rb") as save_file:
-                slot = pickle.load(save_file)
-                self._club_pk = slot["club_pk"]
-                self._game = slot["game"]
-                print("Game is loaded successfully.")
-        else:
-            print("This save does not exist yet.")
-
     def _PrintMain(self):
-        ctx = self._game.GetContext(self._club_pk)
-        print("\nDay:   {0:d}".format(ctx["day"]))
-        print("Balance: ${0:d}".format(ctx["balance"]))
+        info = self._game_service.get_main_screen_info(
+            self._game_id,
+            self._manager_club_id
+        )
+
+        print(f"\n{info['club_name']}")
+        print("Day:     {0:d}".format(info["day"]))
+        print("Balance: ${0:d}".format(info["balance"]))
         print()
 
     def _ProcessInput(self):
@@ -198,7 +187,7 @@ class DdSimplifiedApp:
     def __Action_Measure(self):
         import time
         dt1 = time.time()
-        self._game.GetContext(self._club_pk)
+        self._game.get_context(self._club_pk)
         dt2 = time.time()
 
         print(f"Time to calculate context: {dt2 - dt1:.4f}")
@@ -213,7 +202,7 @@ class DdSimplifiedApp:
             )
             return
 
-        agents: List[Tuple[DdPlayer, int]] = self._game.GetContext(
+        agents: List[Tuple[DdPlayer, int]] = self._game.get_context(
             self._club_pk
         )["free_agents"]
         print(" #| Age| Technique|Stm|Exh| Spec| Contract | Name")
@@ -242,7 +231,6 @@ class DdSimplifiedApp:
             print(agent.json["first_name"], agent.json["last_name"], end="")
             print()
 
-
     @UserAction
     def __ActionCoach(self, player_index: str, coach_index: str):
         self._game.SelectCoachForPlayer(
@@ -256,7 +244,7 @@ class DdSimplifiedApp:
         if court is not None:
             self._game.SelectCourt(pk=self._club_pk, court=court)
         else:
-            courts = self._game.GetContext(self._club_pk)["court"]
+            courts = self._game.get_context(self._club_pk)["court"]
             print("Capacity:    ", courts["capacity"])
             print("Rent cost:   ", courts["rent_cost"])
             print("Ticket price:", courts["ticket_price"])
@@ -266,7 +254,7 @@ class DdSimplifiedApp:
         self._game.FirePlayer(int(index), self._club_pk)
 
     @UserAction
-    def __ActionHelp(self):
+    def __action_help(self):
         with open("core/help.txt") as help_file:
             print(help_file.read())
 
@@ -277,7 +265,7 @@ class DdSimplifiedApp:
     @UserAction
     def __ActionHistory(self, season: str):
         s = int(season)
-        ctx = self._game.GetContext(self._club_pk)
+        ctx = self._game.get_context(self._club_pk)
         history = ctx["history"]
 
         if s > len(history) or history[s - 1] == {}:
@@ -294,51 +282,56 @@ class DdSimplifiedApp:
         if "Cup" in history[s - 1]:
             print("=" * 50)
             _PrintCupStandings(
-                history[s-1]["Cup"],
+                history[s - 1]["Cup"],
                 ctx["clubs"],
                 self._club_pk,
                 3,
             )
 
     @UserAction
-    def __ActionList(self):
+    def __action_list(self):
         print(" #| Age| Technique|Stm|Exh| Spec| Coach | Name")
         print("__|____|__________|___|___|_____|_______|_____________")
-        ctx = self._game.GetContext(self._club_pk)
-        for i, data in enumerate(ctx["user_players"]):
-            if data.is_selected:
+
+        info = self._game_service.get_player_list_info(
+            self._game_id,
+            self._manager_club_id,
+        )
+
+        for i, data in enumerate(info["players"]):
+            if data["is_selected"]:
                 print(BOLD, end="")
-            print("{0:2}|".format(i), end="")
-            plr: DdPlayer = data.player
-            print(" {0:2d} |".format(plr.json["age"]), end="")
+            print("{0:2}|".format(data["player_id"]), end="")
+            # plr: DdPlayer = data.player
+            print(" {0:2d} |".format(data["age"]), end="")
             print(
                 "{0:4.1f} /{1:4.1f}|".format(
-                    round(plr.json["actual_technique"] / 10, 1),
-                    round(plr.json["technique"] / 10, 1)
+                    round(data["actual_technique"] / 10, 1),
+                    round(data["technique"] / 10, 1)
                 ),
                 end="",
             )
             print(
-                "{0:3d}|".format(plr.json["current_stamina"]),
+                "{0:3d}|".format(data["current_stamina"]),
                 end="",
             )
             print(
-                "{0:3d}|".format(plr.json["exhaustion"]),
+                "{0:3d}|".format(data["exhaustion"]),
                 end=""
             )
-            print("{0:5s}|".format(plr.json["speciality"]), end="")
+            print("{0:5s}|".format(data["speciality"]), end="")
             print(
                 "   {0:1d}   |".format(
-                    ctx["user_players"][i].coach_level
+                    data["coach_level"]
                 ),
                 end=""
             )
-            print(plr.json["first_name"], plr.json["last_name"], end="")
-            if data.is_selected:
+            print(data["name"], end="")
+            if data["is_selected"]:
                 print(RESET, end="")
             print()
 
-        print("\nCurrent practice price:", "$" + str(ctx["practice_cost"]))
+        print("\nCurrent practice price:", "$" + str(info["practice_cost"]))
 
     @UserAction
     def __ActionNext(self):
@@ -351,7 +344,7 @@ class DdSimplifiedApp:
 
     @UserAction
     def __ActionOpponent(self):
-        opponent: DdOpponentStruct = self._game.GetContext(
+        opponent: DdOpponentStruct = self._game.get_context(
             self._club_pk
         )["opponent"]
         if opponent is None:
@@ -380,9 +373,9 @@ class DdSimplifiedApp:
 
     @UserAction
     def __ActionResults(self):
-        clubs = self._game.GetContext(self._club_pk)["clubs"]
+        clubs = self._game.get_context(self._club_pk)["clubs"]
         pk = self._club_pk
-        for res in self._game.GetContext(self._club_pk)["last_results"]:
+        for res in self._game.get_context(self._club_pk)["last_results"]:
             exp = None
             if res.home_pk == pk:
                 exp = DdPlayer.CalculateNewExperience(
@@ -417,11 +410,7 @@ class DdSimplifiedApp:
 
     @UserAction
     def __ActionSave(self):
-        with open(self._save_path, "wb") as save_file:
-            slot = {"club_pk": self._club_pk}
-            slot["game"] = self._game
-            pickle.dump(slot, save_file)
-            print("The game is saved.")
+        pass
 
     @UserAction
     def __ActionSelect(self, index="0"):
@@ -430,7 +419,7 @@ class DdSimplifiedApp:
     @UserAction
     def __ActionShow(self, index: str):
         index = int(index)
-        players_data = self._game.GetContext(self._club_pk)["user_players"]
+        players_data = self._game.get_context(self._club_pk)["user_players"]
         assert 0 <= index < len(players_data), "Incorrect player index"
         _PrintPlayer(
             players_data[index].player,
@@ -445,7 +434,7 @@ class DdSimplifiedApp:
 
     @UserAction
     def __ActionStandings(self):
-        context = self._game.GetContext(self._club_pk)
+        context = self._game.get_context(self._club_pk)
         if context["title"] == "Cup":
             _PrintCupStandings(
                 context["standings"],
@@ -466,7 +455,7 @@ class DdSimplifiedApp:
 
     @UserAction
     def __ActionUpcoming(self):
-        context = self._game.GetContext(self._club_pk)
+        context = self._game.get_context(self._club_pk)
         for match in context["remaining_matches"][:5]:
             if match.home_pk == self._club_pk:
                 print(context["clubs"][match.away_pk], "(home)")
@@ -478,67 +467,6 @@ class DdSimplifiedApp:
             "\nRemaining matches:",
             len(context["remaining_matches"]),
         )
-
-def _GetParams(path: str) -> DdGameParams:
-    config = configparser.ConfigParser()
-    config.read(path)
-    match_params = DdMatchParams(
-        speciality_bonus=config["match"].getfloat("speciality_bonus", 0.0),
-        games_to_win=config["match"].getint("games_to_win", 0),
-        sets_to_win=config["match"].getint("sets_to_win", 0),
-        exhaustion_function=DdExhaustionCalculator(
-            config["match"].getint("exhaustion_coefficient", 0)
-        ),
-        reputation_function=DdPlayerReputationCalculator(
-            config["match"].getint("games_to_win", 0),
-            config["match"].getint("reputation_coefficient", 0)
-        ),
-        probability_function=DdLinearProbabilityCalculator(
-            config["match"].getfloat("probability_coefficient", 0.0)
-        ),
-    )
-    attendance_params = DdAttendanceParams(
-        price=config["attendance"].getfloat("price", 0.0),
-        home_fame=config["attendance"].getfloat("home_fame", 0.0),
-        away_fame=config["attendance"].getfloat("away_fame", 0.0),
-        reputation=config["attendance"].getfloat("reputation", 0.0),
-        importance=config["attendance"].getfloat("importance", 0.0),
-    )
-    championship_params = DdChampionshipParams(
-        match_params=match_params,
-        recovery_day=config["championship"].getint("recovery_day", 0),
-        rounds=config["championship"].getint("rounds", 0),
-        match_importance=config["championship"].getfloat(
-            "match_importance", 0.0
-        ),
-    )
-    playoff_params = DdPlayoffParams(
-        series_matches_pattern=(
-            True, True, False, False, True, False, True,
-        ),
-        match_params=match_params,
-        length=config["playoff"].getint("length", 0),
-        gap_days=config["playoff"].getint("gap_days", 0),
-        match_importance=config["playoff"].getfloat("match_importance", 0.0),
-    )
-    return DdGameParams(
-        attendance_params=attendance_params,
-        championship_params=championship_params,
-        playoff_params=playoff_params,
-        courts=dict(
-            default=DdCourt(capacity=1000, rent_cost=1000),
-            tiny=DdCourt(capacity=1000, rent_cost=1000),
-            small=DdCourt(capacity=2000, rent_cost=5000),
-            medium=DdCourt(capacity=4000, rent_cost=16000),
-            big=DdCourt(capacity=8000, rent_cost=44000),
-            huge=DdCourt(capacity=16000, rent_cost=112000)
-        ),
-        contracts=json.loads(config.get("game", "contracts")),
-        exhaustion_factor=config["game"].getint("exhaustion_factor", 0),
-        is_hard=config["game"].getboolean("is_hard", True),
-        training_coefficient=config["game"].getint("training_coefficient", 0),
-        years_to_simulate=config["game"].getint("years_to_simulate", 0),
-    )
 
 
 def _GetPlayerName(player_json: Dict[str, Any]) -> str:
@@ -556,6 +484,7 @@ def _PrintCupStandings(series, club_names, users_club, rounds):
             res = list(range(first, first + 2 ** (n - i - 1)))
             first += len(res)
             yield i, res
+
     row_string = (
         "{top_name:s} vs {bottom_name:s}\n"
         "    {top_score:d}:{bottom_score:n}"
@@ -580,10 +509,10 @@ def _PrintCupStandings(series, club_names, users_club, rounds):
 
 
 def _PrintPlayer(
-    player: DdPlayer,
-    next_contract: bool,
-    own: bool = False,
-    contract_cost: Optional[int] = None
+        player: DdPlayer,
+        next_contract: bool,
+        own: bool = False,
+        contract_cost: Optional[int] = None
 ):
     string = (
         "Level {level:d}\n"
@@ -659,12 +588,7 @@ if __name__ == '__main__':
         default="default",
         help="The name of the file for save/load game."
     )
-    parser.add_argument(
-        "--length",
-        choices=("short", "long"),
-        default="short",
-        help="The length of the championship."
-    )
+
     parser.add_argument(
         "--load",
         help=(
@@ -677,6 +601,6 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
 
     app = DdSimplifiedApp(
-        arguments.club, arguments.length, arguments.savename, arguments.load
+        arguments.club, arguments.savename, arguments.load
     )
-    app.Run()
+    app.run()

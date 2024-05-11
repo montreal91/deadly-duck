@@ -144,6 +144,10 @@ class DdPlayer(DdJsonable):
         return self._experience
 
     @property
+    def first_name(self):
+        return self._first_name
+
+    @property
     def full_name(self) -> str:
         """Full name of the player."""
 
@@ -176,6 +180,10 @@ class DdPlayer(DdJsonable):
             reputation=self._reputation,
             speciality=self._speciality,
         )
+
+    @property
+    def last_name(self):
+        return self._last_name
 
     @property
     def level(self) -> int:

@@ -74,7 +74,7 @@ class DdOpponentStruct:
     fame: Optional[int]
 
 
-class DdGameDuck:
+class Game:
     """
     A class that incapsulates the game logic.
 
@@ -100,7 +100,9 @@ class DdGameDuck:
     _results: List[DdMatchResult]
     _practice_calculator: DdPracticeCalculator
 
-    def __init__(self, params: DdGameParams):
+    def __init__(self, params: DdGameParams, game_id: str, manager_club_id: int):
+        self._game_id = game_id
+        self._manager_club_id = manager_club_id
         self._free_agents = []
         self._history = [{}]
         self._params = params
@@ -142,10 +144,23 @@ class DdGameDuck:
         self._GenerateFreeAgents()
 
     @property
+    def day(self):
+        return self._competition.day
+
+    @property
+    def game_id(self):
+        return self._game_id
+
+    @property
+    def manager_club_id(self):
+        return self._manager_club_id
+
+    @property
     def is_over(self) -> bool:
         """Indicates if game is over."""
 
-        return not any(club.is_controlled for club in self._clubs.values())
+        return False  # The game never ends yet :)
+        # return not any(club.is_controlled for club in self._clubs.values())
 
     @property
     def season_over(self) -> bool:
@@ -169,13 +184,14 @@ class DdGameDuck:
 
         self._free_agents.append(player)
 
-    def GetContext(self, pk: int) -> Dict[str, Any]:
+    def get_context(self, pk: int) -> Dict[str, Any]:
         """A dictionary with information available for user."""
 
         assert 0 <= pk < len(self._clubs), _CLUB_INDEX_ERROR
 
         return dict(
             balance=self._clubs[pk].account.balance,
+            club_name=self._clubs[pk].name,
             day=self._competition.day,
             clubs=[club.name for club in self._clubs.values()],
             court=self._clubs[pk].court.json,
@@ -264,7 +280,7 @@ class DdGameDuck:
         )
         self._clubs[pk].SelectPlayer(i)
 
-    def SetControlled(self, pk: int, is_controlled: bool):
+    def _set_controlled(self, pk: int, is_controlled: bool):
         """Sets flag wether club is controlled by a user or not."""
 
         assert 0 <= pk < len(self._clubs), "Incorrect club pk."
@@ -572,7 +588,7 @@ class DdGameDuck:
             return res
         raise Exception("Bad schedule.")
 
-    def _GetUserPlayers(self, pk: int) -> List[DdPlayer]:
+    def _GetUserPlayers(self, pk: int) -> List[DdClubPlayerSlot]:
 
         def SetContractPrices(slot: DdClubPlayerSlot) -> DdClubPlayerSlot:
             slot.contract_cost = self._contract_calculator(slot.player.level)
@@ -641,7 +657,7 @@ class DdGameDuck:
 
             club.AddPlayer(self._player_factory.CreatePlayer(
                 age=DdGameplayConstants.STARTING_AGE.value,
-                level=randint(5, 10),
+                level=randint(0, 5),
                 speciality=club.surface
             ))
 
