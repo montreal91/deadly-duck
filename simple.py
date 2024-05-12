@@ -94,8 +94,8 @@ class DdSimplifiedApp:
         self._actions["c"] = self.__action_court
         self._actions["court"] = self.__action_court
         self._actions["fame"] = self.__Action_Fame
-        self._actions["fire"] = self.__ActionFire
-        self._actions["hire"] = self.__ActionHire
+        self._actions["fire"] = self.__action_fire
+        self._actions["hire"] = self.__action_hire
         self._actions["h"] = self.__ActionHistory
         self._actions["history"] = self.__ActionHistory
         self._actions["l"] = self.__action_list
@@ -254,8 +254,12 @@ class DdSimplifiedApp:
         print("Ticket price:", court.ticket_price)
 
     @UserAction
-    def __ActionFire(self, index: str):
-        self._game.FirePlayer(int(index), self._club_pk)
+    def __action_fire(self, index: str):
+        self._game_service.fire_player(
+            self._game_id,
+            self._manager_club_id,
+            int(index)
+        )
 
     @UserAction
     def __action_help(self):
@@ -263,8 +267,12 @@ class DdSimplifiedApp:
             print(help_file.read())
 
     @UserAction
-    def __ActionHire(self, surface: str):
-        self._game.HireNewPlayer(surface, self._club_pk)
+    def __action_hire(self, surface: str):
+        self._game_service.hire_player(
+            self._game_id,
+            self._manager_club_id,
+            surface
+        )
 
     @UserAction
     def __ActionHistory(self, season: str):

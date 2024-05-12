@@ -168,7 +168,7 @@ class Game:
 
         return self._competition.title == "Cup" and self._competition.is_over
 
-    def FirePlayer(self, i: int, pk: int):
+    def fire_player(self, i: int, pk: int):
         """Fires the selected player from user's club."""
 
         assert 0 <= pk < len(self._clubs), _CLUB_INDEX_ERROR
@@ -217,7 +217,7 @@ class Game:
         self._ProcessPlayerHire(club_pk=club_pk, player=player)
         self._free_agents.pop(player_pk)
 
-    def HireNewPlayer(self, surface: str, pk: int):
+    def hire_new_player(self, surface: str, club_id: int):
         """Hires a new player for the given club."""
 
         choices = "|".join(self._SURFACES)
@@ -231,7 +231,7 @@ class Game:
             age=DdGameplayConstants.STARTING_AGE.value,
             speciality=surface
         )
-        self._ProcessPlayerHire(club_pk=pk, player=player)
+        self._ProcessPlayerHire(club_pk=club_id, player=player)
 
     def ProceedToNextCompetition(self):
         """Updates game while player action is not required."""

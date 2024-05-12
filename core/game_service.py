@@ -148,6 +148,16 @@ class GameService:
 
         return CourtInfo(**court)
 
+    def fire_player(self, game_id, manager_club_id, player_id):
+        game = self._game_repository.get_game(game_id)
+        game.fire_player(player_id, manager_club_id)
+        self._game_repository.save_game(game)
+
+    def hire_player(self, game_id, manager_club_id, surface):
+        game = self._game_repository.get_game(game_id)
+        game.hire_new_player(surface, manager_club_id)
+        self._game_repository.save_game(game)
+
     def _player_to_row_info(self, player, player_id, is_selected, coach_level):
         # Again, this method is weird, but okay for now :)
         plr = {}
