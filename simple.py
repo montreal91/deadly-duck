@@ -89,7 +89,7 @@ class DdSimplifiedApp:
 
     def _InitActions(self):
         self._actions["?"] = self.__action_help
-        self._actions["agents"] = self.__ActionAgents
+        self._actions["agents"] = self.__action_agents
         self._actions["coach"] = self.__ActionCoach
         self._actions["c"] = self.__ActionCourt
         self._actions["court"] = self.__ActionCourt
@@ -127,14 +127,14 @@ class DdSimplifiedApp:
         self._actions["_m"] = self.__Action_Measure
 
     def _PrintMain(self):
-        info = self._game_service.get_main_screen_info(
+        info: MainMenuInfo = self._game_service.get_main_screen_info(
             self._game_id,
             self._manager_club_id
         )
 
-        print(f"\n{info['club_name']}")
-        print("Day:     {0:d}".format(info["day"]))
-        print("Balance: ${0:d}".format(info["balance"]))
+        print(f"\n{info.club_name}")
+        print("Day:     {0:d}".format(info.day))
+        print("Balance: ${0:d}".format(info.balance))
         print()
 
     def _ProcessInput(self):
@@ -193,42 +193,37 @@ class DdSimplifiedApp:
         print(f"Time to calculate context: {dt2 - dt1:.4f}")
 
     @UserAction
-    def __ActionAgents(self, sub_action: str, index: Optional[str] = None):
+    def __action_agents(self, sub_action: str, index: Optional[str] = None):
         assert sub_action in ("list", "hire")
         if sub_action == "hire":
-            self._game.HireFreeAgent(
-                club_pk=self._club_pk,
-                player_pk=int(index)
+            self._game_service.hire_free_agent(
+                game_id=self._game_id,
+                manager_club_id=self._manager_club_id,
+                agent_id=int(index)
             )
             return
 
-        agents: List[Tuple[DdPlayer, int]] = self._game.get_context(
-            self._club_pk
-        )["free_agents"]
-        print(" #| Age| Technique|Stm|Exh| Spec| Contract | Name")
-        print("__|____|__________|___|___|_____|__________|_____________")
-        for i, agent_tuple in enumerate(agents):
-            agent, contract = agent_tuple
-            print(f"{i:2d}|", end="")
-            print(" {0:2d} |".format(agent.json["age"]), end="")
+        agents = self._game_service.get_agents_list_screen_info(
+            self._game_id,
+            self._manager_club_id,
+        )
+
+        print(" #| Age|Technq|Endrnc| Spec| Contract | Name")
+        print("__|____|______|______|_____|__________|_____________")
+        for agent in agents:
+            print(f"{agent.player_id:2d}|", end="")
+            print(" {0:2d} |".format(agent.age), end="")
             print(
-                "{0:4.1f} /{1:4.1f}|".format(
-                    round(agent.json["actual_technique"] / 10, 1),
-                    round(agent.json["technique"] / 10, 1)
-                ),
+                f"{agent.technique:5.2f} |",
                 end="",
             )
             print(
-                "{0:3d}|".format(agent.json["current_stamina"]),
+                "{0:5.2f} |".format(agent.endurance),
                 end="",
             )
-            print(
-                "{0:3d}|".format(agent.json["exhaustion"]),
-                end=""
-            )
-            print("{0:5s}|".format(agent.json["speciality"]), end="")
-            print(f" {contract:7d}$ |", end="")
-            print(agent.json["first_name"], agent.json["last_name"], end="")
+            print("{0:5s}|".format(agent.speciality), end="")
+            print(f" ${agent.contract_cost:7d} |", end="")
+            print(agent.name, end="")
             print()
 
     @UserAction
@@ -298,40 +293,40 @@ class DdSimplifiedApp:
             self._manager_club_id,
         )
 
-        for i, data in enumerate(info["players"]):
-            if data["is_selected"]:
+        for data in info.players:
+            if data.is_selected:
                 print(BOLD, end="")
-            print("{0:2}|".format(data["player_id"]), end="")
+            print("{0:2}|".format(data.player_id), end="")
             # plr: DdPlayer = data.player
-            print(" {0:2d} |".format(data["age"]), end="")
+            print(" {0:2d} |".format(data.age), end="")
             print(
                 "{0:4.1f} /{1:4.1f}|".format(
-                    round(data["actual_technique"] / 10, 1),
-                    round(data["technique"] / 10, 1)
+                    round(data.actual_technique / 10, 1),
+                    round(data.technique / 10, 1)
                 ),
                 end="",
             )
             print(
-                "{0:3d}|".format(data["current_stamina"]),
+                "{0:3d}|".format(data.current_stamina),
                 end="",
             )
             print(
-                "{0:3d}|".format(data["exhaustion"]),
+                "{0:3d}|".format(data.exhaustion),
                 end=""
             )
-            print("{0:5s}|".format(data["speciality"]), end="")
+            print("{0:5s}|".format(data.speciality), end="")
             print(
                 "   {0:1d}   |".format(
-                    data["coach_level"]
+                    data.coach_level
                 ),
                 end=""
             )
-            print(data["name"], end="")
-            if data["is_selected"]:
+            print(data.name, end="")
+            if data.is_selected:
                 print(RESET, end="")
             print()
 
-        print("\nCurrent practice price:", "$" + str(info["practice_cost"]))
+        print("\nCurrent practice price:", "$" + str(info.practice_cost))
 
     @UserAction
     def __ActionNext(self):

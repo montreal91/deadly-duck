@@ -5,8 +5,49 @@ Created May 11, 2024
 
 @author montreal91
 """
+
+from typing import List
+from typing import NamedTuple
+
 from core.game_repostory import GameRepository
 from core.game import Game
+
+
+class MainScreenInfo(NamedTuple):
+    day: int
+    balance: int
+    club_name: str
+
+
+class PlayerListInfo(NamedTuple):
+    player_id: int
+    name: str
+    level: int
+    actual_technique: float
+    technique: float
+    endurance: float
+    current_stamina: int
+    maximum_stamina: int
+    coach_level: int
+    is_selected: bool
+    age: int
+    exhaustion: int
+    speciality: str
+
+
+class PlayerListScreenInfo(NamedTuple):
+    players: List[PlayerListInfo]
+    practice_cost: int
+
+
+class AgentListInfo(NamedTuple):
+    player_id: int
+    age: int
+    technique: float
+    endurance: float
+    speciality: str
+    contract_cost: int
+    name: str
 
 
 class GameService:
@@ -34,16 +75,28 @@ class GameService:
         return game.is_over
 
     def get_agents_list_screen_info(self, game_id, manager_club_id):
+        # This should actually sit in PlayerService
+        # Or, better, use ports and adapters and make it a query
         game = self._game_repository.get_game(game_id)
+
+        if game is None:
+            return None
+
+        game_agents = game.get_context(manager_club_id)["free_agents"]
+        return [
+            self._agent_to_list_info(player[0], i, player[1])
+            for i, player in enumerate(game_agents)
+        ]
 
     def get_main_screen_info(self, game_id, manager_club_id):
         game = self._game_repository.get_game(game_id)
         context = game.get_context(manager_club_id)
 
-        info = {}
-        info["day"] = context["day"]
-        info["balance"] = context["balance"]
-        info["club_name"] = context["club_name"]
+        info = MainScreenInfo(
+            day=context["day"],
+            balance=context["balance"],
+            club_name=context["club_name"],
+        )
 
         return info
 
@@ -51,23 +104,25 @@ class GameService:
         context = self._game_repository.get_game(game_id).get_context(
             manager_club_id
         )
-        info = {"players": []}
 
-        player_slot_stuff = context["user_players"]
+        players = [
+            self._player_to_row_info(
+                player.player, i, player.is_selected, player.coach_level
+            )
+            for i, player in enumerate(context["user_players"])
+        ]
 
-        for i, player in enumerate(player_slot_stuff):
-            info["players"].append(self._player_to_row_dict(
-                player.player,
-                i,
-                player.is_selected,
-                player.coach_level
-            ))
+        return PlayerListScreenInfo(
+            players=players,
+            practice_cost=context["practice_cost"],
+        )
 
-        info["practice_cost"] = context["practice_cost"]
+    def hire_free_agent(self, game_id, manager_club_id, agent_id):
+        game = self._game_repository.get_game(game_id)
+        game.hire_free_agent(manager_club_id, agent_id)
 
-        return info
-
-    def _player_to_row_dict(self, player, player_id, is_selected, coach_level):
+    def _player_to_row_info(self, player, player_id, is_selected, coach_level):
+        # Again, this method is weird, but okay for now :)
         plr = {}
         plr["player_id"] = player_id
         plr["name"] = f"{player.first_name} {player.last_name}"
@@ -83,4 +138,15 @@ class GameService:
         plr["exhaustion"] = player.exhaustion
         plr["speciality"] = player.speciality
 
-        return plr
+        return PlayerListInfo(**plr)
+
+    def _agent_to_list_info(self, player, player_id, contract_cost):
+        return AgentListInfo(
+            player_id=player_id,
+            age=player.age,
+            technique=player.technique / 10,
+            endurance=player.endurance,
+            speciality=player.speciality,
+            contract_cost=contract_cost,
+            name=f"{player.first_name} {player.last_name}",
+        )

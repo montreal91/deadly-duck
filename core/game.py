@@ -206,7 +206,7 @@ class Game:
             user_players=self._GetUserPlayers(pk),
         )
 
-    def HireFreeAgent(self, club_pk: int, player_pk: int):
+    def hire_free_agent(self, club_pk: int, player_pk: int):
         """Hires a free agent for the given club."""
 
         assert player_pk in range(len(self._free_agents)), (
