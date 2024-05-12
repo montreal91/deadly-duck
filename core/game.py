@@ -240,22 +240,22 @@ class Game:
         while self._competition.day != 0 and step:
             step = self.Update()
 
-    def SelectCoachForPlayer(
-        self, coach_index: int, player_index: int, pk: int
+    def select_coach_for_player(
+        self, coach_index: int, player_index: int, club_index: int
     ):
         """
         Selects a coach (bad, normal, or good) for the player in the club.
         """
 
-        assert pk in self._clubs, _CLUB_INDEX_ERROR
-        assert 0 <= player_index < len(self._clubs[pk].players), (
+        assert club_index in self._clubs, _CLUB_INDEX_ERROR
+        assert 0 <= player_index < len(self._clubs[club_index].players), (
             "Incorrect player index."
         )
         assert 0 <= coach_index < len(DdClub.COACH_LEVELS), (
             "Incorrect coach index."
         )
 
-        self._clubs[pk].SelectCoach(
+        self._clubs[club_index].SelectCoach(
             coach_index=coach_index, player_index=player_index
         )
 

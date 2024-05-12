@@ -90,7 +90,7 @@ class DdSimplifiedApp:
     def _InitActions(self):
         self._actions["?"] = self.__action_help
         self._actions["agents"] = self.__action_agents
-        self._actions["coach"] = self.__ActionCoach
+        self._actions["coach"] = self.__action_coach
         self._actions["c"] = self.__ActionCourt
         self._actions["court"] = self.__ActionCourt
         self._actions["fame"] = self.__Action_Fame
@@ -227,11 +227,12 @@ class DdSimplifiedApp:
             print()
 
     @UserAction
-    def __ActionCoach(self, player_index: str, coach_index: str):
-        self._game.SelectCoachForPlayer(
-            coach_index=int(coach_index),
-            player_index=int(player_index),
-            pk=self._club_pk
+    def __action_coach(self, player_index: str, coach_index: str):
+        self._game_service.select_coach_for_player(
+            self._game_id,
+            self._manager_club_id,
+            int(coach_index),
+            int(player_index),
         )
 
     @UserAction

@@ -121,6 +121,14 @@ class GameService:
         game = self._game_repository.get_game(game_id)
         game.hire_free_agent(manager_club_id, agent_id)
 
+    def select_coach_for_player(self, game_id, manager_club_id, coach_quality, player_id):
+        game = self._game_repository.get_game(game_id)
+        game.select_coach_for_player(
+            coach_index=coach_quality,
+            player_index=player_id,
+            club_index=manager_club_id,
+        )
+
     def _player_to_row_info(self, player, player_id, is_selected, coach_level):
         # Again, this method is weird, but okay for now :)
         plr = {}
