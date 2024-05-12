@@ -91,8 +91,8 @@ class DdSimplifiedApp:
         self._actions["?"] = self.__action_help
         self._actions["agents"] = self.__action_agents
         self._actions["coach"] = self.__action_coach
-        self._actions["c"] = self.__ActionCourt
-        self._actions["court"] = self.__ActionCourt
+        self._actions["c"] = self.__action_court
+        self._actions["court"] = self.__action_court
         self._actions["fame"] = self.__Action_Fame
         self._actions["fire"] = self.__ActionFire
         self._actions["hire"] = self.__ActionHire
@@ -236,14 +236,22 @@ class DdSimplifiedApp:
         )
 
     @UserAction
-    def __ActionCourt(self, court: Optional[str] = None):
+    def __action_court(self, court: Optional[str] = None):
         if court is not None:
-            self._game.SelectCourt(pk=self._club_pk, court=court)
-        else:
-            courts = self._game.get_context(self._club_pk)["court"]
-            print("Capacity:    ", courts["capacity"])
-            print("Rent cost:   ", courts["rent_cost"])
-            print("Ticket price:", courts["ticket_price"])
+            self._game_service.select_court_for_club(
+                self._game_id,
+                self._manager_club_id,
+                court
+            )
+            return
+
+        court = self._game_service.get_court_info(
+            self._game_id, self._manager_club_id
+        )
+
+        print("Capacity:    ", court.capacity)
+        print("Rent cost:   ", court.rent_cost)
+        print("Ticket price:", court.ticket_price)
 
     @UserAction
     def __ActionFire(self, index: str):
@@ -406,6 +414,7 @@ class DdSimplifiedApp:
 
     @UserAction
     def __ActionSave(self):
+        # Actually, we'll save game on every "NextDay" action
         pass
 
     @UserAction

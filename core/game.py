@@ -259,17 +259,17 @@ class Game:
             coach_index=coach_index, player_index=player_index
         )
 
-    def SelectCourt(self, pk: int, court: str):
+    def select_court(self, club_id: int, court: str):
         """Selects court for club from available options."""
 
-        assert pk in self._clubs, _CLUB_INDEX_ERROR
+        assert club_id in self._clubs, _CLUB_INDEX_ERROR
         possible_courts = "|".join(self._params.courts)
         assert court in self._params.courts, (
             "Incorrect court type.\n"
             f"Possible correct types: {possible_courts}"
         )
 
-        self._clubs[pk].court = deepcopy(self._params.courts[court])
+        self._clubs[club_id].court = deepcopy(self._params.courts[court])
 
     def SelectPlayer(self, i: int, pk: int):
         """Sets selected player for user."""

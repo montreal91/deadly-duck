@@ -50,6 +50,12 @@ class AgentListInfo(NamedTuple):
     name: str
 
 
+class CourtInfo(NamedTuple):
+    capacity: int
+    rent_cost: int
+    ticket_price: int
+
+
 class GameService:
     def __init__(self, game_repository: GameRepository, game_parameters):
         self._game_repository = game_repository
@@ -120,6 +126,7 @@ class GameService:
     def hire_free_agent(self, game_id, manager_club_id, agent_id):
         game = self._game_repository.get_game(game_id)
         game.hire_free_agent(manager_club_id, agent_id)
+        self._game_repository.save_game(game)
 
     def select_coach_for_player(self, game_id, manager_club_id, coach_quality, player_id):
         game = self._game_repository.get_game(game_id)
@@ -128,6 +135,18 @@ class GameService:
             player_index=player_id,
             club_index=manager_club_id,
         )
+        self._game_repository.save_game(game)
+
+    def select_court_for_club(self, game_id, manager_club_id, court_type):
+        game = self._game_repository.get_game(game_id)
+        game.select_court(manager_club_id, court_type)
+        self._game_repository.save_game(game)
+
+    def get_court_info(self, game_id, manager_club_id):
+        game = self._game_repository.get_game(game_id)
+        court = game.get_context(manager_club_id)["court"]
+
+        return CourtInfo(**court)
 
     def _player_to_row_info(self, player, player_id, is_selected, coach_level):
         # Again, this method is weird, but okay for now :)
