@@ -1,4 +1,3 @@
-
 """
 The actual game.
 
@@ -10,6 +9,7 @@ Created Apr 09, 2019
 """
 
 import json
+import logging
 
 from copy import deepcopy
 from random import choice
@@ -45,7 +45,6 @@ from core.regular_championship import DdChampionshipParams
 from core.regular_championship import DdRegularChampionship
 from core.serialization import DdJsonDecoder
 
-
 _CLUB_INDEX_ERROR = "Incorrect club index."
 
 
@@ -74,6 +73,14 @@ class DdOpponentStruct:
     fame: Optional[int]
 
 
+logging.basicConfig(
+    level=logging.DEBUG,  # Set the logging level to INFO
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Define the log message format
+    filename='app.log',  # Specify the name of the log file
+    filemode='a'  # Set the file mode to 'w' to overwrite the log file each time the program runs
+)
+
+
 class DdGameDuck:
     """
     A class that incapsulates the game logic.
@@ -87,6 +94,7 @@ class DdGameDuck:
         DdCourtSurface.GRASS,
         DdCourtSurface.HARD,
     )
+
 
     _attendance_calculator: Callable
     _clubs: Dict[int, DdClub]
@@ -225,7 +233,7 @@ class DdGameDuck:
             step = self.Update()
 
     def SelectCoachForPlayer(
-        self, coach_index: int, player_index: int, pk: int
+            self, coach_index: int, player_index: int, pk: int
     ):
         """
         Selects a coach (bad, normal, or good) for the player in the club.
@@ -292,7 +300,7 @@ class DdGameDuck:
             "This player already has a contract for the next season."
         )
         assert (
-            players[i].player.age + 1 < DdGameplayConstants.RETIREMENT_AGE.value
+                players[i].player.age + 1 < DdGameplayConstants.RETIREMENT_AGE.value
         ), (
             f"{players[i].player.initials} is too old to play next season."
         )
@@ -713,9 +721,18 @@ class DdGameDuck:
 
     def _ShuffleCoachPowers(self):
         from random import shuffle
-        strong_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 3 and not club.is_controlled]
-        medium_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 2 and not club.is_controlled]
-        weaksy_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 1 and not club.is_controlled]
+        strong_clubs = [
+            pk for pk, club in self._clubs.items()
+            if club.coach_power == 3 and not club.is_controlled
+        ]
+        medium_clubs = [
+            pk for pk, club in self._clubs.items()
+            if club.coach_power == 2 and not club.is_controlled
+        ]
+        weaksy_clubs = [
+            pk for pk, club in self._clubs.items()
+            if club.coach_power == 1 and not club.is_controlled
+        ]
 
         shuffle(strong_clubs)
         shuffle(medium_clubs)
@@ -727,14 +744,14 @@ class DdGameDuck:
         while len(medium_clubs) > 5:
             weaksy_clubs.append(medium_clubs.pop())
 
-        print("HUGS", strong_clubs)
-        print("HUGS", medium_clubs)locals()
-        print("HUGS", weaksy_clubs)
-
         s, m, w = strong_clubs.pop(), medium_clubs.pop(), weaksy_clubs.pop()
-        print("HUGS", s, m, w)
+
+        logging.debug(f"Strong club going weak:   {self._clubs[s].name}")
+        logging.debug(f"Medium club going strong: {self._clubs[m].name}")
+        logging.debug(f"Weak club going medium:   {self._clubs[w].name}")
+
         s, m, w = m, w, s  # cycle
-        print("HUGS", s, m, w)
+
         strong_clubs.append(s)
         medium_clubs.append(m)
         weaksy_clubs.append(w)
