@@ -310,36 +310,35 @@ class DdSimplifiedApp:
             self._manager_club_id,
         )
 
-        for data in info.players:
-            if data.is_selected:
+        for player in info.players:
+            if player.is_selected:
                 print(BOLD, end="")
-            print("{0:2}|".format(data.player_id), end="")
-            # plr: DdPlayer = data.player
-            print(" {0:2d} |".format(data.age), end="")
+            print("{0:2}|".format(player.player_id), end="")
+            print(" {0:2d} |".format(player.age), end="")
             print(
                 "{0:4.1f} /{1:4.1f}|".format(
-                    round(data.actual_technique / 10, 1),
-                    round(data.technique / 10, 1)
+                    round(player.actual_technique / 10, 1),
+                    round(player.technique / 10, 1)
                 ),
                 end="",
             )
             print(
-                "{0:3d}|".format(data.current_stamina),
+                "{0:3d}|".format(player.current_stamina),
                 end="",
             )
             print(
-                "{0:3d}|".format(data.exhaustion),
+                "{0:3d}|".format(player.exhaustion),
                 end=""
             )
-            print("{0:5s}|".format(data.speciality), end="")
+            print("{0:5s}|".format(player.speciality), end="")
             print(
                 "   {0:1d}   |".format(
-                    data.coach_level
+                    player.coach_level
                 ),
                 end=""
             )
-            print(data.name, end="")
-            if data.is_selected:
+            print(player.name, end="")
+            if player.is_selected:
                 print(RESET, end="")
             print()
 
