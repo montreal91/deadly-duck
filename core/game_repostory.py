@@ -4,6 +4,7 @@ Created May 11, 2024
 @author montreal91
 """
 import os
+import pickle
 
 from core.game import Game
 
@@ -30,17 +31,14 @@ class GameRepository:
         save_path = os.path.join(self._SAVE_FOLDER, game_id)
         if os.path.isfile(save_path):
             with open(save_path, "rb") as save_file:
-                slot = pickle.load(save_file)
-                # self._club_pk = slot["club_pk"]
-                self._games[game_id] = slot["game"]
+                game = pickle.load(save_file)
+                self._games[game_id] = game
                 print(f"Game [{game_id}] is loaded successfully.")
         else:
             print(f"Game [{game_id}] does not exist.")
 
-    def _save_game_to_file(self, game_id, game):
+    def _save_game_to_file(self, game_id: str, game: Game):
         save_path = os.path.join(self._SAVE_FOLDER, game_id)
         with open(save_path, "wb") as save_file:
-            slot = {"club_pk": self._club_pk}
-            slot["game"] = game
-            pickle.dump(slot, save_file)
+            pickle.dump(game, save_file)
             print(f"The game [{game_id}] is saved.")

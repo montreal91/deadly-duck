@@ -96,6 +96,8 @@ class Game:
         DdCourtSurface.HARD,
     )
 
+    _game_id: str
+    _manager_club_id: int
     _attendance_calculator: Callable
     _clubs: Dict[int, Club]
     _competition: DdAbstractCompetition
@@ -141,8 +143,10 @@ class Game:
         with open("configuration/clubs.json", "r") as data_file:
             club_data = json.load(data_file, object_hook=decoder)
 
-        for pk, club in enumerate(club_data):
-            self._add_club(club_id=pk, club_data=club)
+        for club_id, club in enumerate(club_data):
+            self._add_club(club_id=club_id, club_data=club)
+            if club_id == manager_club_id:
+                self._clubs[club_id].SetCoachPower(0)
 
         self._competition = DdRegularChampionship(
             self._clubs, self._params.championship_params
@@ -283,14 +287,14 @@ class Game:
 
         self._clubs[club_id].court = deepcopy(self._params.courts[court])
 
-    def SelectPlayer(self, i: int, pk: int):
+    def SelectPlayer(self, player_id: int, club_id: int):
         """Sets selected player for user."""
 
-        assert 0 <= pk < len(self._clubs), "Incorrect club pk."
-        assert 0 <= i < len(self._clubs[pk].players), (
+        assert 0 <= club_id < len(self._clubs), "Incorrect club pk."
+        assert 0 <= player_id < len(self._clubs[club_id].players), (
             "Incorrect player index."
         )
-        self._clubs[pk].SelectPlayer(i)
+        self._clubs[club_id].SelectPlayer(player_id)
 
     def _set_controlled(self, pk: int, is_controlled: bool):
         """Sets flag wether club is controlled by a user or not."""

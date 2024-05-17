@@ -6,7 +6,6 @@ Created Apr 09, 2019
 
 import json
 import os.path
-import pickle
 import sys
 
 from typing import Any
@@ -44,13 +43,14 @@ def UserAction(fun: Callable) -> Callable:
             return fun(*args, **kwargs)
         except (AssertionError, ValueError) as error:
             print(error)
-        except TypeError:
+        except TypeError as error:
             print("Incorrect number of arguments.")
+            print(error)
 
     return res
 
 
-class DdSimplifiedApp:
+class SimplifiedApp:
     """Simple client for a game that runs in the console."""
 
     def __init__(
@@ -64,10 +64,7 @@ class DdSimplifiedApp:
         self._game_id = game_id
         self._game_service = get_application_context().game_service
 
-        if load:
-            # Weird, but okay for now
-            pass
-        else:
+        if not load:
             self._game_service.create_new_game(self._game_id, self._manager_club_id)
 
         self._actions = {}
@@ -107,12 +104,11 @@ class DdSimplifiedApp:
         self._actions["proceed"] = self.__action_proceed
         self._actions["q"] = self.__action_quit
         self._actions["quit"] = self.__action_quit
-        self._actions["res"] = self.__ActionResults
-        # self._actions["save"] = self.__ActionSave
-        self._actions["s"] = self.__ActionSelect
-        self._actions["select"] = self.__ActionSelect
-        self._actions["sh"] = self.__ActionShow
-        self._actions["show"] = self.__ActionShow
+        self._actions["res"] = self.__action_results
+        self._actions["s"] = self.__action_select
+        self._actions["select"] = self.__action_select
+        self._actions["sh"] = self.__action_show
+        self._actions["show"] = self.__action_show
         self._actions["sign"] = self.__ActionSign
         self._actions["st"] = self.__ActionStandings
         self._actions["standings"] = self.__ActionStandings
@@ -155,11 +151,6 @@ class DdSimplifiedApp:
 
     @UserAction
     def __action_fame(self):
-        # clubs = sorted(
-        #     [(pk, club) for pk, club in self._game._clubs.items()],
-        #     key=lambda club: club[1].fame,
-        #     reverse=True
-        # )
         query_result = self._game_service.get_fames(self._game_id)
 
         for fame_row in query_result.fame_ratings:
@@ -353,7 +344,7 @@ class DdSimplifiedApp:
             print("You have to select a player.")
             return
 
-        self.__ActionResults()
+        self.__action_results()
 
     @UserAction
     def __action_opponent(self):
@@ -383,10 +374,11 @@ class DdSimplifiedApp:
         self._is_running = False
 
     @UserAction
-    def __ActionResults(self):
-        clubs = self._get_actual_context()["clubs"]
+    def __action_results(self):
+        context = self._get_actual_context()
+        clubs = context["clubs"]
         pk = self._manager_club_id
-        for res in self._game.get_context(self._manager_club_id)["last_results"]:
+        for res in context["last_results"]:
             exp = None
             if res.home_pk == pk:
                 exp = DdPlayer.CalculateNewExperience(
@@ -420,11 +412,11 @@ class DdSimplifiedApp:
             print()
 
     @UserAction
-    def __ActionSelect(self, index="0"):
-        self._game.SelectPlayer(int(index), self._manager_club_id)
+    def __action_select(self, index="0"):
+        self._game_service.set_player(self._game_id, self._manager_club_id, int(index))
 
     @UserAction
-    def __ActionShow(self, index: str):
+    def __action_show(self, index: str):
         index = int(index)
         context = self._get_actual_context()
         players_data = context["user_players"]
@@ -477,10 +469,7 @@ class DdSimplifiedApp:
         )
 
     def _get_actual_context(self):
-        return self._game_service.get_game_context(
-            self._game_id,
-            self._manager_club_id
-        )
+        return self._game_service.get_game_context(self._game_id)
 
 
 def _GetPlayerName(player_json: Dict[str, Any]) -> str:
@@ -614,7 +603,10 @@ if __name__ == '__main__':
 
     arguments = parser.parse_args()
 
-    app = DdSimplifiedApp(
-        arguments.club, arguments.savename, arguments.load
+    app = SimplifiedApp(
+        starting_club=arguments.club,
+        load=arguments.load,
+        game_id=arguments.savename,
+        config_filename="short"
     )
     app.run()
