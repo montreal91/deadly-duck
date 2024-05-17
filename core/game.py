@@ -10,6 +10,7 @@ Created Apr 09, 2019
 """
 
 import json
+import logging
 
 from copy import deepcopy
 from random import choice
@@ -45,7 +46,6 @@ from core.regular_championship import DdChampionshipParams
 from core.regular_championship import DdRegularChampionship
 from core.serialization import DdJsonDecoder
 
-
 _CLUB_INDEX_ERROR = "Incorrect club index."
 
 
@@ -72,6 +72,14 @@ class DdOpponentStruct:
     match_surface: str
     player: Optional[DdPlayer]
     fame: Optional[int]
+
+
+logging.basicConfig(
+    level=logging.DEBUG,  # Set the logging level to INFO
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Define the log message format
+    filename='app.log',  # Specify the name of the log file
+    filemode='a'  # Set the file mode to 'w' to overwrite the log file each time the program runs
+)
 
 
 class Game:
@@ -308,7 +316,7 @@ class Game:
             "This player already has a contract for the next season."
         )
         assert (
-            players[i].player.age + 1 < DdGameplayConstants.RETIREMENT_AGE.value
+                players[i].player.age + 1 < DdGameplayConstants.RETIREMENT_AGE.value
         ), (
             f"{players[i].player.initials} is too old to play next season."
         )
@@ -588,7 +596,7 @@ class Game:
             return res
         raise Exception("Bad schedule.")
 
-    def _GetUserPlayers(self, pk: int) -> List[DdClubPlayerSlot]:
+    def _GetUserPlayers(self, pk: int) -> List[DdPlayer]:
 
         def SetContractPrices(slot: DdClubPlayerSlot) -> DdClubPlayerSlot:
             slot.contract_cost = self._contract_calculator(slot.player.level)
@@ -657,7 +665,7 @@ class Game:
 
             club.AddPlayer(self._player_factory.CreatePlayer(
                 age=DdGameplayConstants.STARTING_AGE.value,
-                level=randint(0, 5),
+                level=randint(5, 10),
                 speciality=club.surface
             ))
 

@@ -100,9 +100,13 @@ class DdClub:
 
     @property
     def account(self) -> DdFinancialAccount:
-        """Club's financial accout."""
+        """Club's financial account."""
 
         return self._account
+
+    @property
+    def coach_power(self):
+        return self._coach_power
 
     @property
     def court(self) -> DdCourt:
@@ -218,6 +222,14 @@ class DdClub:
 
         if index is not None:
             self._players[index].is_selected = True
+
+    def SetCoachPower(self, val: int):
+        if val in self.COACH_LEVELS:
+            self._coach_power = val
+
+            for slot in self._players:
+                slot.coach_power = val
+
 
     def SetControlled(self, val: bool):
         """Sets club controlled or uncontrolled by a human user."""
