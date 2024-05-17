@@ -56,6 +56,24 @@ class CourtInfo(NamedTuple):
     ticket_price: int
 
 
+class RegularSeasonHistoryRow(NamedTuple):
+    club_name: str
+    sets_won: int
+    games_won: int
+
+
+class PlayoffSeriesHistoryInfo(NamedTuple):
+    top_club_name: str
+    bottom_club_name: str
+    top_club_won: int
+    bottom_club_won: int
+
+
+class HistoryScreenInfo(NamedTuple):
+    regular_season: List[RegularSeasonHistoryRow]
+    playoff_season: List[List[PlayoffSeriesHistoryInfo]]
+
+
 class GameService:
     def __init__(self, game_repository: GameRepository, game_parameters):
         self._game_repository = game_repository
@@ -157,6 +175,13 @@ class GameService:
         game = self._game_repository.get_game(game_id)
         game.hire_new_player(surface, manager_club_id)
         self._game_repository.save_game(game)
+
+    def get_history_info(self, game_id, manager_club_id, season):
+        game = self._game_repository.get_game(game_id)
+        context = game.get_context(manager_club_id)
+        history_data = context["history"][season]
+
+        return None
 
     def _player_to_row_info(self, player, player_id, is_selected, coach_level):
         # Again, this method is weird, but okay for now :)

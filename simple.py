@@ -276,29 +276,30 @@ class DdSimplifiedApp:
 
     @UserAction
     def __ActionHistory(self, season: str):
-        s = int(season)
-        ctx = self._game.get_context(self._club_pk)
-        history = ctx["history"]
-
-        if s > len(history) or history[s - 1] == {}:
-            print(f"Season {s} is not finished yet.")
-            return
-        if s < 1:
-            print(f"Season should be a positive integer")
-            return
-        _PrintRegularStandings(
-            standings=history[s - 1]["Championship"],
-            club_names=ctx["clubs"],
-            users_club=self._club_pk,
-        )
-        if "Cup" in history[s - 1]:
-            print("=" * 50)
-            _PrintCupStandings(
-                history[s - 1]["Cup"],
-                ctx["clubs"],
-                self._club_pk,
-                3,
-            )
+        print("History will be available later.")
+        # s = int(season)
+        # ctx = self._game.get_context(self._club_pk)
+        # history = ctx["history"]
+        #
+        # if s > len(history) or history[s - 1] == {}:
+        #     print(f"Season {s} is not finished yet.")
+        #     return
+        # if s < 1:
+        #     print(f"Season should be a positive integer")
+        #     return
+        # _PrintRegularStandings(
+        #     standings=history[s - 1]["Championship"],
+        #     club_names=ctx["clubs"],
+        #     users_club=self._club_pk,
+        # )
+        # if "Cup" in history[s - 1]:
+        #     print("=" * 50)
+        #     _PrintCupStandings(
+        #         history[s - 1]["Cup"],
+        #         ctx["clubs"],
+        #         self._club_pk,
+        #         3,
+        #     )
 
     @UserAction
     def __action_list(self):
