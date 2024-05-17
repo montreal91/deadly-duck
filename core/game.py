@@ -27,7 +27,7 @@ from configuration.config_game import DdGameplayConstants
 from core.attendance import DdAttendanceParams
 from core.attendance import DdAttendanceCalculator
 from core.attendance import DdCourt
-from core.club import DdClub
+from core.club import Club
 from core.club import DdClubPlayerSlot
 from core.competition import DdAbstractCompetition
 from core.financial import DdPracticeCalculator
@@ -49,7 +49,7 @@ from core.serialization import DdJsonDecoder
 _CLUB_INDEX_ERROR = "Incorrect club index."
 
 
-class DdGameParams(NamedTuple):
+class GameParams(NamedTuple):
     """Passive class to store game parameters."""
 
     # Various parameters
@@ -97,18 +97,18 @@ class Game:
     )
 
     _attendance_calculator: Callable
-    _clubs: Dict[int, DdClub]
+    _clubs: Dict[int, Club]
     _competition: DdAbstractCompetition
     _contract_calculator: Callable[[int], int]
     _free_agents: List[DdPlayer]
     _history: List[Dict[str, Any]]
-    _params: DdGameParams
+    _params: GameParams
     _player_factory: DdPlayerFactory
     _season_fame: Dict[int, int]
     _results: List[DdMatchResult]
     _practice_calculator: DdPracticeCalculator
 
-    def __init__(self, params: DdGameParams, game_id: str, manager_club_id: int):
+    def __init__(self, params: GameParams, game_id: str, manager_club_id: int):
         self._game_id = game_id
         self._manager_club_id = manager_club_id
         self._free_agents = []
@@ -142,7 +142,7 @@ class Game:
             club_data = json.load(data_file, object_hook=decoder)
 
         for pk, club in enumerate(club_data):
-            self._AddClub(pk=pk, club_data=club)
+            self._add_club(club_id=pk, club_data=club)
 
         self._competition = DdRegularChampionship(
             self._clubs, self._params.championship_params
@@ -156,7 +156,11 @@ class Game:
         return self._competition.day
 
     @property
-    def game_id(self):
+    def clubs(self) -> List[Club]:
+        return list(self._clubs.values())
+
+    @property
+    def game_id(self) -> str:
         return self._game_id
 
     @property
@@ -259,7 +263,7 @@ class Game:
         assert 0 <= player_index < len(self._clubs[club_index].players), (
             "Incorrect player index."
         )
-        assert 0 <= coach_index < len(DdClub.COACH_LEVELS), (
+        assert 0 <= coach_index < len(Club.COACH_LEVELS), (
             "Incorrect coach index."
         )
 
@@ -380,7 +384,7 @@ class Game:
 
     @property
     def _contract_check(self) -> bool:
-        def CheckClub(club: DdClub) -> bool:
+        def CheckClub(club: Club) -> bool:
             for slot in club.players:
                 next_age = slot.player.age + 1
                 if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
@@ -448,7 +452,7 @@ class Game:
         if self._competition.title != "Championship":
             return True
 
-        def CheckClub(club: DdClub) -> bool:
+        def CheckClub(club: Club) -> bool:
             return self._CalculateClubPracticeCost(club) <= club.account.balance
 
         for club in self._clubs.values():
@@ -458,8 +462,9 @@ class Game:
                 return False
         return True
 
-    def _AddClub(self, pk: int, club_data: Dict[str, Any]):
-        club = DdClub(
+    def _add_club(self, club_id: int, club_data: Dict[str, Any]):
+        club = Club(
+            club_id=club_id,
             name=club_data["name"],
             surface=club_data["surface"],
             coach_power=club_data["coach_power"],
@@ -479,10 +484,10 @@ class Game:
             "Initial balance",
         ))
 
-        self._clubs[pk] = club
-        self._season_fame[pk] = 0
+        self._clubs[club_id] = club
+        self._season_fame[club_id] = 0
 
-    def _CalculateClubPracticeCost(self, club: DdClub) -> int:
+    def _CalculateClubPracticeCost(self, club: Club) -> int:
         slots = [(s.player.level, s.coach_level) for s in club.players]
         return sum(self._practice_calculator(*slot) for slot in slots)
 
@@ -491,7 +496,7 @@ class Game:
             return
 
         for result in results:
-            home_club: DdClub = self._clubs[result.home_pk]
+            home_club: Club = self._clubs[result.home_pk]
             attendance = self._attendance_calculator(
                 ticket_price=home_club.court.ticket_price,
                 home_fame=home_club.fame,
@@ -579,7 +584,7 @@ class Game:
         if actual_match.home_pk == pk:
             # Home case
             res = DdOpponentStruct()
-            opponent_club: DdClub = self._clubs[actual_match.away_pk]
+            opponent_club: Club = self._clubs[actual_match.away_pk]
             res.club_name = opponent_club.name
             res.match_surface = self._clubs[pk].surface
             res.player = opponent_club.selected_player
@@ -619,7 +624,7 @@ class Game:
 
     def _IsClubValid(self, pk: int) -> bool:
         opponent = self._GetOpponent(pk)
-        club: DdClub = self._clubs[pk]
+        club: Club = self._clubs[pk]
         if opponent is None or not club.is_controlled:
             return True
 
@@ -640,7 +645,7 @@ class Game:
 
         return True
 
-    def _LogTrainingCosts(self, club: DdClub):
+    def _LogTrainingCosts(self, club: Club):
         with open(".logs/trainings.csv", "a") as log_file:
             cost = self._CalculateClubPracticeCost(club)
             print(
@@ -651,7 +656,7 @@ class Game:
     def _NextSeason(self):
         previous_standings = self._history[-1]["Championship"]
         for row in previous_standings:
-            club: DdClub = self._clubs[row.club_pk]
+            club: Club = self._clubs[row.club_pk]
             for slot in club.players:
                 slot.player.AgeUp()
                 slot.player.AfterSeasonRest()

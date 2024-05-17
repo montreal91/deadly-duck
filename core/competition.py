@@ -13,7 +13,7 @@ from typing import Generator
 from typing import List
 from typing import Optional
 
-from core.club import DdClub
+from core.club import Club
 from core.match import DdMatchProcessor
 from core.match import DdMatchResult
 from core.match import DdScheduledMatchStruct
@@ -25,13 +25,13 @@ ScheduleDay = List[DdScheduledMatchStruct]
 class DdAbstractCompetition:
     """Abstract competition class."""
 
-    _clubs: Dict[int, DdClub]
+    _clubs: Dict[int, Club]
     _schedule: List[Optional[ScheduleDay]]
     _day: int
     _params: Any
     _results: List[List[DdMatchResult]]
 
-    def __init__(self, clubs: Dict[int, DdClub], params: Any):
+    def __init__(self, clubs: Dict[int, Club], params: Any):
         self._clubs = clubs
         self._day = 0
         self._params = params

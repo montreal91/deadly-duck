@@ -9,8 +9,11 @@ Created May 11, 2024
 from typing import List
 from typing import NamedTuple
 
+from core import club
+from core.club import Club
 from core.game_repostory import GameRepository
 from core.game import Game
+from core.game import GameParams
 
 
 class MainScreenInfo(NamedTuple):
@@ -56,28 +59,69 @@ class CourtInfo(NamedTuple):
     ticket_price: int
 
 
-class RegularSeasonHistoryRow(NamedTuple):
+class UpdateResult(NamedTuple):
+    success: bool
+
+
+class FameInfo(NamedTuple):
+    club_id: int
     club_name: str
-    sets_won: int
-    games_won: int
+    fame: int
 
 
-class PlayoffSeriesHistoryInfo(NamedTuple):
-    top_club_name: str
-    bottom_club_name: str
-    top_club_won: int
-    bottom_club_won: int
+class FameRatingsQuery(NamedTuple):
+    game_id: str
 
 
-class HistoryScreenInfo(NamedTuple):
-    regular_season: List[RegularSeasonHistoryRow]
-    playoff_season: List[List[PlayoffSeriesHistoryInfo]]
+class FameRatingsQueryResult(NamedTuple):
+    fame_ratings: List[FameInfo]
+
+class ClubRepository:
+    _game_repository: GameRepository
+
+    def __init__(self, game_repository: GameRepository):
+        self._game_repository = game_repository
+
+    def get_all_clubs(self, game_id) -> List[Club]:
+        game = self._game_repository.get_game(game_id)
+
+        if game is None:
+            return []
+
+        return game.clubs
+
+
+class FameQueryHandler:
+    _club_repository: ClubRepository
+
+    def __init__(self, club_repository: ClubRepository):
+        self._club_repository = club_repository
+
+    def handle(self, request: FameRatingsQuery) -> FameRatingsQueryResult:
+        clubs = self._club_repository.get_all_clubs(request.game_id)
+        fames = [
+            FameInfo(club_id=club.club_id, club_name=club.name, fame=club.fame)
+            for club in clubs
+        ]
+
+        return FameRatingsQueryResult(
+            fame_ratings=sorted(fames, key=lambda fame: fame.fame, reverse=True),
+        )
 
 
 class GameService:
-    def __init__(self, game_repository: GameRepository, game_parameters):
+    _game_repository: GameRepository
+    _game_parameters: GameParams
+
+    def __init__(
+            self,
+            game_repository: GameRepository,
+            game_parameters: GameParams,
+            fame_query_handler: FameQueryHandler
+    ):
         self._game_repository = game_repository
         self._parameters = game_parameters
+        self._fame_query_handler = fame_query_handler
 
     def create_new_game(self, game_id, manager_club_id):
         self._game_repository.save_game(Game(
@@ -176,12 +220,27 @@ class GameService:
         game.hire_new_player(surface, manager_club_id)
         self._game_repository.save_game(game)
 
-    def get_history_info(self, game_id, manager_club_id, season):
+    def get_game_context(self, game_id, manager_club_id):
         game = self._game_repository.get_game(game_id)
-        context = game.get_context(manager_club_id)
-        history_data = context["history"][season]
+        return game.get_context(manager_club_id)
 
-        return None
+    def next_day(self, game_id):
+        game = self._game_repository.get_game(game_id)
+        if game is None:
+            return
+        res = game.Update()
+        self._game_repository.save_game(game, persistent_save=True)
+        return UpdateResult(success=res)
+
+    def proceed(self, game_id):
+        game = self._game_repository.get_game(game_id)
+        if game is None:
+            return
+        game.ProceedToNextCompetition()
+        self._game_repository.save_game(game, persistent_save=True)
+
+    def get_fames(self, game_id) -> FameRatingsQueryResult:
+        return self._fame_query_handler.handle(FameRatingsQuery(game_id=game_id))
 
     def _player_to_row_info(self, player, player_id, is_selected, coach_level):
         # Again, this method is weird, but okay for now :)

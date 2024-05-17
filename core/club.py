@@ -67,7 +67,7 @@ class DdFameTracker:
         self._fame_queue.append(value)
 
 
-class DdClub:
+class Club:
     """
     A club in the tournament.
 
@@ -78,6 +78,7 @@ class DdClub:
 
     COACH_LEVELS = (0, 1, 2, 3)
 
+    _club_id: int
     _account: DdFinancialAccount
     _court: DdCourt
     _fame_tracker: DdFameTracker
@@ -87,7 +88,15 @@ class DdClub:
     _selected_player: Optional[int]
     _surface: str
 
-    def __init__(self, name: str, surface: str, court: DdCourt, coach_power: int):
+    def __init__(
+            self,
+            club_id: int,
+            name: str,
+            surface: str,
+            court: DdCourt,
+            coach_power: int
+    ):
+        self._club_id = club_id
         self._account = DdFinancialAccount()
         self._court = court
         self._fame_tracker = DdFameTracker()
@@ -103,6 +112,10 @@ class DdClub:
         """Club's financial account."""
 
         return self._account
+
+    @property
+    def club_id(self) -> int:
+        return self._club_id
 
     @property
     def coach_power(self):

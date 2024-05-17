@@ -10,8 +10,8 @@ import configparser
 import json
 
 from core.game_repostory import GameRepository
-from core.game_service import GameService
-from core.game import DdGameParams
+from core.game_service import GameService, ClubRepository, FameQueryHandler
+from core.game import GameParams
 from core.match import DdMatchParams
 from core.match import DdExhaustionCalculator
 from core.player import DdPlayerReputationCalculator
@@ -26,8 +26,14 @@ from core.attendance import DdCourt
 class ApplicationContext:
     def __init__(self):
         self._game_repository = GameRepository()
+        self._club_repository = ClubRepository(self._game_repository)
         self._params = _get_params()
-        self._game_service = GameService(self._game_repository, self._params)
+        self._fame_query_handler = FameQueryHandler(self._club_repository)
+        self._game_service = GameService(
+            game_repository=self._game_repository,
+            game_parameters=self._params,
+            fame_query_handler=self._fame_query_handler,
+        )
 
     @property
     def game_service(self):
@@ -38,7 +44,7 @@ class ApplicationContext:
         return self._params
 
 
-def _get_params() -> DdGameParams:
+def _get_params() -> GameParams:
     path = "configuration/short.ini"
     config = configparser.ConfigParser()
     config.read(path)
@@ -81,7 +87,7 @@ def _get_params() -> DdGameParams:
         gap_days=config["playoff"].getint("gap_days", 0),
         match_importance=config["playoff"].getfloat("match_importance", 0.0),
     )
-    return DdGameParams(
+    return GameParams(
         attendance_params=attendance_params,
         championship_params=championship_params,
         playoff_params=playoff_params,

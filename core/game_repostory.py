@@ -5,6 +5,8 @@ Created May 11, 2024
 """
 import os
 
+from core.game import Game
+
 
 class GameRepository:
     _SAVE_FOLDER = ".saves"
@@ -12,16 +14,16 @@ class GameRepository:
     def __init__(self):
         self._games = {}
 
-    def get_game(self, game_id):
+    def get_game(self, game_id) -> Game:
         if game_id not in self._games:
             self._load_game(game_id)
 
         return self._games.get(game_id)
 
-    def save_game(self, game, quitting=False):
+    def save_game(self, game, persistent_save=False):
         self._games[game.game_id] = game
 
-        if quitting:
+        if persistent_save:
             self._save_game_to_file(game.game_id, game)
 
     def _load_game(self, game_id):
