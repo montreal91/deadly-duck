@@ -45,8 +45,9 @@ def UserAction(fun: Callable) -> Callable:
             return fun(*args, **kwargs)
         except (AssertionError, ValueError) as error:
             print(error)
-        except TypeError:
+        except TypeError as error:
             print("Incorrect number of arguments.")
+            print(error)
     return res
 
 

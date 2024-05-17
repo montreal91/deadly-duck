@@ -208,8 +208,8 @@ class DdPlayoff(DdAbstractCompetition):
 
     def GetClubFame(self, club_pk):
         def Apow(x, k):
-            if x == 0:
-                return 0
+            #if x == 0:
+            #    return 0
             return k * 2 ** x
         wins = 0
 

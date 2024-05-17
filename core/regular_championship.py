@@ -77,13 +77,15 @@ class DdRegularChampionship(DdAbstractCompetition):
         return "Championship"
 
     def GetClubFame(self, club_pk):
-        def Asum(x, k, wtf):
-            y = max(x - wtf, 0)
-            return k * (y * (y - 1) // 2)
+        #def Asum(x, k, wtf):
+        #    y = max(x - wtf, 0)
+        #    return k * (y * (y - 1) // 2)
 
         for pos, row in enumerate(self.standings):
-            if row.club_pk == club_pk:
-                return Asum(pos, -50, 10)
+            if row.club_pk == club_pk and pos == 0:
+                return 500
+
+        return 0
 
     def Update(self) -> Optional[List[DdMatchResult]]:
         if self.current_matches is None:
