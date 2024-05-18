@@ -75,16 +75,16 @@ class DdOpponentStruct:
 
 
 logging.basicConfig(
-    level=logging.DEBUG,  # Set the logging level to INFO
+    level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',  # Define the log message format
-    filename='app.log',  # Specify the name of the log file
-    filemode='a'  # Set the file mode to 'w' to overwrite the log file each time the program runs
+    filename='app.log',
+    filemode='a'
 )
 
 
 class Game:
     """
-    A class that incapsulates the game logic.
+    A class that encapsulates the game logic.
 
     Public methods of this class validate user inputs. If input is incorrect,
     an error with (hopefully) descriptive message is raised.
@@ -605,8 +605,7 @@ class Game:
             return res
         raise Exception("Bad schedule.")
 
-    def _GetUserPlayers(self, pk: int) -> List[DdPlayer]:
-
+    def _GetUserPlayers(self, pk: int) -> List[DdClubPlayerSlot]:
         def SetContractPrices(slot: DdClubPlayerSlot) -> DdClubPlayerSlot:
             slot.contract_cost = self._contract_calculator(slot.player.level)
             return slot
