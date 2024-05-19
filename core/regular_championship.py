@@ -12,7 +12,7 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 
-from core.club import DdClub
+from core.club import Club
 from core.competition import DdAbstractCompetition
 from core.competition import ScheduleDay
 from core.match import DdMatchParams
@@ -37,7 +37,7 @@ class DdRegularChampionship(DdAbstractCompetition):
     _results: List[List[DdMatchResult]]
     _standings: Dict[int, List[DdStandingsRowStruct]]
 
-    def __init__(self, clubs: Dict[int, DdClub], params: DdChampionshipParams):
+    def __init__(self, clubs: Dict[int, Club], params: DdChampionshipParams):
         super().__init__(clubs, params)
         self._MakeSchedule()
 

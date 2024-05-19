@@ -1,3 +1,4 @@
+
 """
 The actual game.
 
@@ -26,7 +27,7 @@ from configuration.config_game import DdGameplayConstants
 from core.attendance import DdAttendanceParams
 from core.attendance import DdAttendanceCalculator
 from core.attendance import DdCourt
-from core.club import DdClub
+from core.club import Club
 from core.club import DdClubPlayerSlot
 from core.competition import DdAbstractCompetition
 from core.financial import DdPracticeCalculator
@@ -48,7 +49,7 @@ from core.serialization import DdJsonDecoder
 _CLUB_INDEX_ERROR = "Incorrect club index."
 
 
-class DdGameParams(NamedTuple):
+class GameParams(NamedTuple):
     """Passive class to store game parameters."""
 
     # Various parameters
@@ -74,16 +75,16 @@ class DdOpponentStruct:
 
 
 logging.basicConfig(
-    level=logging.DEBUG,  # Set the logging level to INFO
+    level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',  # Define the log message format
-    filename='app.log',  # Specify the name of the log file
-    filemode='a'  # Set the file mode to 'w' to overwrite the log file each time the program runs
+    filename='app.log',
+    filemode='a'
 )
 
 
-class DdGameDuck:
+class Game:
     """
-    A class that incapsulates the game logic.
+    A class that encapsulates the game logic.
 
     Public methods of this class validate user inputs. If input is incorrect,
     an error with (hopefully) descriptive message is raised.
@@ -95,20 +96,23 @@ class DdGameDuck:
         DdCourtSurface.HARD,
     )
 
-
+    _game_id: str
+    _manager_club_id: int
     _attendance_calculator: Callable
-    _clubs: Dict[int, DdClub]
+    _clubs: Dict[int, Club]
     _competition: DdAbstractCompetition
     _contract_calculator: Callable[[int], int]
     _free_agents: List[DdPlayer]
     _history: List[Dict[str, Any]]
-    _params: DdGameParams
+    _params: GameParams
     _player_factory: DdPlayerFactory
     _season_fame: Dict[int, int]
     _results: List[DdMatchResult]
     _practice_calculator: DdPracticeCalculator
 
-    def __init__(self, params: DdGameParams):
+    def __init__(self, params: GameParams, game_id: str, manager_club_id: int):
+        self._game_id = game_id
+        self._manager_club_id = manager_club_id
         self._free_agents = []
         self._history = [{}]
         self._params = params
@@ -136,24 +140,44 @@ class DdGameDuck:
         decoder = DdJsonDecoder()
         decoder.Register(DdPlayer)
         decoder.Register(DdClubPlayerSlot)
-        with open("configuration/clubs.json", "r") as data_file:
+        with open("data/clubs.json", "r") as data_file:
             club_data = json.load(data_file, object_hook=decoder)
 
-        for pk, club in enumerate(club_data):
-            self._AddClub(pk=pk, club_data=club)
+        for club_id, club in enumerate(club_data):
+            self._add_club(club_id=club_id, club_data=club)
+            if club_id == manager_club_id:
+                self._clubs[club_id].SetCoachPower(0)
+                self._clubs[club_id].SetControlled(True)
 
         self._competition = DdRegularChampionship(
             self._clubs, self._params.championship_params
         )
 
-        self._Simulate(self._params.years_to_simulate)
-        self._GenerateFreeAgents()
+        self._simulate(self._params.years_to_simulate)
+        self._generate_free_agents()
+
+    @property
+    def day(self):
+        return self._competition.day
+
+    @property
+    def clubs(self) -> List[Club]:
+        return list(self._clubs.values())
+
+    @property
+    def game_id(self) -> str:
+        return self._game_id
+
+    @property
+    def manager_club_id(self):
+        return self._manager_club_id
 
     @property
     def is_over(self) -> bool:
         """Indicates if game is over."""
 
-        return not any(club.is_controlled for club in self._clubs.values())
+        return False  # The game never ends yet :)
+        # return not any(club.is_controlled for club in self._clubs.values())
 
     @property
     def season_over(self) -> bool:
@@ -161,7 +185,7 @@ class DdGameDuck:
 
         return self._competition.title == "Cup" and self._competition.is_over
 
-    def FirePlayer(self, i: int, pk: int):
+    def fire_player(self, i: int, pk: int):
         """Fires the selected player from user's club."""
 
         assert 0 <= pk < len(self._clubs), _CLUB_INDEX_ERROR
@@ -177,28 +201,29 @@ class DdGameDuck:
 
         self._free_agents.append(player)
 
-    def GetContext(self, pk: int) -> Dict[str, Any]:
+    def get_context(self, pk: int) -> Dict[str, Any]:
         """A dictionary with information available for user."""
 
         assert 0 <= pk < len(self._clubs), _CLUB_INDEX_ERROR
 
         return dict(
             balance=self._clubs[pk].account.balance,
+            club_name=self._clubs[pk].name,
             day=self._competition.day,
             clubs=[club.name for club in self._clubs.values()],
             court=self._clubs[pk].court.json,
-            free_agents=self._GetFreeAgents(),
+            free_agents=self._get_free_agents(),
             history=self._history,
             last_results=self._last_results,
-            opponent=self._GetOpponent(pk),
-            practice_cost=self._CalculateClubPracticeCost(club=self._clubs[pk]),
+            opponent=self._get_opponent(pk),
+            practice_cost=self._calculate_club_practice_cost(club=self._clubs[pk]),
             remaining_matches=self._competition.GetClubSchedule(pk),
             standings=self._standings,
             title=self._competition.title,
-            user_players=self._GetUserPlayers(pk),
+            user_players=self._get_user_players(pk),
         )
 
-    def HireFreeAgent(self, club_pk: int, player_pk: int):
+    def hire_free_agent(self, club_pk: int, player_pk: int):
         """Hires a free agent for the given club."""
 
         assert player_pk in range(len(self._free_agents)), (
@@ -206,10 +231,10 @@ class DdGameDuck:
         )
 
         player = self._free_agents[player_pk]
-        self._ProcessPlayerHire(club_pk=club_pk, player=player)
+        self._process_player_hire(club_pk=club_pk, player=player)
         self._free_agents.pop(player_pk)
 
-    def HireNewPlayer(self, surface: str, pk: int):
+    def hire_new_player(self, surface: str, club_id: int):
         """Hires a new player for the given club."""
 
         choices = "|".join(self._SURFACES)
@@ -223,62 +248,62 @@ class DdGameDuck:
             age=DdGameplayConstants.STARTING_AGE.value,
             speciality=surface
         )
-        self._ProcessPlayerHire(club_pk=pk, player=player)
+        self._process_player_hire(club_pk=club_id, player=player)
 
-    def ProceedToNextCompetition(self):
+    def proceed_to_next_competition(self):
         """Updates game while player action is not required."""
 
         step = True
         while self._competition.day != 0 and step:
-            step = self.Update()
+            step = self.update()
 
-    def SelectCoachForPlayer(
-            self, coach_index: int, player_index: int, pk: int
+    def select_coach_for_player(
+        self, coach_index: int, player_index: int, club_index: int
     ):
         """
         Selects a coach (bad, normal, or good) for the player in the club.
         """
 
-        assert pk in self._clubs, _CLUB_INDEX_ERROR
-        assert 0 <= player_index < len(self._clubs[pk].players), (
+        assert club_index in self._clubs, _CLUB_INDEX_ERROR
+        assert 0 <= player_index < len(self._clubs[club_index].players), (
             "Incorrect player index."
         )
-        assert 0 <= coach_index < len(DdClub.COACH_LEVELS), (
+        assert 0 <= coach_index < len(Club.COACH_LEVELS), (
             "Incorrect coach index."
         )
 
-        self._clubs[pk].SelectCoach(
+        self._clubs[club_index].SelectCoach(
             coach_index=coach_index, player_index=player_index
         )
 
-    def SelectCourt(self, pk: int, court: str):
+    def select_court(self, club_id: int, court: str):
         """Selects court for club from available options."""
 
-        assert pk in self._clubs, _CLUB_INDEX_ERROR
+        assert club_id in self._clubs, _CLUB_INDEX_ERROR
         possible_courts = "|".join(self._params.courts)
         assert court in self._params.courts, (
             "Incorrect court type.\n"
             f"Possible correct types: {possible_courts}"
         )
 
-        self._clubs[pk].court = deepcopy(self._params.courts[court])
+        self._clubs[club_id].court = deepcopy(self._params.courts[court])
 
-    def SelectPlayer(self, i: int, pk: int):
+    def select_player(self, player_id: int, club_id: int):
         """Sets selected player for user."""
 
-        assert 0 <= pk < len(self._clubs), "Incorrect club pk."
-        assert 0 <= i < len(self._clubs[pk].players), (
+        assert 0 <= club_id < len(self._clubs), "Incorrect club pk."
+        assert 0 <= player_id < len(self._clubs[club_id].players), (
             "Incorrect player index."
         )
-        self._clubs[pk].SelectPlayer(i)
+        self._clubs[club_id].SelectPlayer(player_id)
 
-    def SetControlled(self, pk: int, is_controlled: bool):
+    def _set_controlled(self, pk: int, is_controlled: bool):
         """Sets flag wether club is controlled by a user or not."""
 
         assert 0 <= pk < len(self._clubs), "Incorrect club pk."
         self._clubs[pk].SetControlled(is_controlled)
 
-    def SetTicketPrice(self, pk: int, price: int):
+    def set_ticket_price(self, pk: int, price: int):
         """Sets ticket price on club's court."""
 
         assert pk in self._clubs, _CLUB_INDEX_ERROR
@@ -286,38 +311,38 @@ class DdGameDuck:
 
         self._clubs[pk].court.ticket_price = price
 
-    def SignPlayer(self, pk: int, i: int):
+    def sign_player(self, club_id: int, player_id: int):
         """Signs a new contract with a player for the next season."""
 
-        assert 0 <= pk < len(self._clubs), "Incorrect club pk."
+        assert 0 <= club_id < len(self._clubs), "Incorrect club pk."
 
-        club = self._clubs[pk]
-        players = self._clubs[pk].players
-        assert 0 <= i < len(players), (
+        club = self._clubs[club_id]
+        players = self._clubs[club_id].players
+        assert 0 <= player_id < len(players), (
             "Incorrect player index."
         )
-        assert not players[i].has_next_contract, (
+        assert not players[player_id].has_next_contract, (
             "This player already has a contract for the next season."
         )
         assert (
-                players[i].player.age + 1 < DdGameplayConstants.RETIREMENT_AGE.value
+                players[player_id].player.age + 1 < DdGameplayConstants.RETIREMENT_AGE.value
         ), (
-            f"{players[i].player.initials} is too old to play next season."
+            f"{players[player_id].player.initials} is too old to play next season."
         )
 
-        cost = self._contract_calculator(players[i].player.level)
-        assert self._clubs[pk].account.balance >= cost, (
+        cost = self._contract_calculator(players[player_id].player.level)
+        assert self._clubs[club_id].account.balance >= cost, (
             "Insufficient funds.\n"
             f"You need at least ${cost}."
         )
 
-        club.ContractPlayer(i)
+        club.ContractPlayer(player_id)
         club.account.ProcessTransaction(DdTransaction(
             -cost,
-            f"Renewed player contract with {players[i].player.initials} "
+            f"Renewed player contract with {players[player_id].player.initials} "
         ))
 
-    def Update(self):
+    def update(self):
         """
         Updates game state.
 
@@ -364,7 +389,7 @@ class DdGameDuck:
 
     @property
     def _contract_check(self) -> bool:
-        def CheckClub(club: DdClub) -> bool:
+        def CheckClub(club: Club) -> bool:
             for slot in club.players:
                 next_age = slot.player.age + 1
                 if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
@@ -432,7 +457,7 @@ class DdGameDuck:
         if self._competition.title != "Championship":
             return True
 
-        def CheckClub(club: DdClub) -> bool:
+        def CheckClub(club: Club) -> bool:
             return self._CalculateClubPracticeCost(club) <= club.account.balance
 
         for club in self._clubs.values():
@@ -442,8 +467,9 @@ class DdGameDuck:
                 return False
         return True
 
-    def _AddClub(self, pk: int, club_data: Dict[str, Any]):
-        club = DdClub(
+    def _add_club(self, club_id: int, club_data: Dict[str, Any]):
+        club = Club(
+            club_id=club_id,
             name=club_data["name"],
             surface=club_data["surface"],
             coach_power=club_data["coach_power"],
@@ -463,10 +489,10 @@ class DdGameDuck:
             "Initial balance",
         ))
 
-        self._clubs[pk] = club
-        self._season_fame[pk] = 0
+        self._clubs[club_id] = club
+        self._season_fame[club_id] = 0
 
-    def _CalculateClubPracticeCost(self, club: DdClub) -> int:
+    def _CalculateClubPracticeCost(self, club: Club) -> int:
         slots = [(s.player.level, s.coach_level) for s in club.players]
         return sum(self._practice_calculator(*slot) for slot in slots)
 
@@ -475,7 +501,7 @@ class DdGameDuck:
             return
 
         for result in results:
-            home_club: DdClub = self._clubs[result.home_pk]
+            home_club: Club = self._clubs[result.home_pk]
             attendance = self._attendance_calculator(
                 ticket_price=home_club.court.ticket_price,
                 home_fame=home_club.fame,
@@ -563,7 +589,7 @@ class DdGameDuck:
         if actual_match.home_pk == pk:
             # Home case
             res = DdOpponentStruct()
-            opponent_club: DdClub = self._clubs[actual_match.away_pk]
+            opponent_club: Club = self._clubs[actual_match.away_pk]
             res.club_name = opponent_club.name
             res.match_surface = self._clubs[pk].surface
             res.player = opponent_club.selected_player
@@ -580,9 +606,8 @@ class DdGameDuck:
             return res
         raise Exception("Bad schedule.")
 
-    def _GetUserPlayers(self, pk: int) -> List[DdPlayer]:
-
-        def SetContractPrices(slot: DdClubPlayerSlot) -> DdClubPlayerSlot:
+    def _get_user_players(self, pk: int) -> List[DdPlayer]:
+        def set_contract_prices(slot: DdClubPlayerSlot) -> DdClubPlayerSlot:
             slot.contract_cost = self._contract_calculator(slot.player.level)
             return slot
 
@@ -603,7 +628,7 @@ class DdGameDuck:
 
     def _IsClubValid(self, pk: int) -> bool:
         opponent = self._GetOpponent(pk)
-        club: DdClub = self._clubs[pk]
+        club: Club = self._clubs[pk]
         if opponent is None or not club.is_controlled:
             return True
 
@@ -624,7 +649,7 @@ class DdGameDuck:
 
         return True
 
-    def _LogTrainingCosts(self, club: DdClub):
+    def _LogTrainingCosts(self, club: Club):
         with open(".logs/trainings.csv", "a") as log_file:
             cost = self._CalculateClubPracticeCost(club)
             print(
@@ -635,7 +660,7 @@ class DdGameDuck:
     def _NextSeason(self):
         previous_standings = self._history[-1]["Championship"]
         for row in previous_standings:
-            club: DdClub = self._clubs[row.club_pk]
+            club: Club = self._clubs[row.club_pk]
             for slot in club.players:
                 slot.player.AgeUp()
                 slot.player.AfterSeasonRest()
@@ -649,14 +674,13 @@ class DdGameDuck:
 
             club.AddPlayer(self._player_factory.CreatePlayer(
                 age=DdGameplayConstants.STARTING_AGE.value,
-                level=randint(0, 5),
+                level=randint(5, 10),
                 speciality=club.surface
             ))
 
         self._GenerateFreeAgents()
 
         self._SaveHistory()
-        self._ShuffleCoachPowers()
         self._competition = DdRegularChampionship(
             self._clubs,
             self._params.championship_params
@@ -718,47 +742,6 @@ class DdGameDuck:
         with open(".logs/results.csv", "a") as results_file:
             for match in self._competition.results_:
                 print(match.csv, file=results_file)
-
-    def _ShuffleCoachPowers(self):
-        from random import shuffle
-        strong_clubs = [
-            pk for pk, club in self._clubs.items()
-            if club.coach_power == 3 and not club.is_controlled
-        ]
-        medium_clubs = [
-            pk for pk, club in self._clubs.items()
-            if club.coach_power == 2 and not club.is_controlled
-        ]
-        weaksy_clubs = [
-            pk for pk, club in self._clubs.items()
-            if club.coach_power == 1 and not club.is_controlled
-        ]
-
-        shuffle(strong_clubs)
-        shuffle(medium_clubs)
-        shuffle(weaksy_clubs)
-
-        while len(strong_clubs) > 3:
-            medium_clubs.append(strong_clubs.pop())
-
-        while len(medium_clubs) > 5:
-            weaksy_clubs.append(medium_clubs.pop())
-
-        s, m, w = strong_clubs.pop(), medium_clubs.pop(), weaksy_clubs.pop()
-
-        logging.debug(f"Strong club going weak:   {self._clubs[s].name}")
-        logging.debug(f"Medium club going strong: {self._clubs[m].name}")
-        logging.debug(f"Weak club going medium:   {self._clubs[w].name}")
-
-        s, m, w = m, w, s  # cycle
-
-        strong_clubs.append(s)
-        medium_clubs.append(m)
-        weaksy_clubs.append(w)
-
-        [self._clubs[pk].SetCoachPower(3) for pk in strong_clubs]
-        [self._clubs[pk].SetCoachPower(2) for pk in medium_clubs]
-        [self._clubs[pk].SetCoachPower(1) for pk in weaksy_clubs]
 
     def _Simulate(self, years):
         while len(self._history) < years:

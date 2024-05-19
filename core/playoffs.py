@@ -12,7 +12,7 @@ from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 
-from core.club import DdClub
+from core.club import Club
 from core.competition import DdAbstractCompetition
 from core.competition import ScheduleDay
 from core.match import DdMatchParams
@@ -158,7 +158,7 @@ class DdPlayoff(DdAbstractCompetition):
 
     def __init__(
         self,
-        clubs: Dict[int, DdClub],
+        clubs: Dict[int, Club],
         params: DdPlayoffParams,
         standings: List[DdStandingsRowStruct],
     ):
@@ -171,6 +171,7 @@ class DdPlayoff(DdAbstractCompetition):
         self._round = 1
         self._series = []
         self._past_series = []
+        self._participants = []
         self._MakeNewRound()
 
     @property
@@ -207,6 +208,9 @@ class DdPlayoff(DdAbstractCompetition):
         return "Cup"
 
     def GetClubFame(self, club_pk):
+        if club_pk not in self._participants:
+            return 0
+
         def Apow(x, k):
             return k * 2 ** x
 
@@ -272,6 +276,7 @@ class DdPlayoff(DdAbstractCompetition):
                     self._standings[predraw[bottom]].club_pk,
                 )
                 self._series.append(series)
+                self._participants.extend(series.pair)
         elif self._params.length == len(self._SHORT) * 2:
             predraw = _MakePreDraw(4)
             for top, bottom in self._SHORT:
@@ -281,6 +286,7 @@ class DdPlayoff(DdAbstractCompetition):
                     self._standings[predraw[bottom]].club_pk,
                 )
                 self._series.append(series)
+                self._participants.extend(series.pair)
 
     def _MakeNewRound(self):
         if not self._series:
