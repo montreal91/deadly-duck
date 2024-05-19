@@ -65,26 +65,33 @@ class SimplifiedApp:
         self._game_service = get_application_context().game_service
 
         if not load:
-            self._game_service.create_new_game(self._game_id, self._manager_club_id)
+            self._game_service.create_new_game(
+                self._game_id,
+                self._manager_club_id
+            )
+        else:
+            self._manager_club_id = self._game_service.get_manager_club_id(
+                self._game_id
+            )
 
         self._actions = {}
         self._is_running = True
 
-        self._InitActions()
+        self._init_actions()
 
     def run(self):
         """Runs the game."""
 
         print("Type ? for help.")
         while self._is_running and not self._game_is_over:
-            self._PrintMain()
-            self._ProcessInput()
+            self._print_main()
+            self._process_input()
 
     @property
     def _game_is_over(self) -> bool:
         return self._game_service.game_is_over(self._game_id)
 
-    def _InitActions(self):
+    def _init_actions(self):
         self._actions["?"] = self.__action_help
         self._actions["agents"] = self.__action_agents
         self._actions["coach"] = self.__action_coach
@@ -109,20 +116,20 @@ class SimplifiedApp:
         self._actions["select"] = self.__action_select
         self._actions["sh"] = self.__action_show
         self._actions["show"] = self.__action_show
-        self._actions["sign"] = self.__ActionSign
-        self._actions["st"] = self.__ActionStandings
-        self._actions["standings"] = self.__ActionStandings
-        self._actions["t"] = self.__ActionTicket
-        self._actions["ticket"] = self.__ActionTicket
-        self._actions["u"] = self.__ActionUpcoming
-        self._actions["upcoming"] = self.__ActionUpcoming
+        self._actions["sign"] = self.__action_sign
+        self._actions["st"] = self.__action_standings
+        self._actions["standings"] = self.__action_standings
+        self._actions["t"] = self.__action_ticket
+        self._actions["ticket"] = self.__action_ticket
+        self._actions["u"] = self.__action_upcoming
+        self._actions["upcoming"] = self.__action_upcoming
 
         self._actions["_$"] = self.__Action_Finances
         self._actions["_d"] = self.__Action_DropAccounts
         self._actions["_l"] = self.__Action_Levels
-        self._actions["_m"] = self.__Action_Measure
+        self._actions["_m"] = self.__action_measure
 
-    def _PrintMain(self):
+    def _print_main(self):
         info: MainMenuInfo = self._game_service.get_main_screen_info(
             self._game_id,
             self._manager_club_id
@@ -133,7 +140,7 @@ class SimplifiedApp:
         print("Balance: ${0:d}".format(info.balance))
         print()
 
-    def _ProcessInput(self):
+    def _process_input(self):
         user_input = input(">> ").split("/")
         self._actions.setdefault(
             user_input[0], lambda *_: print("No such action.")
@@ -177,10 +184,10 @@ class SimplifiedApp:
                 sys.stdout.write(RESET)
 
     @UserAction
-    def __Action_Measure(self):
+    def __action_measure(self):
         import time
         dt1 = time.time()
-        self._game.get_context(self._manager_club_id)
+        self._get_actual_context()
         dt2 = time.time()
 
         print(f"Time to calculate context: {dt2 - dt1:.4f}")
@@ -279,14 +286,14 @@ class SimplifiedApp:
         if s < 1:
             print(f"Season should be a positive integer")
             return
-        _PrintRegularStandings(
+        _print_regular_standings(
             standings=history[s - 1]["Championship"],
             club_names=ctx["clubs"],
             users_club=self._manager_club_id,
         )
         if "Cup" in history[s - 1]:
             print("=" * 50)
-            _PrintCupStandings(
+            _print_cup_standings(
                 history[s - 1]["Cup"],
                 ctx["clubs"],
                 self._manager_club_id,
@@ -363,7 +370,7 @@ class SimplifiedApp:
         print("_" * 30)
 
         if opponent.player is not None:
-            _PrintPlayer(opponent.player, False)
+            _print_player(opponent.player, False)
 
     @UserAction
     def __action_proceed(self):
@@ -371,6 +378,7 @@ class SimplifiedApp:
 
     @UserAction
     def __action_quit(self):
+        self._game_service.save_game(self._game_id)
         self._is_running = False
 
     @UserAction
@@ -397,9 +405,9 @@ class SimplifiedApp:
                 f"{clubs[res.home_pk]} vs "
                 f"{clubs[res.away_pk]}\n"
                 f"[{res.home_player_snapshot['level']}] "
-                f"{_GetPlayerName(res.home_player_snapshot)} vs "
+                f"{_get_player_name(res.home_player_snapshot)} vs "
                 f"[{res.away_player_snapshot['level']}] "
-                f"{_GetPlayerName(res.away_player_snapshot)}\n"
+                f"{_get_player_name(res.away_player_snapshot)}\n"
                 f"{res.full_score}"
             )
 
@@ -421,7 +429,7 @@ class SimplifiedApp:
         context = self._get_actual_context()
         players_data = context["user_players"]
         assert 0 <= index < len(players_data), "Incorrect player index"
-        _PrintPlayer(
+        _print_player(
             players_data[index].player,
             own=True,
             contract_cost=players_data[index].contract_cost,
@@ -429,32 +437,38 @@ class SimplifiedApp:
         )
 
     @UserAction
-    def __ActionSign(self, player_index: str):
-        self._game.SignPlayer(pk=self._manager_club_id, i=int(player_index))
+    def __action_sign(self, player_index: str):
+        self._game_service.sign_player(
+            game_id=self._game_id,
+            manager_club_id=self._manager_club_id,
+            player_id=int(player_index)
+        )
 
     @UserAction
-    def __ActionStandings(self):
+    def __action_standings(self):
         context = self._get_actual_context()
         if context["title"] == "Cup":
-            _PrintCupStandings(
+            _print_cup_standings(
                 context["standings"],
                 context["clubs"],
                 self._manager_club_id,
                 3,
             )
         else:
-            _PrintRegularStandings(
+            _print_regular_standings(
                 context["standings"],
                 context["clubs"],
                 self._manager_club_id
             )
 
     @UserAction
-    def __ActionTicket(self, ticket_price):
-        self._game.SetTicketPrice(pk=self._manager_club_id, price=int(ticket_price))
+    def __action_ticket(self, ticket_price):
+        self._game_service.set_ticket_price(
+            self._game_id, self._manager_club_id, int(ticket_price)
+        )
 
     @UserAction
-    def __ActionUpcoming(self):
+    def __action_upcoming(self):
         context = self._get_actual_context()
         for match in context["remaining_matches"][:5]:
             if match.home_pk == self._manager_club_id:
@@ -472,7 +486,7 @@ class SimplifiedApp:
         return self._game_service.get_game_context(self._game_id)
 
 
-def _GetPlayerName(player_json: Dict[str, Any]) -> str:
+def _get_player_name(player_json: Dict[str, Any]) -> str:
     return (
         f"{player_json['first_name'][0]}. "
         f"{player_json['second_name'][0]}. "
@@ -480,8 +494,8 @@ def _GetPlayerName(player_json: Dict[str, Any]) -> str:
     )
 
 
-def _PrintCupStandings(series, club_names, users_club, rounds):
-    def RoundIndexGenerator(n):
+def _print_cup_standings(series, club_names, users_club, rounds):
+    def round_index_generator(n):
         first = 0
         for i in range(n):
             res = list(range(first, first + 2 ** (n - i - 1)))
@@ -492,7 +506,7 @@ def _PrintCupStandings(series, club_names, users_club, rounds):
         "{top_name:s} vs {bottom_name:s}\n"
         "    {top_score:d}:{bottom_score:n}"
     )
-    for i, _round in RoundIndexGenerator(rounds):
+    for i, _round in round_index_generator(rounds):
         if _round[0] == len(series):
             break
         print(f"Round {i + 1}")
@@ -511,7 +525,7 @@ def _PrintCupStandings(series, club_names, users_club, rounds):
         print()
 
 
-def _PrintPlayer(
+def _print_player(
         player: DdPlayer,
         next_contract: bool,
         own: bool = False,
@@ -555,7 +569,7 @@ def _PrintPlayer(
             print(f"\nConract cost: ${contract_cost}")
 
 
-def _PrintRegularStandings(standings, club_names, users_club):
+def _print_regular_standings(standings, club_names, users_club):
     standings = sorted(
         standings,
         key=lambda x: (x.sets_won, x.games_won),
@@ -581,7 +595,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "--club",
         type=int,
-        choices=range(16),
+        choices=range(18),
         default=0,
         help="Selects a specific club."
     )
