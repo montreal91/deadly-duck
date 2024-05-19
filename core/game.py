@@ -351,7 +351,7 @@ class Game:
         """
 
         for club_pk in self._clubs:
-            if not self._IsClubValid(club_pk):
+            if not self._is_club_valid(club_pk):
                 self._clubs[club_pk].SetControlled(False)
         assert not self.is_over, ("The game is over.")
 
@@ -365,20 +365,20 @@ class Game:
             "You have insufficient funds to perform such kind of training."
         )
 
-        self._PerformPractice()
-        self._PlayOneDay()
-        self._Unselect()
+        self._perform_practice()
+        self._play_one_day()
+        self._unselect()
 
         if self.season_over:
-            self._CheckContracts()
-            self._UpdateSeasonFame()
-            self._NextSeason()
-            self._DropStats()
+            self._check_contracts()
+            self._update_season_fame()
+            self._next_season()
+            self._drop_stats()
 
         if self._competition.is_over:
-            self._UpdateSeasonFame()
-            self._SaveHistory()
-            self._StartPlayoff()
+            self._update_season_fame()
+            self._save_history()
+            self._start_playoff()
         return True
 
     @property
@@ -389,7 +389,7 @@ class Game:
 
     @property
     def _contract_check(self) -> bool:
-        def CheckClub(club: Club) -> bool:
+        def check_club(club: Club) -> bool:
             for slot in club.players:
                 next_age = slot.player.age + 1
                 if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
@@ -401,7 +401,7 @@ class Game:
         for club in self._clubs.values():
             if not club.is_controlled:
                 continue
-            if not CheckClub(club):
+            if not check_club(club):
                 return False
 
         return True
@@ -411,7 +411,7 @@ class Game:
         if self._competition.current_matches is None:
             return True
 
-        def HasHomeMatch(pk):
+        def has_home_match(pk):
             for match in self._competition.current_matches:
                 if match.home_pk == pk:
                     return True
@@ -420,7 +420,7 @@ class Game:
         for pk, club in self._clubs.items():
             if not club.is_controlled:
                 continue
-            if club.court.rent_cost > club.account.balance and HasHomeMatch(pk):
+            if club.court.rent_cost > club.account.balance and has_home_match(pk):
                 return False
 
         return True
@@ -457,13 +457,13 @@ class Game:
         if self._competition.title != "Championship":
             return True
 
-        def CheckClub(club: Club) -> bool:
-            return self._CalculateClubPracticeCost(club) <= club.account.balance
+        def check_club(club: Club) -> bool:
+            return self._calculate_club_practice_cost(club) <= club.account.balance
 
         for club in self._clubs.values():
             if not club.is_controlled:
                 continue
-            if not CheckClub(club):
+            if not check_club(club):
                 return False
         return True
 
@@ -492,11 +492,11 @@ class Game:
         self._clubs[club_id] = club
         self._season_fame[club_id] = 0
 
-    def _CalculateClubPracticeCost(self, club: Club) -> int:
+    def _calculate_club_practice_cost(self, club: Club) -> int:
         slots = [(s.player.level, s.coach_level) for s in club.players]
         return sum(self._practice_calculator(*slot) for slot in slots)
 
-    def _CalculateMatchIncome(self, results: Optional[List[DdMatchResult]]):
+    def _calculate_match_income(self, results: Optional[List[DdMatchResult]]):
         if results is None:
             return
 
@@ -528,23 +528,23 @@ class Game:
                 ),
             ))
 
-    def _CheckContracts(self):
+    def _check_contracts(self):
         if not self._contract_check:
             raise AssertionError(
                 "Your club has uncontracted players.\n"
                 "You should wether contract them or fire."
             )
 
-    def _CollectCompetitionFame(self):
+    def _collect_competition_fame(self):
         for pk in self._clubs:
             self._season_fame[pk] = self._competition.GetClubFame(pk)
 
-    def _DropStats(self):
+    def _drop_stats(self):
         for club in self._clubs.values():
             for data in club.players:
                 data.player.DropStats()
 
-    def _GenerateFreeAgents(self):
+    def _generate_free_agents(self):
         new_agents = []
         for _ in range(randint(3, 10)):
             new_agents.append(self._player_factory.CreatePlayer(
@@ -561,14 +561,14 @@ class Game:
         )
         self._free_agents = new_agents
 
-    def _GetFreeAgents(self) -> List[Tuple[DdPlayer, int]]:
+    def _get_free_agents(self) -> List[Tuple[DdPlayer, int]]:
         res = []
         for agent in self._free_agents:
             res.append((agent, self._contract_calculator(agent.level),))
         return res
 
-    def _GetOpponent(self, pk: int) -> Optional[DdOpponentStruct]:
-        def ScheduleFilter(pair: DdScheduledMatchStruct):
+    def _get_opponent(self, pk: int) -> Optional[DdOpponentStruct]:
+        def schedule_filter(pair: DdScheduledMatchStruct):
             if pair.home_pk == pk:
                 return True
             return pair.away_pk == pk
@@ -581,7 +581,7 @@ class Game:
         # Just in case
         if schedule is None:
             return None
-        planned_match = [pair for pair in schedule if ScheduleFilter(pair)]
+        planned_match = [pair for pair in schedule if schedule_filter(pair)]
 
         if not planned_match:
             return None
@@ -611,9 +611,9 @@ class Game:
             slot.contract_cost = self._contract_calculator(slot.player.level)
             return slot
 
-        return [SetContractPrices(slot) for slot in self._clubs[pk].players]
+        return [set_contract_prices(slot) for slot in self._clubs[pk].players]
 
-    def _HirePlayersIfNeeded(self):
+    def _hire_players_if_needed(self):
         for club in self._clubs.values():
             if club.is_controlled:
                 continue
@@ -626,8 +626,8 @@ class Game:
                 )
                 club.AddPlayer(new_player)
 
-    def _IsClubValid(self, pk: int) -> bool:
-        opponent = self._GetOpponent(pk)
+    def _is_club_valid(self, pk: int) -> bool:
+        opponent = self._get_opponent(pk)
         club: Club = self._clubs[pk]
         if opponent is None or not club.is_controlled:
             return True
@@ -649,15 +649,15 @@ class Game:
 
         return True
 
-    def _LogTrainingCosts(self, club: Club):
+    def _log_training_costs(self, club: Club):
         with open(".logs/trainings.csv", "a") as log_file:
-            cost = self._CalculateClubPracticeCost(club)
+            cost = self._calculate_club_practice_cost(club)
             print(
                 f"{len(self._history) + 1},{self._competition.day},{cost}",
                 file=log_file
             )
 
-    def _NextSeason(self):
+    def _next_season(self):
         previous_standings = self._history[-1]["Championship"]
         for row in previous_standings:
             club: Club = self._clubs[row.club_pk]
@@ -678,38 +678,38 @@ class Game:
                 speciality=club.surface
             ))
 
-        self._GenerateFreeAgents()
+        self._generate_free_agents()
 
-        self._SaveHistory()
+        self._save_history()
         self._competition = DdRegularChampionship(
             self._clubs,
             self._params.championship_params
         )
         self._history.append({})
 
-    def _PerformPractice(self):
+    def _perform_practice(self):
         if not self._can_practice:
             return
 
         for club in self._clubs.values():
             # This cruft is for debugging/balance adjusting reasons.
             if club.is_controlled:
-                self._LogTrainingCosts(club)
+                self._log_training_costs(club)
 
             if club.is_controlled:
                 club.account.ProcessTransaction(DdTransaction(
-                    -self._CalculateClubPracticeCost(club),
+                    -self._calculate_club_practice_cost(club),
                     f"Practice on day {self._competition.day}"
                 ))
             club.PerformPractice()
 
-    def _PlayOneDay(self):
+    def _play_one_day(self):
         self._results = self._competition.Update()
-        self._CalculateMatchIncome(self._results)
-        self._Recover()
-        self._HirePlayersIfNeeded()
+        self._calculate_match_income(self._results)
+        self._recover()
+        self._hire_players_if_needed()
 
-    def _ProcessPlayerHire(self, club_pk: int, player: DdPlayer):
+    def _process_player_hire(self, club_pk: int, player: DdPlayer):
         assert club_pk in self._clubs, _CLUB_INDEX_ERROR
 
         cost = self._contract_calculator(player.level)
@@ -725,7 +725,7 @@ class Game:
             f"speciality {player.speciality}."
         ))
 
-    def _Recover(self):
+    def _recover(self):
         recovery_function = DdExhaustedLinearRecovery(
             self._params.exhaustion_factor
         )
@@ -735,7 +735,7 @@ class Game:
                     recovery_function(slot.player)
                 )
 
-    def _SaveHistory(self):
+    def _save_history(self):
         self._history[-1][self._competition.title] = self._competition.standings
 
         # This is done for collecting match statistics.
@@ -743,21 +743,21 @@ class Game:
             for match in self._competition.results_:
                 print(match.csv, file=results_file)
 
-    def _Simulate(self, years):
+    def _simulate(self, years):
         while len(self._history) < years:
             self.Update()
 
-    def _StartPlayoff(self):
+    def _start_playoff(self):
         self._competition = DdPlayoff(
             self._clubs,
             self._params.playoff_params,
             self._competition.standings,
         )
 
-    def _Unselect(self):
+    def _unselect(self):
         for club in self._clubs.values():
             club.SelectPlayer(None)
 
-    def _UpdateSeasonFame(self):
+    def _update_season_fame(self):
         for pk in self._clubs:
             self._season_fame[pk] += self._competition.GetClubFame(pk)
