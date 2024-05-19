@@ -220,6 +220,24 @@ class GameService:
         game.hire_new_player(surface, manager_club_id)
         self._game_repository.save_game(game)
 
+    def sign_player(self, game_id, manager_club_id, player_id):
+        game = self._game_repository.get_game(game_id)
+        game.sign_player(club_id=manager_club_id, player_id=player_id)
+        self._game_repository.save_game(game)
+
+    def set_ticket_price(self, game_id, manager_club_id, price):
+        game = self._game_repository.get_game(game_id)
+        game.set_ticket_price(pk=manager_club_id, price=price)
+        self._game_repository.save_game(game)
+
+    def save_game(self, game_id):
+        game = self._game_repository.get_game(game_id)
+
+        if game is None:
+            return
+
+        self._game_repository.save_game(game, persistent_save=True)
+
     def get_game_context(self, game_id):
         game = self._game_repository.get_game(game_id)
         return game.get_context(game.manager_club_id)
@@ -228,7 +246,7 @@ class GameService:
         game = self._game_repository.get_game(game_id)
         if game is None:
             return
-        res = game.Update()
+        res = game.update()
         self._game_repository.save_game(game, persistent_save=True)
         return UpdateResult(success=res)
 
@@ -236,19 +254,25 @@ class GameService:
         game = self._game_repository.get_game(game_id)
         if game is None:
             return
-        game.ProceedToNextCompetition()
+        game.proceed_to_next_competition()
         self._game_repository.save_game(game, persistent_save=True)
 
     def set_player(self, game_id, manager_club_id, player_id):
         game = self._game_repository.get_game(game_id)
         if game is None:
             return
-        game.SelectPlayer(player_id=player_id, club_id=manager_club_id)
+        game.select_player(player_id=player_id, club_id=manager_club_id)
         self._game_repository.save_game(game)
 
 
     def get_fames(self, game_id) -> FameRatingsQueryResult:
         return self._fame_query_handler.handle(FameRatingsQuery(game_id=game_id))
+
+    def get_manager_club_id(self, game_id):
+        game = self._game_repository.get_game(game_id)
+        if game is None:
+            return
+        return game.manager_club_id
 
     def _player_to_row_info(self, player, player_id, is_selected, coach_level):
         # Again, this method is weird, but okay for now :)

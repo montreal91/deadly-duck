@@ -1,15 +1,20 @@
 [
   {
     "name":"Auckland Aces",
+    "location": {
+      "country": "New Zealand",
+      "city": "Auckland"
+    },
+    "tagline": "",
     "surface":"grass",
-    "fame":[250, -50, 0, -150, 0],
+    "fame":[250, 0, 0, 0, 0],
     "balance":1000000,
     "coach_power": 3,
     "player_data":[
       {
         "DdClubPlayerSlot": true,
         "coach_level":0,
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "player": {
           "DdPlayer":true,
@@ -29,7 +34,7 @@
       {
         "DdClubPlayerSlot": true,
         "coach_level":0,
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "player":{
           "DdPlayer":true,
@@ -51,7 +56,7 @@
   {
     "name":"Brisbane Vipers",
     "surface":"clay",
-    "fame":[-150, 0, 0, 0, 500],
+    "fame":[0, 0, 0, 0, 500],
     "balance":1000000,
     "coach_power": 1,
     "player_data":[
@@ -78,7 +83,7 @@
       {
       "DdClubPlayerSlot": true,
         "coach_level":0,
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "player": {
           "DdPlayer":true,
@@ -107,7 +112,7 @@
       {
         "DdClubPlayerSlot": true,
         "coach_level":0,
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "player": {
           "DdPlayer":true,
@@ -127,7 +132,7 @@
       {
         "DdClubPlayerSlot": true,
         "coach_level":0,
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "player": {
           "DdPlayer":true,
@@ -149,7 +154,7 @@
   {
     "name":"Dandenong Pianists",
     "surface":"hard",
-    "fame":[-500, -150, -300, -500, -50],
+    "fame":[0, 0, 0, 0, 0],
     "balance":5000000,
     "coach_power": 2,
     "player_data":[
@@ -196,7 +201,7 @@
       {
         "DdClubPlayerSlot": true,
         "coach_level":0,
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "player": {
           "DdPlayer":true,
@@ -225,7 +230,7 @@
       {
         "DdClubPlayerSlot": true,
         "coach_level":0,
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "player": {
           "DdPlayer":true,
@@ -245,7 +250,7 @@
       {
         "DdClubPlayerSlot": true,
         "coach_level":0,
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "player": {
           "DdPlayer":true,
@@ -265,7 +270,7 @@
       {
         "DdClubPlayerSlot": true,
         "coach_level":0,
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "player": {
           "DdPlayer":true,
@@ -307,7 +312,7 @@
           "age": 20,
           "reputation": 910
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       },
@@ -327,7 +332,7 @@
           "age": 19,
           "reputation": 875
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       }
@@ -356,7 +361,7 @@
           "age": 20,
           "reputation": 412
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       },
@@ -376,7 +381,7 @@
           "age": 19,
           "reputation": 330
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       }
@@ -385,7 +390,7 @@
   {
     "name": "Tasmanian Devils",
     "surface": "hard",
-    "fame": [-50, 0, -500, 0, -300],
+    "fame": [0, 0, 0, 0, 0],
     "balance": 2500000,
     "coach_power": 2,
     "player_data": [
@@ -405,7 +410,7 @@
           "age": 20,
           "reputation": 758
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       },
@@ -425,7 +430,7 @@
           "age": 19,
           "reputation": 275
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       }
@@ -434,7 +439,7 @@
   {
     "name": "Adelaide Falcons",
     "surface": "hard",
-    "fame": [0, 0, -50, 0, 0],
+    "fame": [0, 0, 0, 0, 0],
     "balance": 1100000,
     "coach_power": 2,
     "player_data": [
@@ -454,7 +459,7 @@
           "age": 18,
           "reputation": 550
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       },
@@ -474,16 +479,21 @@
           "age": 18,
           "reputation": 656
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       }
     ]
   },
   {
-    "name": "Bunbury Ravens",
+    "name": "Saigon Suns",
+    "location": {
+      "country": "Vietnam",
+      "city": "Ho Chi Minh City"
+    },
+    "tagline": "Rising to Victory",
     "surface": "hard",
-    "fame": [0, 0, -150, -50, -150],
+    "fame": [0, 0, 0, 0, 0],
     "balance": 3500000,
     "coach_power": 1,
     "player_data": [
@@ -503,7 +513,7 @@
           "age": 20,
           "reputation": 1050
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       },
@@ -523,7 +533,7 @@
           "age": 18,
           "reputation": 525
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       }
@@ -552,7 +562,7 @@
           "age": 20,
           "reputation": 200
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       },
@@ -592,7 +602,7 @@
           "age": 19,
           "reputation": 132
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       },
@@ -619,9 +629,13 @@
     ]
   },
   {
-    "name": "Mandurah Turtles",
+    "name": "Jakarta Jaguars",
+    "location": {
+      "country": "Indonesia",
+      "city": "Jakarta"
+    },
     "surface": "clay",
-    "fame": [-300, -500, 0, 0, 0],
+    "fame": [0, 0, 0, 0, 0],
     "balance": 4500000,
     "coach_power": 1,
     "player_data": [
@@ -629,7 +643,7 @@
         "DdClubPlayerSlot": true,
         "player": {
           "DdPlayer": true,
-          "first_name": "Anna-Lena",
+          "first_name": "Anna",
           "second_name": "Lisa",
           "last_name": "Widman",
           "technique": 95,
@@ -641,7 +655,7 @@
           "age": 20,
           "reputation": 750
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       },
@@ -661,14 +675,19 @@
           "age": 18,
           "reputation": 487
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       }
     ]
   },
   {
-    "name": "Perth Scorchers",
+    "name": "Perth Pioneers",
+    "location": {
+      "country": "Australia",
+      "city": "Perth"
+    },
+    "tagline": "Leading the Way",
     "surface": "hard",
     "fame": [0, 1000, 1000, 250, 0],
     "balance": 550000,
@@ -690,7 +709,7 @@
           "age": 19,
           "reputation": 400
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       },
@@ -710,16 +729,21 @@
           "age": 18,
           "reputation": 666
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       }
     ]
   },
   {
-    "name": "Rockingham Rogues",
+    "name": "Singapore Flowers",
+    "location": {
+      "country": "Singapore",
+      "city": "Singapore"
+    },
+    "tagline": "A Garden of Victory",
     "surface": "clay",
-    "fame": [0, 0, 500, -300, -500],
+    "fame": [0, 0, 500, 0, 0],
     "balance": 2750000,
     "coach_power": 1,
     "player_data": [
@@ -768,7 +792,7 @@
           "age": 20,
           "reputation": 1750
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       },
@@ -795,9 +819,14 @@
     ]
   },
   {
-    "name": "Western Strikers",
-    "surface": "clay",
-    "fame": [0 ,-300 ,0 ,0 ,250],
+    "name": "Western Wasps",
+    "location": {
+      "city": "Perth",
+      "country": "Australia"
+    },
+    "tagline": "Sting with Strength, Soar with Skill",
+    "surface": "hard",
+    "fame": [0 ,0 ,0 ,0 ,250],
     "balance": 3250000,
     "coach_power": 1,
     "player_data": [
@@ -806,7 +835,7 @@
         "player": {
           "DdPlayer": true,
           "first_name": "Kathleen",
-          "second_name": "Tatjana",
+          "second_name": "Joan",
           "last_name": "Williams",
           "technique": 85,
           "endurance": 80,
@@ -817,7 +846,7 @@
           "age": 20,
           "reputation": 910
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       },
@@ -837,10 +866,36 @@
           "age": 18,
           "reputation": 550
         },
-        "has_next_contract": false,
+        "has_next_contract": true,
         "contract_cost": -1,
         "coach_level": 0
       }
     ]
+  },
+  {
+    "name": "Selangor Royals",
+    "location": {
+      "country": "Malaysia",
+      "city": "Kuala Lumpur"
+    },
+    "tagline": "Elegance in Motion",
+    "surface": "hard",
+    "fame": [0 ,0 ,0 ,0 ,0],
+    "balance": 5000000,
+    "coach_power": 3,
+    "player_data": []
+  },
+  {
+    "name": "Bangkok Braves",
+    "location": {
+      "country": "Thailand",
+      "city": "Bangkok"
+    },
+    "tagline": "Courage and Brilliance",
+    "surface": "hard",
+    "fame": [0 ,0 ,0 ,0 ,0],
+    "balance": 5000000,
+    "coach_power": 3,
+    "player_data": []
   }
 ]

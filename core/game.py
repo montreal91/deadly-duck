@@ -140,20 +140,21 @@ class Game:
         decoder = DdJsonDecoder()
         decoder.Register(DdPlayer)
         decoder.Register(DdClubPlayerSlot)
-        with open("configuration/clubs.json", "r") as data_file:
+        with open("data/clubs.json", "r") as data_file:
             club_data = json.load(data_file, object_hook=decoder)
 
         for club_id, club in enumerate(club_data):
             self._add_club(club_id=club_id, club_data=club)
             if club_id == manager_club_id:
                 self._clubs[club_id].SetCoachPower(0)
+                self._clubs[club_id].SetControlled(True)
 
         self._competition = DdRegularChampionship(
             self._clubs, self._params.championship_params
         )
 
-        self._Simulate(self._params.years_to_simulate)
-        self._GenerateFreeAgents()
+        self._simulate(self._params.years_to_simulate)
+        self._generate_free_agents()
 
     @property
     def day(self):
@@ -211,15 +212,15 @@ class Game:
             day=self._competition.day,
             clubs=[club.name for club in self._clubs.values()],
             court=self._clubs[pk].court.json,
-            free_agents=self._GetFreeAgents(),
+            free_agents=self._get_free_agents(),
             history=self._history,
             last_results=self._last_results,
-            opponent=self._GetOpponent(pk),
-            practice_cost=self._CalculateClubPracticeCost(club=self._clubs[pk]),
+            opponent=self._get_opponent(pk),
+            practice_cost=self._calculate_club_practice_cost(club=self._clubs[pk]),
             remaining_matches=self._competition.GetClubSchedule(pk),
             standings=self._standings,
             title=self._competition.title,
-            user_players=self._GetUserPlayers(pk),
+            user_players=self._get_user_players(pk),
         )
 
     def hire_free_agent(self, club_pk: int, player_pk: int):
@@ -230,7 +231,7 @@ class Game:
         )
 
         player = self._free_agents[player_pk]
-        self._ProcessPlayerHire(club_pk=club_pk, player=player)
+        self._process_player_hire(club_pk=club_pk, player=player)
         self._free_agents.pop(player_pk)
 
     def hire_new_player(self, surface: str, club_id: int):
@@ -247,14 +248,14 @@ class Game:
             age=DdGameplayConstants.STARTING_AGE.value,
             speciality=surface
         )
-        self._ProcessPlayerHire(club_pk=club_id, player=player)
+        self._process_player_hire(club_pk=club_id, player=player)
 
-    def ProceedToNextCompetition(self):
+    def proceed_to_next_competition(self):
         """Updates game while player action is not required."""
 
         step = True
         while self._competition.day != 0 and step:
-            step = self.Update()
+            step = self.update()
 
     def select_coach_for_player(
         self, coach_index: int, player_index: int, club_index: int
@@ -287,7 +288,7 @@ class Game:
 
         self._clubs[club_id].court = deepcopy(self._params.courts[court])
 
-    def SelectPlayer(self, player_id: int, club_id: int):
+    def select_player(self, player_id: int, club_id: int):
         """Sets selected player for user."""
 
         assert 0 <= club_id < len(self._clubs), "Incorrect club pk."
@@ -302,7 +303,7 @@ class Game:
         assert 0 <= pk < len(self._clubs), "Incorrect club pk."
         self._clubs[pk].SetControlled(is_controlled)
 
-    def SetTicketPrice(self, pk: int, price: int):
+    def set_ticket_price(self, pk: int, price: int):
         """Sets ticket price on club's court."""
 
         assert pk in self._clubs, _CLUB_INDEX_ERROR
@@ -310,38 +311,38 @@ class Game:
 
         self._clubs[pk].court.ticket_price = price
 
-    def SignPlayer(self, pk: int, i: int):
+    def sign_player(self, club_id: int, player_id: int):
         """Signs a new contract with a player for the next season."""
 
-        assert 0 <= pk < len(self._clubs), "Incorrect club pk."
+        assert 0 <= club_id < len(self._clubs), "Incorrect club pk."
 
-        club = self._clubs[pk]
-        players = self._clubs[pk].players
-        assert 0 <= i < len(players), (
+        club = self._clubs[club_id]
+        players = self._clubs[club_id].players
+        assert 0 <= player_id < len(players), (
             "Incorrect player index."
         )
-        assert not players[i].has_next_contract, (
+        assert not players[player_id].has_next_contract, (
             "This player already has a contract for the next season."
         )
         assert (
-                players[i].player.age + 1 < DdGameplayConstants.RETIREMENT_AGE.value
+                players[player_id].player.age + 1 < DdGameplayConstants.RETIREMENT_AGE.value
         ), (
-            f"{players[i].player.initials} is too old to play next season."
+            f"{players[player_id].player.initials} is too old to play next season."
         )
 
-        cost = self._contract_calculator(players[i].player.level)
-        assert self._clubs[pk].account.balance >= cost, (
+        cost = self._contract_calculator(players[player_id].player.level)
+        assert self._clubs[club_id].account.balance >= cost, (
             "Insufficient funds.\n"
             f"You need at least ${cost}."
         )
 
-        club.ContractPlayer(i)
+        club.ContractPlayer(player_id)
         club.account.ProcessTransaction(DdTransaction(
             -cost,
-            f"Renewed player contract with {players[i].player.initials} "
+            f"Renewed player contract with {players[player_id].player.initials} "
         ))
 
-    def Update(self):
+    def update(self):
         """
         Updates game state.
 
@@ -605,8 +606,8 @@ class Game:
             return res
         raise Exception("Bad schedule.")
 
-    def _GetUserPlayers(self, pk: int) -> List[DdClubPlayerSlot]:
-        def SetContractPrices(slot: DdClubPlayerSlot) -> DdClubPlayerSlot:
+    def _get_user_players(self, pk: int) -> List[DdPlayer]:
+        def set_contract_prices(slot: DdClubPlayerSlot) -> DdClubPlayerSlot:
             slot.contract_cost = self._contract_calculator(slot.player.level)
             return slot
 
