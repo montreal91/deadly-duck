@@ -59,6 +59,11 @@
     "fame":[0, 0, 0, 0, 500],
     "balance":1000000,
     "coach_power": 1,
+    "location": {
+      "country": "Australia",
+      "city": "Brisbane"
+    },
+    "tagline": "Strike with Precision, Play with Passion",
     "player_data":[
       {
         "DdClubPlayerSlot": true,
@@ -108,6 +113,7 @@
     "fame":[250, 250, 250, 1000, 0],
     "balance":500000,
     "coach_power": 3,
+    "tagline": "Mastering the Game, One Match at a Time",
     "player_data":[
       {
         "DdClubPlayerSlot": true,
