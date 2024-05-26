@@ -25,8 +25,7 @@ class DuckClientApp(App):
         self.sm.add_widget(self.splash_screen)
         self.sm.add_widget(self.main_screen)
 
-        Clock.schedule_once(self.switch_to_main, 3)
-
+        Clock.schedule_once(self.switch_to_main, timeout=3)
 
         return self.sm
 

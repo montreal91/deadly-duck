@@ -6,6 +6,7 @@ Created May 20, 2024
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 
+
 class SplashScreen(Screen):
     def __init__(self, **kwargs):
         super(SplashScreen, self).__init__(**kwargs)

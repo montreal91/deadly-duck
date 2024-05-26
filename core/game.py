@@ -774,10 +774,10 @@ class Game:
         shuffle(medium_clubs)
         shuffle(weaksy_clubs)
 
-        while len(strong_clubs) > 3:
+        while len(strong_clubs) > 5:
             medium_clubs.append(strong_clubs.pop())
 
-        while len(medium_clubs) > 5:
+        while len(medium_clubs) > 6:
             weaksy_clubs.append(medium_clubs.pop())
 
 
