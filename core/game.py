@@ -681,6 +681,7 @@ class Game:
         self._generate_free_agents()
 
         self._save_history()
+        self._shuffle_coach_powers()
         self._competition = DdRegularChampionship(
             self._clubs,
             self._params.championship_params
@@ -761,3 +762,36 @@ class Game:
     def _update_season_fame(self):
         for pk in self._clubs:
             self._season_fame[pk] += self._competition.GetClubFame(pk)
+
+    # This whole method is a temporary hack before I'll implement a proper AI
+    def _shuffle_coach_powers(self):
+        from random import shuffle
+        strong_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 3 and not club.is_controlled]
+        medium_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 2 and not club.is_controlled]
+        weaksy_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 1 and not club.is_controlled]
+
+        shuffle(strong_clubs)
+        shuffle(medium_clubs)
+        shuffle(weaksy_clubs)
+
+        while len(strong_clubs) > 3:
+            medium_clubs.append(strong_clubs.pop())
+
+        while len(medium_clubs) > 5:
+            weaksy_clubs.append(medium_clubs.pop())
+
+
+        s, m, w = strong_clubs.pop(), medium_clubs.pop(), weaksy_clubs.pop()
+        s, m, w = m, w, s  # cycle
+
+        logging.debug(f"Strong club going weak:   {self._clubs[s].name}")
+        logging.debug(f"Medium club going strong: {self._clubs[m].name}")
+        logging.debug(f"Weak club going medium:   {self._clubs[w].name}")
+
+        strong_clubs.append(s)
+        medium_clubs.append(m)
+        weaksy_clubs.append(w)
+
+        [self._clubs[pk].SetCoachPower(3) for pk in strong_clubs]
+        [self._clubs[pk].SetCoachPower(2) for pk in medium_clubs]
+        [self._clubs[pk].SetCoachPower(1) for pk in weaksy_clubs]
