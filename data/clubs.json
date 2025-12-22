@@ -5,7 +5,6 @@
       "country": "New Zealand",
       "city": "Auckland"
     },
-    "tagline": "",
     "surface":"grass",
     "fame":[250, 0, 0, 0, 0],
     "balance":1000000,
@@ -59,6 +58,10 @@
     "fame":[0, 0, 0, 0, 500],
     "balance":1000000,
     "coach_power": 1,
+    "location": {
+      "country": "Australia",
+      "city": "Brisbane"
+    },
     "player_data":[
       {
         "DdClubPlayerSlot": true,
@@ -491,7 +494,6 @@
       "country": "Vietnam",
       "city": "Ho Chi Minh City"
     },
-    "tagline": "Rising to Victory",
     "surface": "hard",
     "fame": [0, 0, 0, 0, 0],
     "balance": 3500000,
@@ -687,7 +689,6 @@
       "country": "Australia",
       "city": "Perth"
     },
-    "tagline": "Leading the Way",
     "surface": "hard",
     "fame": [0, 1000, 1000, 250, 0],
     "balance": 550000,
@@ -741,7 +742,6 @@
       "country": "Singapore",
       "city": "Singapore"
     },
-    "tagline": "A Garden of Victory",
     "surface": "clay",
     "fame": [0, 0, 500, 0, 0],
     "balance": 2750000,
@@ -824,7 +824,6 @@
       "city": "Perth",
       "country": "Australia"
     },
-    "tagline": "Sting with Strength, Soar with Skill",
     "surface": "hard",
     "fame": [0 ,0 ,0 ,0 ,250],
     "balance": 3250000,
@@ -878,7 +877,6 @@
       "country": "Malaysia",
       "city": "Kuala Lumpur"
     },
-    "tagline": "Elegance in Motion",
     "surface": "hard",
     "fame": [0 ,0 ,0 ,0 ,0],
     "balance": 5000000,
@@ -891,7 +889,6 @@
       "country": "Thailand",
       "city": "Bangkok"
     },
-    "tagline": "Courage and Brilliance",
     "surface": "hard",
     "fame": [0 ,0 ,0 ,0 ,0],
     "balance": 5000000,

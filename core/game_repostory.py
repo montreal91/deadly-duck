@@ -5,6 +5,7 @@ Created May 11, 2024
 """
 import os
 import pickle
+from pathlib import Path
 
 from core.game import Game
 
@@ -21,6 +22,11 @@ class GameRepository:
 
         return self._games.get(game_id)
 
+    def get_game_ids(self):
+        folder = Path(self._SAVE_FOLDER)
+        games = [p.name for p in folder.iterdir() if p.is_file()]
+        return games
+
     def save_game(self, game, persistent_save=False):
         self._games[game.game_id] = game
 
@@ -28,6 +34,10 @@ class GameRepository:
             self._save_game_to_file(game.game_id, game)
 
     def _load_game(self, game_id):
+        if game_id is None:
+            print("No game id provided.")
+            return
+
         save_path = os.path.join(self._SAVE_FOLDER, game_id)
         if os.path.isfile(save_path):
             with open(save_path, "rb") as save_file:

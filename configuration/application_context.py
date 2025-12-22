@@ -22,7 +22,6 @@ from core.playoffs import DdPlayoffParams
 from core.attendance import DdCourt
 
 
-
 class ApplicationContext:
     def __init__(self):
         self._game_repository = GameRepository()
@@ -74,8 +73,8 @@ def _get_params() -> GameParams:
         match_params=match_params,
         recovery_day=config["championship"].getint("recovery_day", 0),
         rounds=config["championship"].getint("rounds", 0),
-        match_importance=config["championship"].getfloat(
-            "match_importance", 0.0
+        match_importance=config["championship"].getint(
+            "match_importance", 0
         ),
     )
     playoff_params = DdPlayoffParams(
@@ -85,7 +84,7 @@ def _get_params() -> GameParams:
         match_params=match_params,
         length=config["playoff"].getint("length", 0),
         gap_days=config["playoff"].getint("gap_days", 0),
-        match_importance=config["playoff"].getfloat("match_importance", 0.0),
+        match_importance=config["playoff"].getint("match_importance", 0),
     )
     return GameParams(
         attendance_params=attendance_params,
