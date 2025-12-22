@@ -107,9 +107,6 @@ class SimplifiedApp:
         self._actions["u"] = self.__action_upcoming
         self._actions["upcoming"] = self.__action_upcoming
 
-        # self._actions["_$"] = self.__action_finances
-        # self._actions["_d"] = self.__action_drop_accounts
-        # self._actions["_l"] = self.__action_levels
         self._actions["_m"] = self.__action_measure
 
     def _print_main(self):
@@ -132,13 +129,6 @@ class SimplifiedApp:
         action = self._actions[user_input[0]]
         action(*user_input[1:])
 
-    # @user_action
-    # def __action_drop_accounts(self):
-    #     for club in self._game._clubs.values():
-    #         balance = club.account.balance
-    #         balance = -balance + 100000
-    #         club.account.ProcessTransaction(DdTransaction(balance, "Drop"))
-
     @user_action
     def __action_fame(self):
         query_result = self._game_service.get_fames(self._game_id)
@@ -149,22 +139,6 @@ class SimplifiedApp:
             print(f"{fame_row.club_name:20s}", fame_row.fame)
             if fame_row.club_id == self._manager_club_id:
                 print(RESET, end="")
-
-    # @user_action
-    # def __action_finances(self):
-    #     for club in self._game._clubs.values():
-    #         print(f"{club.name:20s}", club.account.balance)
-    #
-    # @user_action
-    # def __action_levels(self):
-    #     for pk, club in self._game._clubs.items():
-    #         level_sum = sum(slot.player.level for slot in club.players)
-    #         level_max = max(slot.player.level for slot in club.players)
-    #         if pk == self._manager_club_id:
-    #             sys.stdout.write(BOLD)
-    #         print(f"{club.name:20s} {level_sum:3d} {level_max:2d}")
-    #         if pk == self._manager_club_id:
-    #             sys.stdout.write(RESET)
 
     @user_action
     def __action_measure(self):
