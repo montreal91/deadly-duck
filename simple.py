@@ -4,38 +4,21 @@ Created Apr 09, 2019
 @author montreal91
 """
 
-import json
-import os.path
 import sys
-
 from typing import Any
 from typing import Callable
 from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Tuple
 
-from configuration.application_context import ApplicationContext
 from configuration.application_context import get_application_context
-from core.attendance import DdAttendanceParams
-from core.attendance import DdCourt
-from core.financial import DdTransaction
-from core.game import Game
-from core.game import GameParams
 from core.game import DdOpponentStruct
-from core.match import DdExhaustionCalculator
-from core.match import DdMatchParams
-from core.match import DdLinearProbabilityCalculator
 from core.player import DdPlayer
-from core.player import DdPlayerReputationCalculator
-from core.playoffs import DdPlayoffParams
-from core.regular_championship import DdChampionshipParams
 
 BOLD = "\033[;1m"
 RESET = "\033[0;0m"
 
 
-def UserAction(fun: Callable) -> Callable:
+def user_action(fun: Callable) -> Callable:
     """Helper decorator to handle user input."""
 
     def res(*args, **kwargs):
@@ -124,13 +107,13 @@ class SimplifiedApp:
         self._actions["u"] = self.__action_upcoming
         self._actions["upcoming"] = self.__action_upcoming
 
-        self._actions["_$"] = self.__Action_Finances
-        self._actions["_d"] = self.__Action_DropAccounts
-        self._actions["_l"] = self.__Action_Levels
+        # self._actions["_$"] = self.__action_finances
+        # self._actions["_d"] = self.__action_drop_accounts
+        # self._actions["_l"] = self.__action_levels
         self._actions["_m"] = self.__action_measure
 
     def _print_main(self):
-        info: MainMenuInfo = self._game_service.get_main_screen_info(
+        info = self._game_service.get_main_screen_info(
             self._game_id,
             self._manager_club_id
         )
@@ -149,14 +132,14 @@ class SimplifiedApp:
         action = self._actions[user_input[0]]
         action(*user_input[1:])
 
-    @UserAction
-    def __Action_DropAccounts(self):
-        for club in self._game._clubs.values():
-            balance = club.account.balance
-            balance = -balance + 100000
-            club.account.ProcessTransaction(DdTransaction(balance, "Drop"))
+    # @user_action
+    # def __action_drop_accounts(self):
+    #     for club in self._game._clubs.values():
+    #         balance = club.account.balance
+    #         balance = -balance + 100000
+    #         club.account.ProcessTransaction(DdTransaction(balance, "Drop"))
 
-    @UserAction
+    @user_action
     def __action_fame(self):
         query_result = self._game_service.get_fames(self._game_id)
 
@@ -167,23 +150,23 @@ class SimplifiedApp:
             if fame_row.club_id == self._manager_club_id:
                 print(RESET, end="")
 
-    @UserAction
-    def __Action_Finances(self):
-        for club in self._game._clubs.values():
-            print(f"{club.name:20s}", club.account.balance)
+    # @user_action
+    # def __action_finances(self):
+    #     for club in self._game._clubs.values():
+    #         print(f"{club.name:20s}", club.account.balance)
+    #
+    # @user_action
+    # def __action_levels(self):
+    #     for pk, club in self._game._clubs.items():
+    #         level_sum = sum(slot.player.level for slot in club.players)
+    #         level_max = max(slot.player.level for slot in club.players)
+    #         if pk == self._manager_club_id:
+    #             sys.stdout.write(BOLD)
+    #         print(f"{club.name:20s} {level_sum:3d} {level_max:2d}")
+    #         if pk == self._manager_club_id:
+    #             sys.stdout.write(RESET)
 
-    @UserAction
-    def __Action_Levels(self):
-        for pk, club in self._game._clubs.items():
-            level_sum = sum(slot.player.level for slot in club.players)
-            level_max = max(slot.player.level for slot in club.players)
-            if pk == self._manager_club_id:
-                sys.stdout.write(BOLD)
-            print(f"{club.name:20s} {level_sum:3d} {level_max:2d}")
-            if pk == self._manager_club_id:
-                sys.stdout.write(RESET)
-
-    @UserAction
+    @user_action
     def __action_measure(self):
         import time
         dt1 = time.time()
@@ -192,7 +175,7 @@ class SimplifiedApp:
 
         print(f"Time to calculate context: {dt2 - dt1:.4f}")
 
-    @UserAction
+    @user_action
     def __action_agents(self, sub_action: str, index: Optional[str] = None):
         assert sub_action in ("list", "hire")
         if sub_action == "hire":
@@ -226,7 +209,7 @@ class SimplifiedApp:
             print(agent.name, end="")
             print()
 
-    @UserAction
+    @user_action
     def __action_coach(self, player_index: str, coach_index: str):
         self._game_service.select_coach_for_player(
             self._game_id,
@@ -235,7 +218,7 @@ class SimplifiedApp:
             int(player_index),
         )
 
-    @UserAction
+    @user_action
     def __action_court(self, court: Optional[str] = None):
         if court is not None:
             self._game_service.select_court_for_club(
@@ -253,7 +236,7 @@ class SimplifiedApp:
         print("Rent cost:   ", court.rent_cost)
         print("Ticket price:", court.ticket_price)
 
-    @UserAction
+    @user_action
     def __action_fire(self, index: str):
         self._game_service.fire_player(
             self._game_id,
@@ -261,12 +244,12 @@ class SimplifiedApp:
             int(index)
         )
 
-    @UserAction
+    @user_action
     def __action_help(self):
         with open("core/help.txt") as help_file:
             print(help_file.read())
 
-    @UserAction
+    @user_action
     def __action_hire(self, surface: str):
         self._game_service.hire_player(
             self._game_id,
@@ -274,7 +257,7 @@ class SimplifiedApp:
             surface
         )
 
-    @UserAction
+    @user_action
     def __action_history(self, season: str):
         s = int(season)
         ctx = self._get_actual_context()
@@ -300,7 +283,7 @@ class SimplifiedApp:
                 3,
             )
 
-    @UserAction
+    @user_action
     def __action_list(self):
         print(" #| Age| Technique|Stm|Exh| Spec| Coach | Name")
         print("__|____|__________|___|___|_____|_______|_____________")
@@ -344,7 +327,7 @@ class SimplifiedApp:
 
         print("\nCurrent practice price:", "$" + str(info.practice_cost))
 
-    @UserAction
+    @user_action
     def __action_next(self):
         res = self._game_service.next_day(self._game_id)
         if not res.success:
@@ -353,7 +336,7 @@ class SimplifiedApp:
 
         self.__action_results()
 
-    @UserAction
+    @user_action
     def __action_opponent(self):
         context = self._get_actual_context()
         opponent: DdOpponentStruct = context["opponent"]
@@ -372,16 +355,16 @@ class SimplifiedApp:
         if opponent.player is not None:
             _print_player(opponent.player, False)
 
-    @UserAction
+    @user_action
     def __action_proceed(self):
         self._game_service.proceed(self._game_id)
 
-    @UserAction
+    @user_action
     def __action_quit(self):
         self._game_service.save_game(self._game_id)
         self._is_running = False
 
-    @UserAction
+    @user_action
     def __action_results(self):
         context = self._get_actual_context()
         clubs = context["clubs"]
@@ -419,11 +402,11 @@ class SimplifiedApp:
                 sys.stdout.write(RESET)
             print()
 
-    @UserAction
+    @user_action
     def __action_select(self, index="0"):
         self._game_service.set_player(self._game_id, self._manager_club_id, int(index))
 
-    @UserAction
+    @user_action
     def __action_show(self, index: str):
         index = int(index)
         context = self._get_actual_context()
@@ -436,7 +419,7 @@ class SimplifiedApp:
             next_contract=players_data[index].has_next_contract,
         )
 
-    @UserAction
+    @user_action
     def __action_sign(self, player_index: str):
         self._game_service.sign_player(
             game_id=self._game_id,
@@ -444,7 +427,7 @@ class SimplifiedApp:
             player_id=int(player_index)
         )
 
-    @UserAction
+    @user_action
     def __action_standings(self):
         context = self._get_actual_context()
         if context["title"] == "Cup":
@@ -461,13 +444,13 @@ class SimplifiedApp:
                 self._manager_club_id
             )
 
-    @UserAction
+    @user_action
     def __action_ticket(self, ticket_price):
         self._game_service.set_ticket_price(
             self._game_id, self._manager_club_id, int(ticket_price)
         )
 
-    @UserAction
+    @user_action
     def __action_upcoming(self):
         context = self._get_actual_context()
         for match in context["remaining_matches"][:5]:

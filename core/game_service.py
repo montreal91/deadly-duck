@@ -9,11 +9,10 @@ Created May 11, 2024
 from typing import List
 from typing import NamedTuple
 
-from core import club
 from core.club import Club
-from core.game_repostory import GameRepository
 from core.game import Game
 from core.game import GameParams
+from core.game_repostory import GameRepository
 
 
 class MainScreenInfo(NamedTuple):
@@ -76,6 +75,11 @@ class FameRatingsQuery(NamedTuple):
 class FameRatingsQueryResult(NamedTuple):
     fame_ratings: List[FameInfo]
 
+
+class SavedGamesInfo(NamedTuple):
+    names: List[str]
+
+
 class ClubRepository:
     _game_repository: GameRepository
 
@@ -130,6 +134,9 @@ class GameService:
             manager_club_id=manager_club_id
         ))
 
+    def get_saved_games(self):
+        return SavedGamesInfo(names=self._game_repository.get_game_ids())
+
     def get_manager_club(self, game_id):
         game = self._game_repository.get_game(game_id)
 
@@ -152,7 +159,7 @@ class GameService:
 
         game_agents = game.get_context(manager_club_id)["free_agents"]
         return [
-            self._agent_to_list_info(player[0], i, player[1])
+            _agent_to_list_info(player[0], i, player[1])
             for i, player in enumerate(game_agents)
         ]
 
@@ -174,7 +181,7 @@ class GameService:
         )
 
         players = [
-            self._player_to_row_info(
+            _player_to_row_info(
                 player.player, i, player.is_selected, player.coach_level
             )
             for i, player in enumerate(context["user_players"])
@@ -245,7 +252,7 @@ class GameService:
     def next_day(self, game_id):
         game = self._game_repository.get_game(game_id)
         if game is None:
-            return
+            return UpdateResult(success=False)
         res = game.update()
         self._game_repository.save_game(game, persistent_save=True)
         return UpdateResult(success=res)
@@ -264,7 +271,6 @@ class GameService:
         game.select_player(player_id=player_id, club_id=manager_club_id)
         self._game_repository.save_game(game)
 
-
     def get_fames(self, game_id) -> FameRatingsQueryResult:
         return self._fame_query_handler.handle(FameRatingsQuery(game_id=game_id))
 
@@ -274,32 +280,33 @@ class GameService:
             return
         return game.manager_club_id
 
-    def _player_to_row_info(self, player, player_id, is_selected, coach_level):
-        # Again, this method is weird, but okay for now :)
-        plr = {}
-        plr["player_id"] = player_id
-        plr["name"] = f"{player.first_name} {player.last_name}"
-        plr["level"] = player.level
-        plr["actual_technique"] = player.actual_technique
-        plr["technique"] = player.technique
-        plr["endurance"] = player.endurance
-        plr["current_stamina"] = player.current_stamina
-        plr["maximum_stamina"] = player.max_stamina
-        plr["coach_level"] = coach_level
-        plr["is_selected"] = is_selected
-        plr["age"] = player.age
-        plr["exhaustion"] = player.exhaustion
-        plr["speciality"] = player.speciality
 
-        return PlayerListInfo(**plr)
+def _agent_to_list_info(player, player_id, contract_cost):
+    return AgentListInfo(
+        player_id=player_id,
+        age=player.age,
+        technique=player.technique / 10,
+        endurance=player.endurance,
+        speciality=player.speciality,
+        contract_cost=contract_cost,
+        name=f"{player.first_name} {player.last_name}",
+    )
 
-    def _agent_to_list_info(self, player, player_id, contract_cost):
-        return AgentListInfo(
-            player_id=player_id,
-            age=player.age,
-            technique=player.technique / 10,
-            endurance=player.endurance,
-            speciality=player.speciality,
-            contract_cost=contract_cost,
-            name=f"{player.first_name} {player.last_name}",
-        )
+def _player_to_row_info(player, player_id, is_selected, coach_level):
+    # Again, this method is weird, but okay for now :)
+    plr = {
+        "player_id": player_id,
+        "name": f"{player.first_name} {player.last_name}",
+        "level": player.level,
+        "actual_technique": player.actual_technique,
+        "technique": player.technique,
+        "endurance": player.endurance,
+        "current_stamina": player.current_stamina,
+        "maximum_stamina": player.max_stamina, "coach_level": coach_level,
+        "is_selected": is_selected,
+        "age": player.age,
+        "exhaustion": player.exhaustion,
+        "speciality": player.speciality
+    }
+
+    return PlayerListInfo(**plr)

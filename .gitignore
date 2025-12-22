@@ -1,5 +1,6 @@
 /.idea
 /backups
+/dd
 *.db
 *_ui.py
 *.pyc
