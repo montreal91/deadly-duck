@@ -8,14 +8,14 @@ from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.screenmanager import NoTransition
 from kivy.clock import Clock
 
-from client.club_selection_screen import ClubSelectionScreen
-from client.day_results_screen import DayResultsScreen
-from client.game_screen import GameScreen
-from client.load_story_screen import LoadStoryScreen
-from client.player_selection_screen import PlayerSelectionScreen
-from client.splash_screen import SplashScreen
-from client.main_screen import MainScreen
-from client.story_name_screen import StoryNameScreen
+from client.screens.club_selection_screen import ClubSelectionScreen
+from client.screens.day_results_screen import DayResultsScreen
+from client.screens.game_screen import GameScreen
+from client.screens.load_story_screen import LoadStoryScreen
+from client.screens.player_selection_screen import PlayerSelectionScreen
+from client.screens.splash_screen import SplashScreen
+from client.screens.main_screen import MainScreen
+from client.screens.story_name_screen import StoryNameScreen
 
 class DuckClientApp(App):
     def __init__(self, **kwargs):
