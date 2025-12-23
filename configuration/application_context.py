@@ -9,7 +9,7 @@ Created May 11, 2024
 import configparser
 import json
 
-from core.game_repostory import GameRepository
+from core.game_repository import GameRepository
 from core.game_service import GameService, ClubRepository, FameQueryHandler
 from core.game import GameParams
 from core.match import DdMatchParams

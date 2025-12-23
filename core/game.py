@@ -66,7 +66,7 @@ class GameParams(NamedTuple):
     years_to_simulate: int
 
 
-class DdOpponentStruct:
+class OpponentDto:
     """Passive class to store information about opponent for the next match."""
     club_name: str
     match_surface: str
@@ -221,6 +221,8 @@ class Game:
             standings=self._standings,
             title=self._competition.title,
             user_players=self._get_user_players(pk),
+            competition=self._competition.title,
+            has_matches=self._has_matches(),
         )
 
     def hire_free_agent(self, club_pk: int, player_pk: int):
@@ -353,17 +355,18 @@ class Game:
         for club_pk in self._clubs:
             if not self._is_club_valid(club_pk):
                 self._clubs[club_pk].SetControlled(False)
-        assert not self.is_over, ("The game is over.")
 
-        assert not self._decision_required, (
-            "You have to select player for the next match."
-        )
-        assert self._court_check, (
-            "You have insufficient funds to play on this court."
-        )
-        assert self._training_check, (
-            "You have insufficient funds to perform such kind of training."
-        )
+        if self.is_over:
+            return False, "The game is over"
+
+        if self._decision_required:
+            return False, "You have to select player for the next match."
+
+        if not self._court_check:
+            return False, "You have insufficient funds to play on this court."
+
+        if not self._training_check:
+            return False, "You have insufficient funds to perform such kind of training."
 
         self._perform_practice()
         self._play_one_day()
@@ -379,7 +382,7 @@ class Game:
             self._update_season_fame()
             self._save_history()
             self._start_playoff()
-        return True
+        return True, "Ok"
 
     @property
     def _can_practice(self) -> bool:
@@ -466,6 +469,14 @@ class Game:
             if not check_club(club):
                 return False
         return True
+
+    def _has_matches(self):
+        matches = self._competition.current_matches
+
+        if matches is None:
+            return False
+
+        return len(matches) > 0
 
     def _add_club(self, club_id: int, club_data: Dict[str, Any]):
         club = Club(
@@ -567,7 +578,7 @@ class Game:
             res.append((agent, self._contract_calculator(agent.level),))
         return res
 
-    def _get_opponent(self, pk: int) -> Optional[DdOpponentStruct]:
+    def _get_opponent(self, pk: int) -> Optional[OpponentDto]:
         def schedule_filter(pair: DdScheduledMatchStruct):
             if pair.home_pk == pk:
                 return True
@@ -588,7 +599,7 @@ class Game:
         actual_match = planned_match[0]
         if actual_match.home_pk == pk:
             # Home case
-            res = DdOpponentStruct()
+            res = OpponentDto()
             opponent_club: Club = self._clubs[actual_match.away_pk]
             res.club_name = opponent_club.name
             res.match_surface = self._clubs[pk].surface
@@ -597,7 +608,7 @@ class Game:
             return res
         if actual_match.away_pk == pk:
             # Away case
-            res = DdOpponentStruct()
+            res = OpponentDto()
             opponent_club = self._clubs[actual_match.home_pk]
             res.club_name = opponent_club.name
             res.match_surface = opponent_club.surface
@@ -606,7 +617,7 @@ class Game:
             return res
         raise Exception("Bad schedule.")
 
-    def _get_user_players(self, pk: int) -> List[DdPlayer]:
+    def _get_user_players(self, pk: int):
         def set_contract_prices(slot: DdClubPlayerSlot) -> DdClubPlayerSlot:
             slot.contract_cost = self._contract_calculator(slot.player.level)
             return slot
@@ -746,7 +757,7 @@ class Game:
 
     def _simulate(self, years):
         while len(self._history) < years:
-            self.Update()
+            self.update()
 
     def _start_playoff(self):
         self._competition = DdPlayoff(

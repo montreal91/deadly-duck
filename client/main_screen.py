@@ -8,15 +8,15 @@ from kivy.uix.button import Button
 from kivy.uix.screenmanager import Screen
 
 from client.constants import button_size
-from client.new_game_context import GameContext
-from client.widgets.layout import make_default_layouts
+from client.game_context import GameContext
+from client.widgets.layout import make_default_layout
 
 
 class MainScreen(Screen):
     def __init__(self, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
 
-        layout, anchor_layout = make_default_layouts("Legends of the Courts")
+        layout, anchor_layout = make_default_layout("Legends of the Courts")
 
         new_story_button = Button(
             text="New Story",
@@ -70,5 +70,5 @@ class MainScreen(Screen):
         App.get_running_app().stop()
 
 def _continue_story(_):
-    print("Continue story button pressed")
+    GameContext.new_context()
     App.get_running_app().switch_to_load_story()

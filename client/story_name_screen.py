@@ -9,16 +9,16 @@ from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 
 from client.constants import button_size
-from client.new_game_context import GameContext
+from client.game_context import GameContext
 from client.widgets.alphanumeric_text_input import AlphanumericTextInput
-from client.widgets.layout import make_default_layouts
+from client.widgets.layout import make_default_layout
 
 
 class StoryNameScreen(Screen):
     def __init__(self, **kwargs):
         super(StoryNameScreen, self).__init__(**kwargs)
 
-        layout, root = make_default_layouts("Story Name")
+        layout, root = make_default_layout("Story Name")
 
         self._text_input = AlphanumericTextInput(
             hint_text="Type something here",

@@ -6,19 +6,28 @@ Created May 11, 2024
 @author montreal91
 """
 
-from typing import List
+from typing import List, Optional
 from typing import NamedTuple
 
 from core.club import Club
 from core.game import Game
 from core.game import GameParams
-from core.game_repostory import GameRepository
+from core.game_repository import GameRepository
 
 
 class MainScreenInfo(NamedTuple):
     day: int
     balance: int
     club_name: str
+
+
+class MainScreenGuiInfo(NamedTuple):
+    day: str
+    season: int
+    balance: int
+    club_name: str
+    current_competition: str
+    has_matches: bool
 
 
 class PlayerListInfo(NamedTuple):
@@ -32,6 +41,18 @@ class PlayerListInfo(NamedTuple):
     maximum_stamina: int
     coach_level: int
     is_selected: bool
+    age: int
+    exhaustion: int
+    speciality: str
+
+
+class OpponentPlayerInfo(NamedTuple):
+    player_id: int
+    name: str
+    level: int
+    technique: float
+    endurance: float
+    maximum_stamina: int
     age: int
     exhaustion: int
     speciality: str
@@ -60,6 +81,7 @@ class CourtInfo(NamedTuple):
 
 class UpdateResult(NamedTuple):
     success: bool
+    reason: str
 
 
 class FameInfo(NamedTuple):
@@ -78,6 +100,18 @@ class FameRatingsQueryResult(NamedTuple):
 
 class SavedGamesInfo(NamedTuple):
     names: List[str]
+
+
+class OpponentInfo(NamedTuple):
+    club_name: str
+    match_surface: str
+    player: Optional[PlayerListInfo]
+    # fame: Optional[int]
+
+
+class PlayerSelectionScreenInfo(NamedTuple):
+    players: List[PlayerListInfo]
+    opponent: OpponentInfo
 
 
 class ClubRepository:
@@ -175,6 +209,35 @@ class GameService:
 
         return info
 
+    def get_main_screen_gui_info(self, game_id, manager_club_id):
+        game = self._game_repository.get_game(game_id)
+        context = game.get_context(manager_club_id)
+
+        return MainScreenGuiInfo(
+            day=context["day"],
+            season=len(context["history"]),
+            balance=context["balance"],
+            club_name=context["club_name"],
+            current_competition=context["competition"],
+            has_matches=context["has_matches"],
+        )
+
+    def get_player_selection_gui_info(self, game_id, manager_club_id):
+        context = self._game_repository.get_game(game_id).get_context(manager_club_id)
+
+        players = [
+            _player_to_row_info(
+                player.player, i, player.is_selected, player.coach_level
+            )
+            for i, player in enumerate(context["user_players"])
+        ]
+
+        return PlayerSelectionScreenInfo(
+            players=players,
+            opponent=_opponent_dto_to_info(context.get("opponent", None)),
+        )
+
+
     def get_player_list_info(self, game_id, manager_club_id):
         context = self._game_repository.get_game(game_id).get_context(
             manager_club_id
@@ -252,10 +315,10 @@ class GameService:
     def next_day(self, game_id):
         game = self._game_repository.get_game(game_id)
         if game is None:
-            return UpdateResult(success=False)
-        res = game.update()
+            return UpdateResult(success=False, reason=f"Game with id={game_id} not found")
+        res, reason = game.update()
         self._game_repository.save_game(game, persistent_save=True)
-        return UpdateResult(success=res)
+        return UpdateResult(success=res, reason=reason)
 
     def proceed(self, game_id):
         game = self._game_repository.get_game(game_id)
@@ -277,7 +340,7 @@ class GameService:
     def get_manager_club_id(self, game_id):
         game = self._game_repository.get_game(game_id)
         if game is None:
-            return
+            return -1
         return game.manager_club_id
 
 
@@ -310,3 +373,33 @@ def _player_to_row_info(player, player_id, is_selected, coach_level):
     }
 
     return PlayerListInfo(**plr)
+
+
+def _opponent_dto_to_info(opponent_dto):
+    if opponent_dto is None:
+        return None
+
+    player_info = None
+
+    if opponent_dto.player is not None:
+        player_info = OpponentPlayerInfo(
+            player_id=-1,
+            name=f"{opponent_dto.player.first_name} {opponent_dto.player.last_name}",
+            level=opponent_dto.player.level,
+            technique=opponent_dto.player.technique,
+            endurance=opponent_dto.player.endurance,
+            maximum_stamina=opponent_dto.player.max_stamina,
+            age=opponent_dto.player.age,
+            exhaustion=opponent_dto.player.exhaustion,
+            speciality=opponent_dto.player.speciality,
+        )
+
+    return OpponentInfo(
+        # club_name: str
+        club_name=opponent_dto.club_name,
+        #     match_surface: str
+        match_surface=opponent_dto.match_surface,
+        #     player: Optional[PlayerListInfo]
+        player=player_info,
+        #     fame: Optional[int]
+    )

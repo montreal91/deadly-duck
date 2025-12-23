@@ -10,8 +10,8 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.togglebutton import ToggleButton
 
 from client.constants import button_size
-from client.new_game_context import GameContext
-from client.widgets.layout import make_default_layouts
+from client.game_context import GameContext
+from client.widgets.layout import make_default_layout
 from configuration.application_context import get_application_context
 
 
@@ -24,7 +24,7 @@ class LoadStoryScreen(Screen):
         self._saved_games_buttons = []
         self._selected_save = None
 
-        self._layout, root = make_default_layouts("Continue Story")
+        self._layout, root = make_default_layout("Continue Story")
 
         self._filler_label = Label()
         self._layout.add_widget(self._filler_label)
