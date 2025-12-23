@@ -106,7 +106,6 @@ class OpponentInfo(NamedTuple):
     club_name: str
     match_surface: str
     player: Optional[PlayerListInfo]
-    # fame: Optional[int]
 
 
 class PlayerSelectionScreenInfo(NamedTuple):
@@ -395,11 +394,7 @@ def _opponent_dto_to_info(opponent_dto):
         )
 
     return OpponentInfo(
-        # club_name: str
         club_name=opponent_dto.club_name,
-        #     match_surface: str
         match_surface=opponent_dto.match_surface,
-        #     player: Optional[PlayerListInfo]
         player=player_info,
-        #     fame: Optional[int]
     )

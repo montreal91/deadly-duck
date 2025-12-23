@@ -1,6 +1,6 @@
 
 """
-Useful tools for simple json serialization and deserialization.
+Useful tools for simple JSON serialization and deserialization.
 
 Created Jun 27, 2019
 
@@ -16,7 +16,7 @@ from typing import Optional
 
 
 class DdField(NamedTuple):
-    """Tuple that binds python object fields with json properties."""
+    """Tuple that binds python object fields with JSON properties."""
 
     py_name: str
     json_name: str
@@ -24,7 +24,7 @@ class DdField(NamedTuple):
 
 class DdJsonable:
     """
-    Base class for all json serializable and deserializable objects.
+    Base class for all JSON serializable and deserializable objects.
 
     Every descendant object should declare its own `_FIELD_MAP` tuple and
     "default" constructor for correct serialization and deserialization.
@@ -33,7 +33,7 @@ class DdJsonable:
     _FIELD_MAP: Tuple[DdField, ...]
 
     def __from_json__(self, data: Dict[str, Any]):
-        """Restores object from raw json data."""
+        """Restores object from raw JSON data."""
         for field in self._FIELD_MAP:
             self.__dict__[field.py_name] = data[field.json_name]
 
@@ -60,7 +60,7 @@ class DdJsonDecoder:
     def __call__(self, obj):
         """Decodes an object if possible."""
 
-        typename = self._GetTypeName(obj)
+        typename = self._get_type_name(obj)
         if typename is not None:
             res = self._registry[typename]()
             res.__from_json__(obj)
@@ -70,12 +70,12 @@ class DdJsonDecoder:
     def __init__(self):
         self._registry = {}
 
-    def Register(self, some_type):
+    def register(self, some_type):
         """Marks class as serializable for the decoder."""
 
         self._registry[some_type.__name__] = some_type
 
-    def _GetTypeName(self, obj) -> Optional[str]:
+    def _get_type_name(self, obj) -> Optional[str]:
         for key in self._registry:
             if key in obj:
                 return key

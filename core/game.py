@@ -138,8 +138,8 @@ class Game:
         )
 
         decoder = DdJsonDecoder()
-        decoder.Register(DdPlayer)
-        decoder.Register(DdClubPlayerSlot)
+        decoder.register(DdPlayer)
+        decoder.register(DdClubPlayerSlot)
         with open("data/clubs.json", "r") as data_file:
             club_data = json.load(data_file, object_hook=decoder)
 
