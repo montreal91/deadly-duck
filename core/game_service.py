@@ -21,15 +21,6 @@ class MainScreenInfo(NamedTuple):
     club_name: str
 
 
-class MainScreenGuiInfo(NamedTuple):
-    day: str
-    season: int
-    balance: int
-    club_name: str
-    current_competition: str
-    has_matches: bool
-
-
 class PlayerListInfo(NamedTuple):
     player_id: int
     name: str
@@ -207,19 +198,6 @@ class GameService:
         )
 
         return info
-
-    def get_main_screen_gui_info(self, game_id, manager_club_id):
-        game = self._game_repository.get_game(game_id)
-        context = game.get_context(manager_club_id)
-
-        return MainScreenGuiInfo(
-            day=context["day"],
-            season=len(context["history"]),
-            balance=context["balance"],
-            club_name=context["club_name"],
-            current_competition=context["competition"],
-            has_matches=context["has_matches"],
-        )
 
     def get_player_selection_gui_info(self, game_id, manager_club_id):
         context = self._game_repository.get_game(game_id).get_context(manager_club_id)

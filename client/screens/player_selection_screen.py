@@ -38,10 +38,10 @@ class PlayerSelectionScreen(Screen):
         back_button.bind(on_press=_on_back)
         self._layout.left_col.add_widget(back_button)
 
-        self._opp_club_label = make_label(title="Placeholder", font_size=40)
+        self._opp_club_label = make_label(text="Placeholder", font_size=40)
         self._layout.right_col.add_widget(self._opp_club_label)
 
-        self._home_away_label = make_label(title="Placeholder", font_size=20)
+        self._home_away_label = make_label(text="Placeholder", font_size=20)
         self._layout.right_col.add_widget(self._home_away_label)
 
         self._opp_player_widget = PlayerDetailsWidget()

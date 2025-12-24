@@ -16,6 +16,8 @@ from client.screens.player_selection_screen import PlayerSelectionScreen
 from client.screens.splash_screen import SplashScreen
 from client.screens.main_screen import MainScreen
 from client.screens.story_name_screen import StoryNameScreen
+from configuration.application_context import get_application_context
+
 
 class DuckClientApp(App):
     def __init__(self, **kwargs):
@@ -35,7 +37,13 @@ class DuckClientApp(App):
         self.sm = ScreenManager(transition=NoTransition())
         self.splash_screen = SplashScreen(name="splash")
         self.main_screen = MainScreen(name="main")
-        self.game_screen = GameScreen(name="game")
+
+        self.game_screen = GameScreen(
+            game_service=get_application_context().game_service,
+            query_handler=get_application_context().game_screen_ui_query_handler,
+            name="game"
+        )
+
         self.story_name_screen = StoryNameScreen(name="story_name")
         self._club_selection_screen = ClubSelectionScreen(name="club_selection")
         self._load_story_screen = LoadStoryScreen(name="load_story")

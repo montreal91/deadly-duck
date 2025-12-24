@@ -161,6 +161,10 @@ class Game:
         return self._competition.day
 
     @property
+    def competition(self):
+        return self._competition
+
+    @property
     def clubs(self) -> List[Club]:
         return list(self._clubs.values())
 

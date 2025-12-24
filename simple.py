@@ -1,6 +1,11 @@
 """
 Created Apr 09, 2019
 
+Support for the console client is discontinued.
+If it throws error at start, it throws error at stort, won't fix.
+
+Kept for historical record.
+
 @author montreal91
 """
 

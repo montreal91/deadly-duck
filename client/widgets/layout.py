@@ -34,9 +34,10 @@ def make_default_layout(title):
 
 
 class ThreeColLayout:
-    def __init__(self, root, col_list):
+    def __init__(self, root, col_list, title):
         self.root = root
         self.col_list = col_list
+        self.title = title
 
     @property
     def left_col(self):
@@ -116,4 +117,4 @@ def make_three_column_layout(
 
     container.add_widget(content)
 
-    return ThreeColLayout(root, columns)
+    return ThreeColLayout(root, columns, title)
