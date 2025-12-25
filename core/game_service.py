@@ -5,11 +5,10 @@ Created May 11, 2024
 
 @author montreal91
 """
-
 from typing import List, Optional
 from typing import NamedTuple
 
-from core.club import Club
+from core.club_repository import ClubRepository
 from core.game import Game
 from core.game import GameParams
 from core.game_repository import GameRepository
@@ -102,21 +101,6 @@ class OpponentInfo(NamedTuple):
 class PlayerSelectionScreenInfo(NamedTuple):
     players: List[PlayerListInfo]
     opponent: OpponentInfo
-
-
-class ClubRepository:
-    _game_repository: GameRepository
-
-    def __init__(self, game_repository: GameRepository):
-        self._game_repository = game_repository
-
-    def get_all_clubs(self, game_id) -> List[Club]:
-        game = self._game_repository.get_game(game_id)
-
-        if game is None:
-            return []
-
-        return game.clubs
 
 
 class FameQueryHandler:

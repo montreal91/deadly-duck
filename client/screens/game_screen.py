@@ -72,7 +72,16 @@ class GameScreen(Screen):
         self._select_player_button.bind(on_press=self._on_select_player)
         self._layout.left_col.add_widget(self._select_player_button)
 
-        self._layout.left_col.add_widget(make_label())
+        self._res_button = Button(
+            text="Results",
+            font_size=30,
+            size_hint=(None, None),
+            size=button_size
+        )
+        self._res_button.bind(on_press=_on_results)
+        self._layout.left_col.add_widget(self._res_button)
+
+        self._layout.left_col.add_widget(make_label(" "))
 
         self._back_button = Button(text="Back", font_size=30, size_hint=(None, None), size=button_size)
         self._back_button.bind(on_press=self._back_to_main_screen)
@@ -128,3 +137,7 @@ class GameScreen(Screen):
         self._game_service.save_game(self._game_id)
 
         App.get_running_app().switch_to_main(None)
+
+
+def _on_results(_):
+    App.get_running_app().switch_to_day_results()

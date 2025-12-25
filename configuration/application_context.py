@@ -17,6 +17,7 @@ from core.match import DdExhaustionCalculator
 from core.player import DdPlayerReputationCalculator
 from core.match import DdLinearProbabilityCalculator
 from core.attendance import DdAttendanceParams
+from core.queries.day_results_query import DayResultsQueryHandler
 from core.queries.main_screen_ui_query import GameScreenGuiQueryHandler
 from core.regular_championship import DdChampionshipParams
 from core.playoffs import DdPlayoffParams
@@ -34,7 +35,15 @@ class ApplicationContext:
             game_parameters=self._params,
             fame_query_handler=self._fame_query_handler,
         )
-        self._game_screen_ui_query_handler = GameScreenGuiQueryHandler(self._game_repository)
+        self._game_screen_ui_query_handler = GameScreenGuiQueryHandler(
+            self._game_repository,
+            self._club_repository
+        )
+
+        self._day_results_query_handler = DayResultsQueryHandler(
+            self._game_repository,
+            self._club_repository,
+        )
 
     @property
     def game_service(self):
@@ -47,6 +56,10 @@ class ApplicationContext:
     @property
     def game_screen_ui_query_handler(self):
         return self._game_screen_ui_query_handler
+
+    @property
+    def day_results_query_handler(self):
+        return self._day_results_query_handler
 
 
 def _get_params() -> GameParams:

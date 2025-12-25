@@ -210,6 +210,7 @@ class Game:
 
         assert 0 <= pk < len(self._clubs), _CLUB_INDEX_ERROR
 
+        # TODO: Replace this dict with a NamedTuple class
         return dict(
             balance=self._clubs[pk].account.balance,
             club_name=self._clubs[pk].name,
