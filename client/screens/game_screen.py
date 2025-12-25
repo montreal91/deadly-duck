@@ -13,6 +13,7 @@ from client.constants import button_size
 from client.game_context import GameContext
 from client.widgets.factories import make_label
 from client.widgets.layout import make_three_column_layout
+from client.widgets.standings_table_widget import StandingsTableWidget
 from client.widgets.upcoming_match_widget import UpcomingMatchWidget
 
 
@@ -77,7 +78,11 @@ class GameScreen(Screen):
         self._back_button.bind(on_press=self._back_to_main_screen)
         self._layout.left_col.add_widget(self._back_button)
 
+        self._standings_table = StandingsTableWidget()
+        self._layout.center_col.add_widget(self._standings_table.widget)
+
         self._layout.left_col.add_widget(Widget())
+        self._layout.center_col.add_widget(Widget())
         self._layout.right_col.add_widget(Widget())
 
         self.add_widget(self._layout.root)
@@ -99,6 +104,7 @@ class GameScreen(Screen):
         self._info = gui_info
 
         self._upcoming_match_widget.update(gui_info.upcoming_match)
+        self._standings_table.update(gui_info.standings)
 
     def _on_next(self, _):
         res = self._game_service.next_day(self._game_id)

@@ -3,12 +3,23 @@ Created December 24, 2025
 
 @author montreal91
 """
-from typing import NamedTuple
+from typing import (
+    NamedTuple,
+    List
+)
 from typing import Optional
 
 
 class UpcomingMatch(NamedTuple):
     opponent_club_name: str
+
+
+class StandingRow(NamedTuple):
+    pos: int
+    club_id: int
+    club_name: str
+    sets: int
+    games: int
 
 
 class QueryResult(NamedTuple):
@@ -19,6 +30,7 @@ class QueryResult(NamedTuple):
     current_competition: str
     has_matches: bool
     upcoming_match: Optional[UpcomingMatch]
+    standings: List[StandingRow]
 
 
 class GameScreenGuiQueryHandler:
@@ -43,6 +55,19 @@ class GameScreenGuiQueryHandler:
             else:
                 raise Exception("WTF Happened")
 
+        raw_standings = context.get("standings", [])
+        res_standings = []
+        clubs = _get_club_index(game)
+
+        for pos, standing in enumerate(raw_standings):
+            res_standings.append(StandingRow(
+                pos=pos + 1,
+                club_id=standing.club_pk,
+                sets=standing.sets_won,
+                games=standing.games_won,
+                club_name=clubs[standing.club_pk].name,
+            ))
+
         return QueryResult(
             day=context["day"],
             season=len(context["history"]),
@@ -51,7 +76,17 @@ class GameScreenGuiQueryHandler:
             current_competition=context["competition"],
             has_matches=context["has_matches"],
             upcoming_match=upcoming_match,
+            standings=res_standings,
         )
+
+def _get_club_index(game):
+    clubs = game.clubs
+    res = {}
+
+    for club in clubs:
+        res[club.club_id] = club
+
+    return res
 
 def _get_match(competition, club_id):
     matches = competition.current_matches

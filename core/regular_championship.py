@@ -74,7 +74,7 @@ class DdRegularChampionship(DdAbstractCompetition):
 
     @property
     def title(self):
-        return "Top League Regular Season"
+        return "Regular Season"
 
     def GetClubFame(self, club_pk):
         for pos, row in enumerate(self.standings):

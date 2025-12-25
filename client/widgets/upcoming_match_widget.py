@@ -21,7 +21,6 @@ class UpcomingMatchWidget:
         return self._root
 
     def update(self, opp=None):
-        print(f"{type(self)} is being updated.")
         self._root.clear_widgets()
 
         if opp is None:
