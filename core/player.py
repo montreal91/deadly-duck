@@ -6,21 +6,17 @@ Created Apr 09, 2019
 """
 
 import json
-
 from random import choice
 from random import randint
-
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
-from typing import Union
 
-from configuration.config_game import DdPlayerSkills
 from configuration.config_game import DdGameplayConstants
+from configuration.config_game import DdPlayerSkills
 from core.serialization import DdField
 from core.serialization import DdJsonable
-
 
 _ENDURANCE_FACTOR = DdPlayerSkills.ENDURANCE_FACTOR
 _PRECISION = 1
@@ -131,7 +127,7 @@ class DdPlayer(DdJsonable):
 
     @property
     def endurance(self) -> float:
-        return round(self._endurance / 10, _PRECISION)
+        return self._endurance
 
     @property
     def exhaustion(self) -> int:

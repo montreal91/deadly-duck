@@ -257,26 +257,6 @@
         "contract_cost": -1,
         "player": {
           "DdPlayer":true,
-          "first_name":"Lucie",
-          "second_name":"Kaitleen",
-          "last_name":"Lee",
-          "technique":85,
-          "endurance":75,
-          "exhaustion":0,
-          "experience":3900,
-          "speciality":"hard",
-          "current_stamina":75,
-          "age":20,
-          "reputation":487
-        }
-      },
-      {
-        "DdClubPlayerSlot": true,
-        "coach_level":0,
-        "has_next_contract": true,
-        "contract_cost": -1,
-        "player": {
-          "DdPlayer":true,
           "first_name":"Olivia",
           "second_name":"Monique",
           "last_name":"Sonne",

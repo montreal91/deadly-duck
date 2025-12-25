@@ -1,6 +1,11 @@
 """
 Created Apr 09, 2019
 
+Support for the console client is discontinued.
+If it throws error at start, it throws error at stort, won't fix.
+
+Kept for historical record.
+
 @author montreal91
 """
 
@@ -11,7 +16,7 @@ from typing import Dict
 from typing import Optional
 
 from configuration.application_context import get_application_context
-from core.game import DdOpponentStruct
+from core.game import OpponentDto
 from core.player import DdPlayer
 
 BOLD = "\033[;1m"
@@ -313,7 +318,7 @@ class SimplifiedApp:
     @user_action
     def __action_opponent(self):
         context = self._get_actual_context()
-        opponent: DdOpponentStruct = context["opponent"]
+        opponent: OpponentDto = context["opponent"]
         if opponent is None:
             print("No opponents today.")
             return

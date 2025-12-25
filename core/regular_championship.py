@@ -31,7 +31,7 @@ class DdChampionshipParams(NamedTuple):
 
 
 class DdRegularChampionship(DdAbstractCompetition):
-    """A class to incapsulate logic of a regular championship."""
+    """A class to encapsulate logic of a regular championship."""
 
     _params: DdChampionshipParams
     _results: List[List[DdMatchResult]]
@@ -74,7 +74,7 @@ class DdRegularChampionship(DdAbstractCompetition):
 
     @property
     def title(self):
-        return "Championship"
+        return "Regular Season"
 
     def GetClubFame(self, club_pk):
         for pos, row in enumerate(self.standings):
