@@ -16,12 +16,10 @@ from core.match import DdMatchParams
 from core.match import DdExhaustionCalculator
 from core.player import DdPlayerReputationCalculator
 from core.match import DdLinearProbabilityCalculator
-from core.attendance import DdAttendanceParams
 from core.queries.day_results_query import DayResultsQueryHandler
 from core.queries.main_screen_ui_query import GameScreenGuiQueryHandler
 from core.regular_championship import DdChampionshipParams
 from core.playoffs import DdPlayoffParams
-from core.attendance import DdCourt
 
 
 class ApplicationContext:
@@ -81,13 +79,7 @@ def _get_params() -> GameParams:
             config["match"].getfloat("probability_coefficient", 0.0)
         ),
     )
-    attendance_params = DdAttendanceParams(
-        price=config["attendance"].getfloat("price", 0.0),
-        home_fame=config["attendance"].getfloat("home_fame", 0.0),
-        away_fame=config["attendance"].getfloat("away_fame", 0.0),
-        reputation=config["attendance"].getfloat("reputation", 0.0),
-        importance=config["attendance"].getfloat("importance", 0.0),
-    )
+
     championship_params = DdChampionshipParams(
         match_params=match_params,
         recovery_day=config["championship"].getint("recovery_day", 0),
@@ -106,17 +98,8 @@ def _get_params() -> GameParams:
         match_importance=config["playoff"].getint("match_importance", 0),
     )
     return GameParams(
-        attendance_params=attendance_params,
         championship_params=championship_params,
         playoff_params=playoff_params,
-        courts=dict(
-            default=DdCourt(capacity=1000, rent_cost=1000),
-            tiny=DdCourt(capacity=1000, rent_cost=1000),
-            small=DdCourt(capacity=2000, rent_cost=5000),
-            medium=DdCourt(capacity=4000, rent_cost=16000),
-            big=DdCourt(capacity=8000, rent_cost=44000),
-            huge=DdCourt(capacity=16000, rent_cost=112000)
-        ),
         contracts=json.loads(config.get("game", "contracts")),
         exhaustion_factor=config["game"].getint("exhaustion_factor", 0),
         is_hard=config["game"].getboolean("is_hard", True),

@@ -24,8 +24,6 @@ class SingleMatchResult(NamedTuple):
 
 class DayResultsQueryResult(NamedTuple):
     match_results_list: List[SingleMatchResult]
-    # def __init__(self, match_results_list):
-    #     self.match_results_list = match_results_list
 
 
 class DayResultsQueryHandler:
@@ -34,7 +32,6 @@ class DayResultsQueryHandler:
         self._club_repository = club_repository
 
     def __call__(self, query):
-        print("HUGS: Day results are queried.")
         game = self._game_repository.get_game(query.game_id).get_context(query.manager_club_id)
         clubs = self._club_repository.get_club_index(query.game_id)
 

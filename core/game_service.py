@@ -230,11 +230,6 @@ class GameService:
         )
         self._game_repository.save_game(game)
 
-    def select_court_for_club(self, game_id, manager_club_id, court_type):
-        game = self._game_repository.get_game(game_id)
-        game.select_court(manager_club_id, court_type)
-        self._game_repository.save_game(game)
-
     def get_court_info(self, game_id, manager_club_id):
         game = self._game_repository.get_game(game_id)
         court = game.get_context(manager_club_id)["court"]
@@ -254,11 +249,6 @@ class GameService:
     def sign_player(self, game_id, manager_club_id, player_id):
         game = self._game_repository.get_game(game_id)
         game.sign_player(club_id=manager_club_id, player_id=player_id)
-        self._game_repository.save_game(game)
-
-    def set_ticket_price(self, game_id, manager_club_id, price):
-        game = self._game_repository.get_game(game_id)
-        game.set_ticket_price(pk=manager_club_id, price=price)
         self._game_repository.save_game(game)
 
     def save_game(self, game_id):

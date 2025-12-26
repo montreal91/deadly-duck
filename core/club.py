@@ -10,7 +10,6 @@ from typing import Optional
 from typing import Tuple
 
 from configuration.config_game import DdGameplayConstants
-from core.attendance import DdCourt
 from core.financial import DdFinancialAccount
 from core.player import DdPlayer
 from core.player import PlayerModelComparator
@@ -80,7 +79,7 @@ class Club:
 
     _club_id: int
     _account: DdFinancialAccount
-    _court: DdCourt
+    # _court: DdCourt
     _fame_tracker: DdFameTracker
     _is_controlled: bool
     _name: str
@@ -93,12 +92,11 @@ class Club:
             club_id: int,
             name: str,
             surface: str,
-            court: DdCourt,
+            # court: DdCourt,
             coach_power: int
     ):
         self._club_id = club_id
         self._account = DdFinancialAccount()
-        self._court = court
         self._fame_tracker = DdFameTracker()
         self._is_controlled = False
         self._name = name
@@ -120,16 +118,6 @@ class Club:
     @property
     def coach_power(self):
         return self._coach_power
-
-    @property
-    def court(self) -> DdCourt:
-        """Court where club's next home match will be held."""
-
-        return self._court
-
-    @court.setter
-    def court(self, value: DdCourt):
-        self._court = value
 
     @property
     def fame(self):
@@ -176,12 +164,12 @@ class Club:
 
         return self._surface
 
-    def AddFame(self, value: int):
+    def add_fame(self, value: int):
         """Adds new fame instance to the club."""
 
         self._fame_tracker.AddFameValue(value)
 
-    def AddPlayer(self, player: DdPlayer):
+    def add_player(self, player: DdPlayer):
         """Adds player to the club."""
         if self._is_controlled:
             coach_level = 0
@@ -189,21 +177,21 @@ class Club:
             coach_level = self._coach_power
         self._players.append(DdClubPlayerSlot(player, coach_level))
 
-    def ContractPlayer(self, player_pk):
+    def contract_player(self, player_pk):
         """Marks that a player has a contract for the next season."""
 
         self._players[player_pk].has_next_contract = True
 
-    def ExpelRetiredPlayers(self):
+    def expel_retired_players(self):
         """Removes players from the club which are too old to play."""
 
         retirement_age = DdGameplayConstants.RETIREMENT_AGE.value
-        def AgeCheck(player_slot: DdClubPlayerSlot) -> bool:
+        def age_check(player_slot: DdClubPlayerSlot) -> bool:
             return player_slot.player.age < retirement_age
 
-        self._players = [p for p in self._players if AgeCheck(p)]
+        self._players = [p for p in self._players if age_check(p)]
 
-    def PerformPractice(self):
+    def perform_practice(self):
         """Performs player practice."""
 
         for plr in self._players:
@@ -211,12 +199,12 @@ class Club:
                 plr.player.current_stamina * plr.coach_level
             )
 
-    def PopPlayer(self, index: int) -> DdPlayer:
+    def pop_player(self, index: int) -> DdPlayer:
         """Removes player from the club."""
 
         return self._players.pop(index).player
 
-    def SelectCoach(self, coach_index: int, player_index: int):
+    def select_coach(self, coach_index: int, player_index: int):
         """
         Selects a coach.
 
@@ -225,7 +213,7 @@ class Club:
 
         self._players[player_index].coach_level = self.COACH_LEVELS[coach_index]
 
-    def SelectPlayer(self, index: Optional[int]):
+    def select_player(self, index: Optional[int]):
         """Selects player for the next match."""
 
         if self._selected_player is not None:
@@ -236,7 +224,7 @@ class Club:
         if index is not None:
             self._players[index].is_selected = True
 
-    def SetCoachPower(self, val: int):
+    def set_coach_power(self, val: int):
         if val in self.COACH_LEVELS:
             self._coach_power = val
 
@@ -244,7 +232,7 @@ class Club:
                 slot.coach_power = val
 
 
-    def SetControlled(self, val: bool):
+    def set_controlled(self, val: bool):
         """Sets club controlled or uncontrolled by a human user."""
 
         self._is_controlled = val
