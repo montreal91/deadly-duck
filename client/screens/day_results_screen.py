@@ -4,7 +4,8 @@ Created December 24, 2025
 @author montreal91
 """
 from kivy.app import App
-from kivy.graphics import Color, Rectangle
+from kivy.graphics import Color
+from kivy.graphics import Rectangle
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button

@@ -3,10 +3,8 @@ Created December 24, 2025
 
 @author montreal91
 """
-from typing import (
-    NamedTuple,
-    List
-)
+from typing import List
+from typing import NamedTuple
 from typing import Optional
 
 

@@ -9,9 +9,11 @@ Created May 11, 2024
 import configparser
 import json
 
+from core.club_repository import ClubRepository
 from core.game_repository import GameRepository
-from core.game_service import GameService, ClubRepository, FameQueryHandler
 from core.game import GameParams
+from core.game_service import FameQueryHandler
+from core.game_service import GameService
 from core.match import DdMatchParams
 from core.match import DdExhaustionCalculator
 from core.player import DdPlayerReputationCalculator

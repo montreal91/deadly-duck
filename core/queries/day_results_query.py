@@ -3,7 +3,8 @@ Created December 26, 2025
 
 @author montreal91
 """
-from typing import NamedTuple, List
+from typing import List
+from typing import NamedTuple
 
 
 class DayResultsQuery:
