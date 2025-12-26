@@ -38,9 +38,11 @@ class DuckClientApp(App):
         self.splash_screen = SplashScreen(name="splash")
         self.main_screen = MainScreen(name="main")
 
+        ac = get_application_context()
+
         self.game_screen = GameScreen(
-            game_service=get_application_context().game_service,
-            query_handler=get_application_context().game_screen_ui_query_handler,
+            game_service=ac.game_service,
+            query_handler=ac.game_screen_ui_query_handler,
             name="game"
         )
 
@@ -48,7 +50,10 @@ class DuckClientApp(App):
         self._club_selection_screen = ClubSelectionScreen(name="club_selection")
         self._load_story_screen = LoadStoryScreen(name="load_story")
         self._player_selection_screen = PlayerSelectionScreen(name="player_selection")
-        self._day_results_screen = DayResultsScreen(name="day_results")
+        self._day_results_screen = DayResultsScreen(
+            name="day_results",
+            day_results_query_handler=ac.day_results_query_handler,
+        )
 
         self.sm.add_widget(self.splash_screen)
         self.sm.add_widget(self.main_screen)
@@ -93,3 +98,4 @@ class DuckClientApp(App):
 
     def switch_to_day_results(self):
         self.sm.current = "day_results"
+        self._day_results_screen.update()

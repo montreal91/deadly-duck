@@ -3,10 +3,8 @@ Created December 24, 2025
 
 @author montreal91
 """
-from typing import (
-    NamedTuple,
-    List
-)
+from typing import List
+from typing import NamedTuple
 from typing import Optional
 
 
@@ -34,8 +32,9 @@ class QueryResult(NamedTuple):
 
 
 class GameScreenGuiQueryHandler:
-    def __init__(self, game_repository):
+    def __init__(self, game_repository, club_repository):
         self._game_repository = game_repository
+        self._club_repository = club_repository
 
     def __call__(self, game_id, manager_club_id):
         game = self._game_repository.get_game(game_id)
@@ -57,7 +56,7 @@ class GameScreenGuiQueryHandler:
 
         raw_standings = context.get("standings", [])
         res_standings = []
-        clubs = _get_club_index(game)
+        clubs = self._club_repository.get_club_index(game_id)
 
         for pos, standing in enumerate(raw_standings):
             res_standings.append(StandingRow(
@@ -79,14 +78,6 @@ class GameScreenGuiQueryHandler:
             standings=res_standings,
         )
 
-def _get_club_index(game):
-    clubs = game.clubs
-    res = {}
-
-    for club in clubs:
-        res[club.club_id] = club
-
-    return res
 
 def _get_match(competition, club_id):
     matches = competition.current_matches

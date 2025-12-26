@@ -3,7 +3,8 @@ Created December 23, 2025
 
 @author montreal91
 """
-from kivy.graphics import Color, Rectangle
+from kivy.graphics import Color
+from kivy.graphics import Rectangle
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label

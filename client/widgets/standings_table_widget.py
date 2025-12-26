@@ -3,7 +3,8 @@ Created December 24, 2025
 
 @author montreal91
 """
-from kivy.graphics import Color, Rectangle
+from kivy.graphics import Color
+from kivy.graphics import Rectangle
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -12,11 +13,11 @@ from kivy.uix.widget import Widget
 from client.game_context import GameContext
 from client.widgets.factories import make_label
 
-_COL_WIDTH = dp(75)
 _POS_WIDTH = dp(25)
 _CLUB_WIDTH = dp(100)
 _SETS_WIDTH = dp(30)
 _GAMES_WIDTH = dp(40)
+
 
 class StandingsTableWidget:
     def __init__(self):

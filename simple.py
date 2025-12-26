@@ -83,8 +83,6 @@ class SimplifiedApp:
         self._actions["?"] = self.__action_help
         self._actions["agents"] = self.__action_agents
         self._actions["coach"] = self.__action_coach
-        self._actions["c"] = self.__action_court
-        self._actions["court"] = self.__action_court
         self._actions["fame"] = self.__action_fame
         self._actions["fire"] = self.__action_fire
         self._actions["hire"] = self.__action_hire
@@ -107,8 +105,6 @@ class SimplifiedApp:
         self._actions["sign"] = self.__action_sign
         self._actions["st"] = self.__action_standings
         self._actions["standings"] = self.__action_standings
-        self._actions["t"] = self.__action_ticket
-        self._actions["ticket"] = self.__action_ticket
         self._actions["u"] = self.__action_upcoming
         self._actions["upcoming"] = self.__action_upcoming
 
@@ -196,24 +192,6 @@ class SimplifiedApp:
             int(coach_index),
             int(player_index),
         )
-
-    @user_action
-    def __action_court(self, court: Optional[str] = None):
-        if court is not None:
-            self._game_service.select_court_for_club(
-                self._game_id,
-                self._manager_club_id,
-                court
-            )
-            return
-
-        court = self._game_service.get_court_info(
-            self._game_id, self._manager_club_id
-        )
-
-        print("Capacity:    ", court.capacity)
-        print("Rent cost:   ", court.rent_cost)
-        print("Ticket price:", court.ticket_price)
 
     @user_action
     def __action_fire(self, index: str):
@@ -422,12 +400,6 @@ class SimplifiedApp:
                 context["clubs"],
                 self._manager_club_id
             )
-
-    @user_action
-    def __action_ticket(self, ticket_price):
-        self._game_service.set_ticket_price(
-            self._game_id, self._manager_club_id, int(ticket_price)
-        )
 
     @user_action
     def __action_upcoming(self):

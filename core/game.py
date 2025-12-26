@@ -11,8 +11,6 @@ Created Apr 09, 2019
 
 import json
 import logging
-
-from copy import deepcopy
 from random import choice
 from random import randint
 from typing import Any
@@ -24,9 +22,6 @@ from typing import Optional
 from typing import Tuple
 
 from configuration.config_game import DdGameplayConstants
-from core.attendance import DdAttendanceParams
-from core.attendance import DdAttendanceCalculator
-from core.attendance import DdCourt
 from core.club import Club
 from core.club import DdClubPlayerSlot
 from core.competition import DdAbstractCompetition
@@ -53,13 +48,11 @@ class GameParams(NamedTuple):
     """Passive class to store game parameters."""
 
     # Various parameters
-    attendance_params: DdAttendanceParams
     championship_params: DdChampionshipParams
     playoff_params: DdPlayoffParams
 
     # Other data
     contracts: List[int]
-    courts: Dict[str, DdCourt]
     exhaustion_factor: int
     is_hard: bool
     training_coefficient: int
@@ -119,15 +112,6 @@ class Game:
         self._player_factory = DdPlayerFactory()
         self._results = []
 
-        self._attendance_calculator = DdAttendanceCalculator(
-            price=self._params.attendance_params.price,
-            home_fame=self._params.attendance_params.home_fame,
-            away_fame=self._params.attendance_params.away_fame,
-            reputation=self._params.attendance_params.reputation,
-            importance=self._params.attendance_params.importance,
-            hard=self._params.is_hard
-        )
-
         self._clubs = {}
         self._season_fame = {}
         self._contract_calculator = DdStaticContractCalculator(
@@ -146,8 +130,8 @@ class Game:
         for club_id, club in enumerate(club_data):
             self._add_club(club_id=club_id, club_data=club)
             if club_id == manager_club_id:
-                self._clubs[club_id].SetCoachPower(0)
-                self._clubs[club_id].SetControlled(True)
+                self._clubs[club_id].set_coach_power(0)
+                self._clubs[club_id].set_controlled(True)
 
         self._competition = DdRegularChampionship(
             self._clubs, self._params.championship_params
@@ -181,7 +165,6 @@ class Game:
         """Indicates if game is over."""
 
         return False  # The game never ends yet :)
-        # return not any(club.is_controlled for club in self._clubs.values())
 
     @property
     def season_over(self) -> bool:
@@ -199,7 +182,7 @@ class Game:
             "There is no player with such index in your club."
         )
 
-        player = self._clubs[pk].PopPlayer(i)
+        player = self._clubs[pk].pop_player(i)
         player.has_next_contract = False
         player.RecoverStamina(player.max_stamina)
 
@@ -210,12 +193,12 @@ class Game:
 
         assert 0 <= pk < len(self._clubs), _CLUB_INDEX_ERROR
 
+        # TODO: Replace this dict with a NamedTuple class
         return dict(
             balance=self._clubs[pk].account.balance,
             club_name=self._clubs[pk].name,
             day=self._competition.day,
             clubs=[club.name for club in self._clubs.values()],
-            court=self._clubs[pk].court.json,
             free_agents=self._get_free_agents(),
             history=self._history,
             last_results=self._last_results,
@@ -278,21 +261,9 @@ class Game:
             "Incorrect coach index."
         )
 
-        self._clubs[club_index].SelectCoach(
+        self._clubs[club_index].select_coach(
             coach_index=coach_index, player_index=player_index
         )
-
-    def select_court(self, club_id: int, court: str):
-        """Selects court for club from available options."""
-
-        assert club_id in self._clubs, _CLUB_INDEX_ERROR
-        possible_courts = "|".join(self._params.courts)
-        assert court in self._params.courts, (
-            "Incorrect court type.\n"
-            f"Possible correct types: {possible_courts}"
-        )
-
-        self._clubs[club_id].court = deepcopy(self._params.courts[court])
 
     def select_player(self, player_id: int, club_id: int):
         """Sets selected player for user."""
@@ -301,21 +272,13 @@ class Game:
         assert 0 <= player_id < len(self._clubs[club_id].players), (
             "Incorrect player index."
         )
-        self._clubs[club_id].SelectPlayer(player_id)
+        self._clubs[club_id].select_player(player_id)
 
     def _set_controlled(self, pk: int, is_controlled: bool):
-        """Sets flag wether club is controlled by a user or not."""
+        """Sets flag whether club is controlled by a user or not."""
 
         assert 0 <= pk < len(self._clubs), "Incorrect club pk."
-        self._clubs[pk].SetControlled(is_controlled)
-
-    def set_ticket_price(self, pk: int, price: int):
-        """Sets ticket price on club's court."""
-
-        assert pk in self._clubs, _CLUB_INDEX_ERROR
-        assert price >= 0, "Ticket price can't be negative."
-
-        self._clubs[pk].court.ticket_price = price
+        self._clubs[pk].set_controlled(is_controlled)
 
     def sign_player(self, club_id: int, player_id: int):
         """Signs a new contract with a player for the next season."""
@@ -342,7 +305,7 @@ class Game:
             f"You need at least ${cost}."
         )
 
-        club.ContractPlayer(player_id)
+        club.contract_player(player_id)
         club.account.ProcessTransaction(DdTransaction(
             -cost,
             f"Renewed player contract with {players[player_id].player.initials} "
@@ -358,16 +321,13 @@ class Game:
 
         for club_pk in self._clubs:
             if not self._is_club_valid(club_pk):
-                self._clubs[club_pk].SetControlled(False)
+                self._clubs[club_pk].set_controlled(False)
 
         if self.is_over:
             return False, "The game is over"
 
         if self._decision_required:
             return False, "You have to select player for the next match."
-
-        if not self._court_check:
-            return False, "You have insufficient funds to play on this court."
 
         if not self._training_check:
             return False, "You have insufficient funds to perform such kind of training."
@@ -384,7 +344,6 @@ class Game:
 
         if self._competition.is_over:
             self._update_season_fame()
-            self._save_history()
             self._start_playoff()
         return True, "Ok"
 
@@ -396,8 +355,8 @@ class Game:
 
     @property
     def _contract_check(self) -> bool:
-        def check_club(club: Club) -> bool:
-            for slot in club.players:
+        def check_club(c: Club) -> bool:
+            for slot in c.players:
                 next_age = slot.player.age + 1
                 if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
                     continue
@@ -409,25 +368,6 @@ class Game:
             if not club.is_controlled:
                 continue
             if not check_club(club):
-                return False
-
-        return True
-
-    @property
-    def _court_check(self) -> bool:
-        if self._competition.current_matches is None:
-            return True
-
-        def has_home_match(pk):
-            for match in self._competition.current_matches:
-                if match.home_pk == pk:
-                    return True
-            return False
-
-        for pk, club in self._clubs.items():
-            if not club.is_controlled:
-                continue
-            if club.court.rent_cost > club.account.balance and has_home_match(pk):
                 return False
 
         return True
@@ -464,8 +404,8 @@ class Game:
         if self._competition.title != "Championship":
             return True
 
-        def check_club(club: Club) -> bool:
-            return self._calculate_club_practice_cost(club) <= club.account.balance
+        def check_club(c: Club) -> bool:
+            return self._calculate_club_practice_cost(c) <= c.account.balance
 
         for club in self._clubs.values():
             if not club.is_controlled:
@@ -488,16 +428,15 @@ class Game:
             name=club_data["name"],
             surface=club_data["surface"],
             coach_power=club_data["coach_power"],
-            court=deepcopy(self._params.courts["default"])
         )
 
         for value in club_data["fame"]:
-            club.AddFame(value)
+            club.add_fame(value)
 
         for i, slot in enumerate(club_data["player_data"]):
-            club.AddPlayer(slot.player)
+            club.add_player(slot.player)
             if slot.has_next_contract:
-                club.ContractPlayer(player_pk=i)
+                club.contract_player(player_pk=i)
 
         club.account.ProcessTransaction(DdTransaction(
             club_data["balance"],
@@ -511,43 +450,18 @@ class Game:
         slots = [(s.player.level, s.coach_level) for s in club.players]
         return sum(self._practice_calculator(*slot) for slot in slots)
 
-    def _calculate_match_income(self, results: Optional[List[DdMatchResult]]):
-        if results is None:
-            return
-
-        for result in results:
-            home_club: Club = self._clubs[result.home_pk]
-            attendance = self._attendance_calculator(
-                ticket_price=home_club.court.ticket_price,
-                home_fame=home_club.fame,
-                away_fame=self._clubs[result.away_pk].fame,
-                reputation=result.home_player_snapshot["reputation"],
-                match_importance=self._competition.match_importance,
-            )
-            income = home_club.court.GetMatchIncome(attendance=attendance)
-
-            result.income = income
-            result.attendance = min(attendance, home_club.court.capacity)
-
-            home_club.account.ProcessTransaction(DdTransaction(
-                value=-home_club.court.rent_cost,
-                comment="Court rent cost."
-            ))
-
-            home_club.account.ProcessTransaction(DdTransaction(
-                value=income,
-                comment=(
-                    f"{self._competition.title}, {self._competition.day}, "
-                    f"attendance: {attendance}, "
-                    f"ticket price: {home_club.court.ticket_price}."
-                ),
+    def _calculate_match_income(self):
+        for club in self._clubs.values():
+            club.account.ProcessTransaction(DdTransaction(
+                value=250_000,
+                comment="Income"
             ))
 
     def _check_contracts(self):
         if not self._contract_check:
             raise AssertionError(
                 "Your club has uncontracted players.\n"
-                "You should wether contract them or fire."
+                "You should whether contract them or fire."
             )
 
     def _collect_competition_fame(self):
@@ -639,7 +553,7 @@ class Game:
                     age=DdGameplayConstants.STARTING_AGE.value,
                     speciality=club.surface
                 )
-                club.AddPlayer(new_player)
+                club.add_player(new_player)
 
     def _is_club_valid(self, pk: int) -> bool:
         opponent = self._get_opponent(pk)
@@ -659,9 +573,6 @@ class Game:
         if opponent.player is None:
             return True
 
-        if club.account.balance < self._params.courts["default"].rent_cost:
-            return False
-
         return True
 
     def _log_training_costs(self, club: Club):
@@ -680,14 +591,14 @@ class Game:
                 slot.player.AgeUp()
                 slot.player.AfterSeasonRest()
                 slot.has_next_contract = False
-            club.AddFame(self._season_fame[row.club_pk])
+            club.add_fame(self._season_fame[row.club_pk])
             self._season_fame[row.club_pk] = 0
-            club.ExpelRetiredPlayers()
+            club.expel_retired_players()
 
             if club.is_controlled:
                 continue
 
-            club.AddPlayer(self._player_factory.CreatePlayer(
+            club.add_player(self._player_factory.CreatePlayer(
                 age=DdGameplayConstants.STARTING_AGE.value,
                 level=randint(5, 10),
                 speciality=club.surface
@@ -695,7 +606,6 @@ class Game:
 
         self._generate_free_agents()
 
-        self._save_history()
         self._shuffle_coach_powers()
         self._competition = DdRegularChampionship(
             self._clubs,
@@ -717,11 +627,11 @@ class Game:
                     -self._calculate_club_practice_cost(club),
                     f"Practice on day {self._competition.day}"
                 ))
-            club.PerformPractice()
+            club.perform_practice()
 
     def _play_one_day(self):
         self._results = self._competition.Update()
-        self._calculate_match_income(self._results)
+        self._calculate_match_income()
         self._recover()
         self._hire_players_if_needed()
 
@@ -734,7 +644,7 @@ class Game:
             "Insufficient funds.\n"
             f"You need at least ${cost}."
         )
-        self._clubs[club_pk].AddPlayer(player)
+        self._clubs[club_pk].add_player(player)
         self._clubs[club_pk].account.ProcessTransaction(DdTransaction(
             -cost,
             f"New player contract with {player.initials} "
@@ -751,14 +661,6 @@ class Game:
                     recovery_function(slot.player)
                 )
 
-    def _save_history(self):
-        self._history[-1][self._competition.title] = self._competition.standings
-
-        # This is done for collecting match statistics.
-        with open(".logs/results.csv", "a") as results_file:
-            for match in self._competition.results_:
-                print(match.csv, file=results_file)
-
     def _simulate(self, years):
         while len(self._history) < years:
             self.update()
@@ -772,7 +674,7 @@ class Game:
 
     def _unselect(self):
         for club in self._clubs.values():
-            club.SelectPlayer(None)
+            club.select_player(None)
 
     def _update_season_fame(self):
         for pk in self._clubs:
@@ -807,6 +709,6 @@ class Game:
         medium_clubs.append(m)
         weaksy_clubs.append(w)
 
-        [self._clubs[pk].SetCoachPower(3) for pk in strong_clubs]
-        [self._clubs[pk].SetCoachPower(2) for pk in medium_clubs]
-        [self._clubs[pk].SetCoachPower(1) for pk in weaksy_clubs]
+        [self._clubs[pk].set_coach_power(3) for pk in strong_clubs]
+        [self._clubs[pk].set_coach_power(2) for pk in medium_clubs]
+        [self._clubs[pk].set_coach_power(1) for pk in weaksy_clubs]
