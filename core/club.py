@@ -59,7 +59,7 @@ class DdFameTracker:
 
         return int(sum(x * y for x, y in zip(self._fame_queue, self._WEIGHTS)))
 
-    def AddFameValue(self, value):
+    def add_fame_value(self, value):
         """Adds new fame instance to the tracker."""
 
         self._fame_queue.pop(0)
@@ -79,7 +79,6 @@ class Club:
 
     _club_id: int
     _account: DdFinancialAccount
-    # _court: DdCourt
     _fame_tracker: DdFameTracker
     _is_controlled: bool
     _name: str
@@ -167,7 +166,7 @@ class Club:
     def add_fame(self, value: int):
         """Adds new fame instance to the club."""
 
-        self._fame_tracker.AddFameValue(value)
+        self._fame_tracker.add_fame_value(value)
 
     def add_player(self, player: DdPlayer):
         """Adds player to the club."""
