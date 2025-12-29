@@ -90,11 +90,11 @@ class DuckClientApp(App):
 
     def switch_to_story_name(self):
         self.sm.current = "story_name"
-        self.story_name_screen.cleanup()
+        self.story_name_screen.update()
 
     def switch_to_club_selection(self):
         self.sm.current = "club_selection"
-        self._club_selection_screen.cleanup()
+        self._club_selection_screen.update()
 
     def switch_to_day_results(self):
         self.sm.current = "day_results"

@@ -5,13 +5,11 @@ Created May 11, 2024
 
 @author montreal91
 """
-from time import time_ns
 from typing import List
 from typing import NamedTuple
 from typing import Optional
 
-from core.club_repository import ClubRepository
-from core.game import Game
+from core.ports.outbound.club_repository import ClubRepository
 
 
 class MainScreenInfo(NamedTuple):
@@ -131,18 +129,6 @@ class GameService:
         self._game_repository = game_repository
         self._parameters = game_parameters
         self._fame_query_handler = fame_query_handler
-
-    def create_new_game(self, game_id, manager_club_id):
-        self._game_repository.save_game(
-            game=Game(
-                params=self._parameters,
-                game_id=game_id,
-                manager_club_id=manager_club_id,
-                created_ts=time_ns() // 1_000_000,
-                updated_ts=time_ns() // 1_000_000,
-            ),
-            persistent_save=True,
-        )
 
     def get_saved_games(self):
         return SavedGamesInfo(names=self._game_repository.get_game_ids())

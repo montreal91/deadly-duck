@@ -52,16 +52,6 @@ class SimplifiedApp:
         self._game_id = game_id
         self._game_service = get_application_context().game_service
 
-        if not load:
-            self._game_service.create_new_game(
-                self._game_id,
-                self._manager_club_id
-            )
-        else:
-            self._manager_club_id = self._game_service.get_manager_club_id(
-                self._game_id
-            )
-
         self._actions = {}
         self._is_running = True
 
@@ -510,15 +500,15 @@ def _print_regular_standings(standings, club_names, users_club):
         reverse=True
     )
     for i, row in enumerate(standings, 1):
-        if row.club_pk == users_club:
+        if row.club_id == users_club:
             sys.stdout.write(BOLD)
         print("{pos:02d} {sets:2d} {games:3d} {club_name:s}".format(
-            club_name=club_names[row.club_pk],
+            club_name=club_names[row.club_id],
             pos=i,
             sets=row.sets_won,
             games=row.games_won,
         ))
-        if row.club_pk == users_club:
+        if row.club_id == users_club:
             sys.stdout.write(RESET)
 
 

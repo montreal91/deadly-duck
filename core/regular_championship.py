@@ -4,7 +4,6 @@ Created May 20, 2019
 
 @author montreal91
 """
-
 from random import shuffle
 from typing import Dict
 from typing import Generator
@@ -12,7 +11,6 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 
-from core.club import Club
 from core.competition import DdAbstractCompetition
 from core.competition import ScheduleDay
 from core.match import DdMatchParams
@@ -21,7 +19,7 @@ from core.match import DdScheduledMatchStruct
 from core.match import DdStandingsRowStruct
 
 
-class DdChampionshipParams(NamedTuple):
+class ChampionshipParams(NamedTuple):
     """A passive class to store regular championship parameters."""
 
     match_params: DdMatchParams
@@ -30,16 +28,16 @@ class DdChampionshipParams(NamedTuple):
     match_importance: int
 
 
-class DdRegularChampionship(DdAbstractCompetition):
+class RegularChampionship(DdAbstractCompetition):
     """A class to encapsulate logic of a regular championship."""
 
-    _params: DdChampionshipParams
+    _params: ChampionshipParams
     _results: List[List[DdMatchResult]]
     _standings: Dict[int, List[DdStandingsRowStruct]]
 
-    def __init__(self, clubs: Dict[int, Club], params: DdChampionshipParams):
+    def __init__(self, clubs, params):
         super().__init__(clubs, params)
-        self._MakeSchedule()
+        self._make_schedule()
 
         self._standings = {}
 
@@ -55,7 +53,11 @@ class DdRegularChampionship(DdAbstractCompetition):
     def standings(self) -> List[DdStandingsRowStruct]:
         if self._day in self._standings:
             return self._standings[self._day]
-        results = [DdStandingsRowStruct(i) for i in range(len(self._clubs))]
+
+        # results = [DdStandingsRowStruct(i) for i in self._clubs]
+        results = {}
+        for club_id in self._clubs:
+            results[club_id] = DdStandingsRowStruct(club_id=club_id)
 
         for day in self._results:
             for match in day:
@@ -65,25 +67,28 @@ class DdRegularChampionship(DdAbstractCompetition):
                 results[match.away_pk].sets_won += match.away_sets
                 results[match.away_pk].games_won += match.away_games
 
+        results_list = [results[cid] for cid in results]
+
         self._standings[self._day] = sorted(
-            results,
+            results_list,
             key=lambda x: (x.sets_won, x.games_won),
             reverse=True
         )
+
         return self._standings[self._day]
 
     @property
     def title(self):
         return "Regular Season"
 
-    def GetClubFame(self, club_pk):
+    def get_club_fame(self, club_pk):
         for pos, row in enumerate(self.standings):
-            if row.club_pk == club_pk and pos == 0:
+            if row.club_id == club_pk and pos == 0:
                 return 500
 
         return 0
 
-    def Update(self) -> Optional[List[DdMatchResult]]:
+    def update(self) -> Optional[List[DdMatchResult]]:
         if self.current_matches is None:
             self._day += 1
             return None
@@ -104,25 +109,25 @@ class DdRegularChampionship(DdAbstractCompetition):
         self._results.append(day_results)
         return day_results
 
-    def _MakeFullSchedule(self, pk_list: List[int]):
+    def _make_full_schedule(self, pk_list: List[int]):
         # Alias to shorten length of code lines
         _Match = DdScheduledMatchStruct
 
-        def MirrorDay(matches: List[DdScheduledMatchStruct]):
+        def mirror_day(matches: List[DdScheduledMatchStruct]):
             return [_Match(m.away_pk, m.home_pk) for m in matches]
 
-        def CopyDay(matches):
+        def copy_day(matches):
             return [_Match(m.home_pk, m.away_pk) for m in matches]
 
-        def ComposeDays(matches: List[DdScheduledMatchStruct], num: int):
+        def compose_days(matches: List[DdScheduledMatchStruct], num: int):
             res = []
             for _ in range(num // 2):
-                res.append(CopyDay(matches))
+                res.append(copy_day(matches))
             for _ in range(num // 2):
-                res.append(MirrorDay(matches))
+                res.append(mirror_day(matches))
             return res
 
-        basic_schedule = _MakeBasicSchedule(pk_list)
+        basic_schedule = _make_basic_schedule(pk_list)
 
         res: List[ScheduleDay] = []
         in_div = self._params.rounds
@@ -130,15 +135,15 @@ class DdRegularChampionship(DdAbstractCompetition):
 
         for i, match in enumerate(basic_schedule):
             if i % 2 == 0:
-                res.extend(ComposeDays(match, ex_div))
+                res.extend(compose_days(match, ex_div))
             else:
-                res.extend(ComposeDays(match, in_div))
+                res.extend(compose_days(match, in_div))
         return res
 
-    def _MakeSchedule(self):
-        pk_list = list(range(len(self._clubs)))
+    def _make_schedule(self):
+        pk_list = [cid for cid in self._clubs]
         shuffle(pk_list)
-        days = self._MakeFullSchedule(pk_list)
+        days = self._make_full_schedule(pk_list)
         shuffle(days)
 
         day = -1
@@ -155,21 +160,21 @@ class DdRegularChampionship(DdAbstractCompetition):
         self._schedule.append(None)
 
 
-def _MakeBasicSchedule(pk_list: List[int]):
-    def MakePairs(lst: List[int]) -> ScheduleDay:
+def _make_basic_schedule(pk_list: List[int]):
+    def make_pairs(lst: List[int]) -> ScheduleDay:
         num = len(lst) - 1
         mid = len(lst) // 2
         return [
             DdScheduledMatchStruct(lst[i], lst[num-i]) for i in range(mid)
         ]
 
-    def Shift(lst: List[int], num: int) -> List[int]:
+    def shift(lst: List[int], num: int) -> List[int]:
         if num == 0:
             return list(lst)
         return [lst[0]] + lst[-num:] + lst[1:-num]
 
-    def ShiftGen(lst: List[int]) -> Generator[List[int], None, None]:
+    def shift_gen(lst: List[int]) -> Generator[List[int], None, None]:
         for i in range(len(lst) - 1):
-            yield Shift(lst, i)
+            yield shift(lst, i)
 
-    return [MakePairs(l) for l in ShiftGen(pk_list)]
+    return [make_pairs(l) for l in shift_gen(pk_list)]

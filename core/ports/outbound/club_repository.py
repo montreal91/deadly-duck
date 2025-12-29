@@ -15,14 +15,14 @@ class ClubRepository:
         if game is None:
             return []
 
-        return game.clubs
+        return game.clubs.values()
 
     def get_club_index(self, game_id):
         game = self._game_repository.get_game(game_id)
         clubs = game.clubs
         res = {}
 
-        for club in clubs:
+        for club in clubs.values():
             res[club.club_id] = club
 
         return res

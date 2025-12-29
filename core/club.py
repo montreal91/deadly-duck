@@ -77,7 +77,6 @@ class Club:
 
     COACH_LEVELS = (0, 1, 2, 3)
 
-    _club_id: int
     _account: DdFinancialAccount
     _fame_tracker: DdFameTracker
     _is_controlled: bool
@@ -88,13 +87,14 @@ class Club:
 
     def __init__(
             self,
-            club_id: int,
+            club_id,
+            game_id,
             name: str,
             surface: str,
-            # court: DdCourt,
             coach_power: int
     ):
         self._club_id = club_id
+        self._game_id = game_id
         self._account = DdFinancialAccount()
         self._fame_tracker = DdFameTracker()
         self._is_controlled = False
@@ -113,6 +113,10 @@ class Club:
     @property
     def club_id(self) -> int:
         return self._club_id
+
+    @property
+    def game_id(self):
+        return self._game_id
 
     @property
     def coach_power(self):
