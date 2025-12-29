@@ -103,7 +103,14 @@ class Game:
     _results: List[DdMatchResult]
     _practice_calculator: DdPracticeCalculator
 
-    def __init__(self, params: GameParams, game_id: str, manager_club_id: int):
+    def __init__(
+            self,
+            params: GameParams,
+            game_id: str,
+            manager_club_id: int,
+            created_ts: int,
+            updated_ts: int,
+    ):
         self._game_id = game_id
         self._manager_club_id = manager_club_id
         self._free_agents = []
@@ -120,6 +127,9 @@ class Game:
         self._practice_calculator = DdPracticeCalculator(
             self._params.training_coefficient
         )
+
+        self._created_ts = created_ts
+        self._updated_ts = updated_ts
 
         decoder = DdJsonDecoder()
         decoder.register(DdPlayer)
@@ -171,6 +181,14 @@ class Game:
         """Checks if season is over."""
 
         return self._competition.title == "Cup" and self._competition.is_over
+
+    @property
+    def created_ts(self):
+        return self._created_ts
+
+    @property
+    def updated_ts(self):
+        return self._updated_ts
 
     def fire_player(self, i: int, pk: int):
         """Fires the selected player from user's club."""

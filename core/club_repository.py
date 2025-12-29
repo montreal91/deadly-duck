@@ -3,20 +3,13 @@ Created December 26, 2025
 
 @author montreal91
 """
-from typing import List
-
-from core.club import Club
-from core.game_repository import GameRepository
 
 
 class ClubRepository:
-    # TODO: get rid of this smelly stuff
-    _game_repository: GameRepository
-
-    def __init__(self, game_repository: GameRepository):
+    def __init__(self, game_repository):
         self._game_repository = game_repository
 
-    def get_all_clubs(self, game_id) -> List[Club]:
+    def get_all_clubs(self, game_id):
         game = self._game_repository.get_game(game_id)
 
         if game is None:

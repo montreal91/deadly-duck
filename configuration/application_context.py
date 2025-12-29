@@ -8,33 +8,45 @@ Created May 11, 2024
 
 import configparser
 import json
+from pathlib import Path
+from sqlite3 import connect
 
 from core.club_repository import ClubRepository
-from core.game_repository import GameRepository
 from core.game import GameParams
 from core.game_service import FameQueryHandler
 from core.game_service import GameService
-from core.match import DdMatchParams
 from core.match import DdExhaustionCalculator
-from core.player import DdPlayerReputationCalculator
 from core.match import DdLinearProbabilityCalculator
+from core.match import DdMatchParams
+from core.player import DdPlayerReputationCalculator
+from core.playoffs import DdPlayoffParams
+from core.ports.outbound.game_repository import GameRepository as SqlGameRepository
 from core.queries.day_results_query import DayResultsQueryHandler
 from core.queries.main_screen_ui_query import GameScreenGuiQueryHandler
 from core.regular_championship import DdChampionshipParams
-from core.playoffs import DdPlayoffParams
+
+
+def _make_db_connection(db_path):
+    db_path = Path(db_path)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    return connect(db_path)
 
 
 class ApplicationContext:
     def __init__(self):
-        self._game_repository = GameRepository()
+        self._db_connection = _make_db_connection("data/duck.db")
+        self._game_repository = SqlGameRepository(self._db_connection)
         self._club_repository = ClubRepository(self._game_repository)
         self._params = _get_params()
         self._fame_query_handler = FameQueryHandler(self._club_repository)
+
         self._game_service = GameService(
             game_repository=self._game_repository,
             game_parameters=self._params,
             fame_query_handler=self._fame_query_handler,
         )
+
         self._game_screen_ui_query_handler = GameScreenGuiQueryHandler(
             self._game_repository,
             self._club_repository

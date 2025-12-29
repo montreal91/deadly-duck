@@ -550,11 +550,3 @@ if __name__ == '__main__':
     )
 
     arguments = parser.parse_args()
-
-    app = SimplifiedApp(
-        starting_club=arguments.club,
-        load=arguments.load,
-        game_id=arguments.savename,
-        config_filename="short"
-    )
-    app.run()
