@@ -7,7 +7,7 @@ kivy-deps.angle==0.4.0
 kivy-deps.glew==0.3.1
 kivy-deps.sdl2==0.8.0
 Kivy-Garden==0.1.5
-Pygments==2.18.0
+Pygments==2.20.0
 pypiwin32==223
 pywin32==311
 requests==2.32.4
