@@ -97,7 +97,7 @@ class Game:
     _competition: DdAbstractCompetition
     _contract_calculator: Callable[[int], int]
     _free_agents: List[DdPlayer]
-    _history: List[Dict[str, Any]]
+    _history: List[Dict[CompetitionType, Any]]
     _params: GameParams
     _player_factory: DdPlayerFactory
     _season_fame: Dict[int, int]
@@ -356,11 +356,13 @@ class Game:
         if self.season_over:
             self._check_contracts()
             self._update_season_fame()
+            self._save_competition_results()
             self._next_season()
             self._drop_stats()
 
         if self._competition.is_over:
             self._update_season_fame()
+            self._save_competition_results()
             self._start_playoff()
 
         self._updated_ts = time.time_ns() // 1_000_000
@@ -613,7 +615,7 @@ class Game:
             )
 
     def _next_season(self):
-        previous_standings = self._history[-1]["Championship"]
+        previous_standings = self._history[-1][CompetitionType.CHAMPIONSHIP]
         for row in previous_standings:
             club: Club = self._clubs[row.club_id]
             for slot in club.players:
@@ -693,6 +695,9 @@ class Game:
     def _simulate(self, years):
         while len(self._history) < years:
             self.update()
+
+    def _save_competition_results(self):
+        self._history[-1][self._competition_type] = self._competition.standings
 
     def _start_playoff(self):
         self._competition = DdPlayoff(

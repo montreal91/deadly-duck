@@ -27,8 +27,19 @@ class ChampionshipStandings(NamedTuple):
     rows: List[StandingRow]
 
 
+class PlayoffSeriesRow(NamedTuple):
+    round_number: int
+    top_club_id: int
+    top_club_name: str
+    top_score: int
+    bottom_club_id: int
+    bottom_club_name: str
+    bottom_score: int
+    contains_manager_club: bool
+
+
 class PlayoffStandings(NamedTuple):
-    flag: bool
+    rows: List[PlayoffSeriesRow]
 
 
 Standings = Union[ChampionshipStandings, PlayoffStandings]
@@ -85,7 +96,11 @@ class GameScreenGuiQueryHandler:
 
             standings = ChampionshipStandings(rows=res_standings)
         elif context["competition_type"] == CompetitionType.PLAY_OFFS:
-            standings = PlayoffStandings(flag=True)
+            standings = _make_playoff_standings(
+                raw_standings=context.get("standings", []),
+                clubs=self._club_repository.get_club_index(game_id),
+                manager_club_id=manager_club_id,
+            )
         else:
             raise Exception("Unknown competition type")
 
@@ -100,6 +115,54 @@ class GameScreenGuiQueryHandler:
             upcoming_match=upcoming_match,
             standings=standings,
         )
+
+
+def _make_playoff_standings(
+        raw_standings,
+        clubs,
+        manager_club_id,
+) -> PlayoffStandings:
+    rows = []
+    for round_number, standing in _playoff_rounds(raw_standings):
+        top_club_id = standing["clubs"][0]
+        bottom_club_id = standing["clubs"][1]
+
+        rows.append(PlayoffSeriesRow(
+            round_number=round_number,
+            top_club_id=top_club_id,
+            top_club_name=clubs[top_club_id].name,
+            top_score=standing["score"][0],
+            bottom_club_id=bottom_club_id,
+            bottom_club_name=clubs[bottom_club_id].name,
+            bottom_score=standing["score"][1],
+            contains_manager_club=manager_club_id in standing["clubs"],
+        ))
+
+    return PlayoffStandings(rows=rows)
+
+
+def _playoff_rounds(raw_standings):
+    if not raw_standings:
+        return
+
+    round_size = _largest_power_of_two(len(raw_standings))
+    round_number = 1
+    index = 0
+
+    while index < len(raw_standings):
+        for standing in raw_standings[index:index + round_size]:
+            yield round_number, standing
+
+        index += round_size
+        round_size = max(round_size // 2, 1)
+        round_number += 1
+
+
+def _largest_power_of_two(value):
+    res = 1
+    while res * 2 <= value:
+        res *= 2
+    return res
 
 
 def _get_match(competition, club_id):

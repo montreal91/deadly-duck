@@ -206,29 +206,7 @@ class SimplifiedApp:
 
     @user_action
     def __action_history(self, season: str):
-        s = int(season)
-        ctx = self._get_actual_context()
-        history = ctx["history"]
-
-        if s > len(history) or history[s - 1] == {}:
-            print(f"Season {s} is not finished yet.")
-            return
-        if s < 1:
-            print(f"Season should be a positive integer")
-            return
-        _print_regular_standings(
-            standings=history[s - 1]["Championship"],
-            club_names=ctx["clubs"],
-            users_club=self._manager_club_id,
-        )
-        if "Cup" in history[s - 1]:
-            print("=" * 50)
-            _print_cup_standings(
-                history[s - 1]["Cup"],
-                ctx["clubs"],
-                self._manager_club_id,
-                3,
-            )
+        pass
 
     @user_action
     def __action_list(self):
