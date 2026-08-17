@@ -155,11 +155,6 @@ class GameService:
             opponent=_opponent_dto_to_info(context.get("opponent", None)),
         )
 
-    def sign_player(self, game_id, manager_club_id, player_id):
-        game = self._game_repository.get_game(game_id)
-        game.sign_player(club_id=manager_club_id, player_id=player_id)
-        self._game_repository.save_game(game)
-
     def save_game(self, game_id):
         game = self._game_repository.get_game(game_id)
 

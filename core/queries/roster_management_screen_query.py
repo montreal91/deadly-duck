@@ -26,6 +26,7 @@ class PlayerRosterInfo(NamedTuple):
 class RosterManagementScreenQueryResult(NamedTuple):
     success: bool
     message: str
+    balance: int
     roster: List[PlayerRosterInfo]
 
 
@@ -41,6 +42,7 @@ class RosterManagementScreenQueryHandler:
                 success=False,
                 message=f"Game with id={query.game_id} not found",
                 roster=[],
+                balance=0,
             )
 
         context = game.get_context(query.manager_club_id)
@@ -53,6 +55,7 @@ class RosterManagementScreenQueryHandler:
             success=True,
             message="Ok",
             roster=roster,
+            balance=context["balance"],
         )
 
 

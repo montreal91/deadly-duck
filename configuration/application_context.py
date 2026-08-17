@@ -10,8 +10,10 @@ import json
 from pathlib import Path
 from sqlite3 import connect
 
+from core.ports.inbound.commands.fire_player import FirePlayerCommandHandler
 from core.ports.inbound.commands.hire_new_player import HireNewPlayerCommandHandler
 from core.ports.inbound.commands.next_day import NextDayCommandHandler
+from core.ports.inbound.commands.sign_player import SignPlayerCommandHandler
 from core.ports.outbound.club_repository import ClubRepository
 from core.game import GameParams
 from core.game_service import FameQueryHandler
@@ -83,6 +85,14 @@ class ApplicationContext:
             self._game_repository,
         )
 
+        self._sign_player_command_handler = SignPlayerCommandHandler(
+            self._game_repository,
+        )
+
+        self._fire_player_command_handler = FirePlayerCommandHandler(
+            self._game_repository,
+        )
+
     @property
     def game_service(self):
         return self._game_service
@@ -122,6 +132,14 @@ class ApplicationContext:
     @property
     def hire_new_player_command_handler(self):
         return self._hire_new_player_command_handler
+
+    @property
+    def sign_player_command_handler(self):
+        return self._sign_player_command_handler
+
+    @property
+    def fire_player_command_handler(self):
+        return self._fire_player_command_handler
 
 
 def _get_params() -> GameParams:

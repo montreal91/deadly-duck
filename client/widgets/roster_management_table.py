@@ -5,15 +5,20 @@ Created August 17, 2026
 """
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
 from kivy.uix.label import Label
+from kivy.uix.widget import Widget
 
 _DEFAULT_COL_WIDTH = 100
 _PLAYER_ID_COL_WIDTH = 35
 _PLAYER_NAME_COL_WIDTH = 180
+_ACTION_COL_WIDTH = 160
 
 
 class RosterManagementTable:
-    def __init__(self):
+    def __init__(self, on_sign_player, on_fire_player):
+        self._on_sign_player = on_sign_player
+        self._on_fire_player = on_fire_player
         self._root = BoxLayout(
             orientation="vertical",
             size_hint_y=None,
@@ -33,7 +38,11 @@ class RosterManagementTable:
         self._root.add_widget(self._header.widget)
 
         for player in players:
-            self._root.add_widget(_make_player_row(player))
+            self._root.add_widget(_make_player_row(
+                player,
+                self._on_sign_player,
+                self._on_fire_player,
+            ))
 
 
 class _RosterManagementTableHeader:
@@ -52,6 +61,7 @@ class _RosterManagementTableHeader:
             "Technique",
             "Endurance",
             "Contract",
+            "Action",
         )
 
         for title in cols:
@@ -66,7 +76,7 @@ class _RosterManagementTableHeader:
         return self._root
 
 
-def _make_player_row(player):
+def _make_player_row(player, on_sign_player, on_fire_player):
     row = BoxLayout(
         orientation="horizontal",
         size_hint_y=None,
@@ -80,6 +90,7 @@ def _make_player_row(player):
     row.add_widget(_make_cell(str(player.technique)))
     row.add_widget(_make_cell(str(player.endurance)))
     row.add_widget(_make_cell(_format_contract_cost(player.contract_cost)))
+    row.add_widget(_make_action_cell(player, on_sign_player, on_fire_player))
 
     return row
 
@@ -110,4 +121,57 @@ def _get_col_width(title):
         return _PLAYER_ID_COL_WIDTH
     if title == "Name":
         return _PLAYER_NAME_COL_WIDTH
+    if title == "Action":
+        return _ACTION_COL_WIDTH
     return _DEFAULT_COL_WIDTH
+
+
+def _make_fire_button(player_id, on_fire_player):
+    button = Button(
+        text="Fire",
+        size_hint=(None, None),
+        size=(dp(70), dp(35)),
+    )
+    button.player_id = player_id
+    button.on_fire_player = on_fire_player
+    button.bind(on_press=_on_fire)
+    return button
+
+
+def _make_sign_button(player_id, on_sign_player):
+    button = Button(
+        text="Sign",
+        size_hint=(None, None),
+        size=(dp(70), dp(35)),
+    )
+    button.player_id = player_id
+    button.on_sign_player = on_sign_player
+    button.bind(on_press=_on_sign)
+    return button
+
+
+def _make_action_cell(player, on_sign_player, on_fire_player):
+    cell = BoxLayout(
+        orientation="horizontal",
+        spacing=dp(4),
+        size_hint_x=None,
+        width=dp(_ACTION_COL_WIDTH),
+    )
+
+    cell.add_widget(Widget())
+
+    if player.contract_cost is not None:
+        cell.add_widget(_make_sign_button(player.player_id, on_sign_player))
+
+    cell.add_widget(_make_fire_button(player.player_id, on_fire_player))
+    cell.add_widget(Widget())
+
+    return cell
+
+
+def _on_fire(button):
+    button.on_fire_player(button.player_id)
+
+
+def _on_sign(button):
+    button.on_sign_player(button.player_id)
