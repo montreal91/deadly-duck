@@ -1,0 +1,10 @@
+#
+# Created December 26, 2025
+#
+# @author montreal91
+#
+
+[[migration]]
+id = 1
+file = "v001_initial.sql"
+name = "Iinitial Schema"

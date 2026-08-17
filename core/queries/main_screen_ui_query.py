@@ -61,10 +61,10 @@ class GameScreenGuiQueryHandler:
         for pos, standing in enumerate(raw_standings):
             res_standings.append(StandingRow(
                 pos=pos + 1,
-                club_id=standing.club_pk,
+                club_id=standing.club_id,
                 sets=standing.sets_won,
                 games=standing.games_won,
-                club_name=clubs[standing.club_pk].name,
+                club_name=clubs[standing.club_id].name,
             ))
 
         return QueryResult(

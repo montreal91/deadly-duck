@@ -5,13 +5,11 @@ Created May 11, 2024
 
 @author montreal91
 """
-from typing import List, Optional
+from typing import List
 from typing import NamedTuple
+from typing import Optional
 
-from core.club_repository import ClubRepository
-from core.game import Game
-from core.game import GameParams
-from core.game_repository import GameRepository
+from core.ports.outbound.club_repository import ClubRepository
 
 
 class MainScreenInfo(NamedTuple):
@@ -69,11 +67,6 @@ class CourtInfo(NamedTuple):
     ticket_price: int
 
 
-class UpdateResult(NamedTuple):
-    success: bool
-    reason: str
-
-
 class FameInfo(NamedTuple):
     club_id: int
     club_name: str
@@ -122,25 +115,15 @@ class FameQueryHandler:
 
 
 class GameService:
-    _game_repository: GameRepository
-    _game_parameters: GameParams
-
     def __init__(
             self,
-            game_repository: GameRepository,
-            game_parameters: GameParams,
-            fame_query_handler: FameQueryHandler
+            game_repository,
+            game_parameters,
+            fame_query_handler,
     ):
         self._game_repository = game_repository
         self._parameters = game_parameters
         self._fame_query_handler = fame_query_handler
-
-    def create_new_game(self, game_id, manager_club_id):
-        self._game_repository.save_game(Game(
-            params=self._parameters,
-            game_id=game_id,
-            manager_club_id=manager_club_id
-        ))
 
     def get_saved_games(self):
         return SavedGamesInfo(names=self._game_repository.get_game_ids())
@@ -197,7 +180,6 @@ class GameService:
             players=players,
             opponent=_opponent_dto_to_info(context.get("opponent", None)),
         )
-
 
     def get_player_list_info(self, game_id, manager_club_id):
         context = self._game_repository.get_game(game_id).get_context(
@@ -263,14 +245,6 @@ class GameService:
         game = self._game_repository.get_game(game_id)
         return game.get_context(game.manager_club_id)
 
-    def next_day(self, game_id):
-        game = self._game_repository.get_game(game_id)
-        if game is None:
-            return UpdateResult(success=False, reason=f"Game with id={game_id} not found")
-        res, reason = game.update()
-        self._game_repository.save_game(game, persistent_save=True)
-        return UpdateResult(success=res, reason=reason)
-
     def proceed(self, game_id):
         game = self._game_repository.get_game(game_id)
         if game is None:
@@ -305,6 +279,7 @@ def _agent_to_list_info(player, player_id, contract_cost):
         contract_cost=contract_cost,
         name=f"{player.first_name} {player.last_name}",
     )
+
 
 def _player_to_row_info(player, player_id, is_selected, coach_level):
     # Again, this method is weird, but okay for now :)

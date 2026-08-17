@@ -384,8 +384,8 @@ class DdScheduledMatchStruct:
 class DdStandingsRowStruct:
     """Passive class for a row in standings."""
 
-    def __init__(self, club_pk: int):
-        self.club_pk = club_pk
+    def __init__(self, club_id):
+        self.club_id = club_id
         self.matches_won = 0
         self.sets_won = 0
         self.games_won = 0
@@ -393,7 +393,7 @@ class DdStandingsRowStruct:
     @property
     def json(self) -> Dict[str, Any]:
         return dict(
-            club_pk=self.club_pk,
+            club_pk=self.club_id,
             matches_won=self.matches_won,
             sets_won=self.sets_won,
             games_won=self.games_won,

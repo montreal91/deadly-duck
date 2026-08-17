@@ -4,7 +4,6 @@ Created May 20, 2019
 
 @author montreal91
 """
-
 from copy import copy
 from itertools import chain
 from typing import Any
@@ -55,10 +54,12 @@ class DdAbstractCompetition:
     @property
     def is_over(self) -> bool:
         """Checks if competition is over"""
+        return False
 
     @property
     def match_importance(self) -> int:
         """Returns an importance factor of current matches."""
+        return -1
 
     @property
     def results_(self) -> Generator[List[DdMatchResult], None, None]:
@@ -74,12 +75,14 @@ class DdAbstractCompetition:
     @property
     def standings(self) -> List[Any]:
         """List of current standings."""
+        return []
 
     @property
     def title(self) -> str:
         """Title of the competition."""
+        return ""
 
-    def GetClubSchedule(self, club_pk: int) -> List[DdScheduledMatchStruct]:
+    def get_club_schedule(self, club_pk: int) -> List[DdScheduledMatchStruct]:
         """List of matches scheduled for a club."""
 
         schedule = []
@@ -93,15 +96,15 @@ class DdAbstractCompetition:
                     schedule.append(match)
         return schedule
 
-    def GetClubFame(self, club_pk: int) -> int:
+    def get_club_fame(self, club_pk: int) -> int:
         """Fame earned by club in the competition."""
 
-    def Update(self) -> Optional[List[DdMatchResult]]:
+    def update(self) -> Optional[List[DdMatchResult]]:
         """Updates the state of the competition."""
 
     @property
     def _match_processor(self) -> DdMatchProcessor:
         return DdMatchProcessor(self._params.match_params)
 
-    def _MakeSchedule(self):
+    def _make_schedule(self):
         pass

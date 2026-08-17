@@ -11,6 +11,8 @@ Created Apr 09, 2019
 
 import json
 import logging
+import time
+import uuid
 from random import choice
 from random import randint
 from typing import Any
@@ -37,18 +39,18 @@ from core.player import DdPlayer
 from core.player import DdPlayerFactory
 from core.playoffs import DdPlayoff
 from core.playoffs import DdPlayoffParams
-from core.regular_championship import DdChampionshipParams
-from core.regular_championship import DdRegularChampionship
+from core.regular_championship import ChampionshipParams
+from core.regular_championship import RegularChampionship
 from core.serialization import DdJsonDecoder
 
-_CLUB_INDEX_ERROR = "Incorrect club index."
+_CLUB_INDEX_ERROR = "Incorrect club id."
 
 
 class GameParams(NamedTuple):
     """Passive class to store game parameters."""
 
     # Various parameters
-    championship_params: DdChampionshipParams
+    championship_params: ChampionshipParams
     playoff_params: DdPlayoffParams
 
     # Other data
@@ -90,9 +92,7 @@ class Game:
     )
 
     _game_id: str
-    _manager_club_id: int
     _attendance_calculator: Callable
-    _clubs: Dict[int, Club]
     _competition: DdAbstractCompetition
     _contract_calculator: Callable[[int], int]
     _free_agents: List[DdPlayer]
@@ -103,9 +103,15 @@ class Game:
     _results: List[DdMatchResult]
     _practice_calculator: DdPracticeCalculator
 
-    def __init__(self, params: GameParams, game_id: str, manager_club_id: int):
+    def __init__(
+            self,
+            params: GameParams,
+            game_id: str,
+            created_ts: int,
+            updated_ts: int,
+    ):
         self._game_id = game_id
-        self._manager_club_id = manager_club_id
+        self._manager_club_id = None
         self._free_agents = []
         self._history = [{}]
         self._params = params
@@ -121,6 +127,9 @@ class Game:
             self._params.training_coefficient
         )
 
+        self._created_ts = created_ts
+        self._updated_ts = updated_ts
+
         decoder = DdJsonDecoder()
         decoder.register(DdPlayer)
         decoder.register(DdClubPlayerSlot)
@@ -128,12 +137,9 @@ class Game:
             club_data = json.load(data_file, object_hook=decoder)
 
         for club_id, club in enumerate(club_data):
-            self._add_club(club_id=club_id, club_data=club)
-            if club_id == manager_club_id:
-                self._clubs[club_id].set_coach_power(0)
-                self._clubs[club_id].set_controlled(True)
+            self._add_club(club_data=club)
 
-        self._competition = DdRegularChampionship(
+        self._competition = RegularChampionship(
             self._clubs, self._params.championship_params
         )
 
@@ -149,8 +155,8 @@ class Game:
         return self._competition
 
     @property
-    def clubs(self) -> List[Club]:
-        return list(self._clubs.values())
+    def clubs(self):
+        return self._clubs
 
     @property
     def game_id(self) -> str:
@@ -172,6 +178,14 @@ class Game:
 
         return self._competition.title == "Cup" and self._competition.is_over
 
+    @property
+    def created_ts(self):
+        return self._created_ts
+
+    @property
+    def updated_ts(self):
+        return self._updated_ts
+
     def fire_player(self, i: int, pk: int):
         """Fires the selected player from user's club."""
 
@@ -191,7 +205,7 @@ class Game:
     def get_context(self, pk: int) -> Dict[str, Any]:
         """A dictionary with information available for user."""
 
-        assert 0 <= pk < len(self._clubs), _CLUB_INDEX_ERROR
+        assert pk in self._clubs, _CLUB_INDEX_ERROR
 
         # TODO: Replace this dict with a NamedTuple class
         return dict(
@@ -204,7 +218,7 @@ class Game:
             last_results=self._last_results,
             opponent=self._get_opponent(pk),
             practice_cost=self._calculate_club_practice_cost(club=self._clubs[pk]),
-            remaining_matches=self._competition.GetClubSchedule(pk),
+            remaining_matches=self._competition.get_club_schedule(pk),
             standings=self._standings,
             title=self._competition.title,
             user_players=self._get_user_players(pk),
@@ -268,17 +282,18 @@ class Game:
     def select_player(self, player_id: int, club_id: int):
         """Sets selected player for user."""
 
-        assert 0 <= club_id < len(self._clubs), "Incorrect club pk."
+        assert club_id in self._clubs, _CLUB_INDEX_ERROR
         assert 0 <= player_id < len(self._clubs[club_id].players), (
             "Incorrect player index."
         )
         self._clubs[club_id].select_player(player_id)
 
-    def _set_controlled(self, pk: int, is_controlled: bool):
+    def set_managed(self, club_id, is_controlled):
         """Sets flag whether club is controlled by a user or not."""
 
-        assert 0 <= pk < len(self._clubs), "Incorrect club pk."
-        self._clubs[pk].set_controlled(is_controlled)
+        assert club_id in self._clubs, _CLUB_INDEX_ERROR
+        self._manager_club_id = club_id
+        self._clubs[club_id].set_controlled(is_controlled)
 
     def sign_player(self, club_id: int, player_id: int):
         """Signs a new contract with a player for the next season."""
@@ -345,6 +360,9 @@ class Game:
         if self._competition.is_over:
             self._update_season_fame()
             self._start_playoff()
+
+        self._updated_ts = time.time_ns() // 1_000_000
+
         return True, "Ok"
 
     @property
@@ -395,7 +413,7 @@ class Game:
         standings = self._competition.standings
         if standings:
             return standings
-        return [DdStandingsRowStruct(i) for i in range(len(self._clubs))]
+        return [DdStandingsRowStruct(i) for i in self._clubs]
 
     @property
     def _training_check(self) -> bool:
@@ -422,9 +440,10 @@ class Game:
 
         return len(matches) > 0
 
-    def _add_club(self, club_id: int, club_data: Dict[str, Any]):
+    def _add_club(self, club_data):
         club = Club(
-            club_id=club_id,
+            club_id=uuid.uuid4(),
+            game_id=self._game_id,
             name=club_data["name"],
             surface=club_data["surface"],
             coach_power=club_data["coach_power"],
@@ -443,8 +462,8 @@ class Game:
             "Initial balance",
         ))
 
-        self._clubs[club_id] = club
-        self._season_fame[club_id] = 0
+        self._clubs[club.club_id] = club
+        self._season_fame[club.club_id] = 0
 
     def _calculate_club_practice_cost(self, club: Club) -> int:
         slots = [(s.player.level, s.coach_level) for s in club.players]
@@ -466,7 +485,7 @@ class Game:
 
     def _collect_competition_fame(self):
         for pk in self._clubs:
-            self._season_fame[pk] = self._competition.GetClubFame(pk)
+            self._season_fame[pk] = self._competition.get_club_fame(pk)
 
     def _drop_stats(self):
         for club in self._clubs.values():
@@ -586,13 +605,13 @@ class Game:
     def _next_season(self):
         previous_standings = self._history[-1]["Championship"]
         for row in previous_standings:
-            club: Club = self._clubs[row.club_pk]
+            club: Club = self._clubs[row.club_id]
             for slot in club.players:
                 slot.player.AgeUp()
                 slot.player.AfterSeasonRest()
                 slot.has_next_contract = False
-            club.add_fame(self._season_fame[row.club_pk])
-            self._season_fame[row.club_pk] = 0
+            club.add_fame(self._season_fame[row.club_id])
+            self._season_fame[row.club_id] = 0
             club.expel_retired_players()
 
             if club.is_controlled:
@@ -607,7 +626,7 @@ class Game:
         self._generate_free_agents()
 
         self._shuffle_coach_powers()
-        self._competition = DdRegularChampionship(
+        self._competition = RegularChampionship(
             self._clubs,
             self._params.championship_params
         )
@@ -630,7 +649,7 @@ class Game:
             club.perform_practice()
 
     def _play_one_day(self):
-        self._results = self._competition.Update()
+        self._results = self._competition.update()
         self._calculate_match_income()
         self._recover()
         self._hire_players_if_needed()
@@ -678,7 +697,7 @@ class Game:
 
     def _update_season_fame(self):
         for pk in self._clubs:
-            self._season_fame[pk] += self._competition.GetClubFame(pk)
+            self._season_fame[pk] += self._competition.get_club_fame(pk)
 
     # This whole method is a temporary hack before I'll implement a proper AI
     def _shuffle_coach_powers(self):

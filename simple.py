@@ -52,16 +52,6 @@ class SimplifiedApp:
         self._game_id = game_id
         self._game_service = get_application_context().game_service
 
-        if not load:
-            self._game_service.create_new_game(
-                self._game_id,
-                self._manager_club_id
-            )
-        else:
-            self._manager_club_id = self._game_service.get_manager_club_id(
-                self._game_id
-            )
-
         self._actions = {}
         self._is_running = True
 
@@ -286,12 +276,7 @@ class SimplifiedApp:
 
     @user_action
     def __action_next(self):
-        res = self._game_service.next_day(self._game_id)
-        if not res.success:
-            print("You have to select a player.")
-            return
-
-        self.__action_results()
+        pass
 
     @user_action
     def __action_opponent(self):
@@ -510,15 +495,15 @@ def _print_regular_standings(standings, club_names, users_club):
         reverse=True
     )
     for i, row in enumerate(standings, 1):
-        if row.club_pk == users_club:
+        if row.club_id == users_club:
             sys.stdout.write(BOLD)
         print("{pos:02d} {sets:2d} {games:3d} {club_name:s}".format(
-            club_name=club_names[row.club_pk],
+            club_name=club_names[row.club_id],
             pos=i,
             sets=row.sets_won,
             games=row.games_won,
         ))
-        if row.club_pk == users_club:
+        if row.club_id == users_club:
             sys.stdout.write(RESET)
 
 
@@ -550,11 +535,3 @@ if __name__ == '__main__':
     )
 
     arguments = parser.parse_args()
-
-    app = SimplifiedApp(
-        starting_club=arguments.club,
-        load=arguments.load,
-        game_id=arguments.savename,
-        config_filename="short"
-    )
-    app.run()

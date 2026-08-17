@@ -42,6 +42,7 @@ class DuckClientApp(App):
 
         self.game_screen = GameScreen(
             game_service=ac.game_service,
+            next_day_command_handler=ac.next_day_command_handler,
             query_handler=ac.game_screen_ui_query_handler,
             name="game"
         )
@@ -90,11 +91,11 @@ class DuckClientApp(App):
 
     def switch_to_story_name(self):
         self.sm.current = "story_name"
-        self.story_name_screen.cleanup()
+        self.story_name_screen.update()
 
     def switch_to_club_selection(self):
         self.sm.current = "club_selection"
-        self._club_selection_screen.cleanup()
+        self._club_selection_screen.update()
 
     def switch_to_day_results(self):
         self.sm.current = "day_results"

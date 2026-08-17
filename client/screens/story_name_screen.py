@@ -12,6 +12,8 @@ from client.constants import button_size
 from client.game_context import GameContext
 from client.widgets.alphanumeric_text_input import AlphanumericTextInput
 from client.widgets.layout import make_default_layout
+from configuration.application_context import get_application_context
+from core.ports.inbound.commands.create_new_game import CreateNewGameCommand
 
 
 class StoryNameScreen(Screen):
@@ -19,6 +21,9 @@ class StoryNameScreen(Screen):
         super(StoryNameScreen, self).__init__(**kwargs)
 
         layout, root = make_default_layout("Story Name")
+
+        ac = get_application_context()
+        self._create_new_game_command = ac.create_game_command_handler
 
         self._text_input = AlphanumericTextInput(
             hint_text="Type something here",
@@ -43,17 +48,18 @@ class StoryNameScreen(Screen):
 
         self.add_widget(root)
 
-    def cleanup(self):
+    def update(self):
         self._text_input.text = ""
 
     def _continue(self, _):
-        print(f"Text from input: {self._text_input.text}")
-
         if len(self._text_input.text) < 3:
             self._error_label.text = "Please type at least 3 characters"
             return
 
-        GameContext.get_instance().game_name = self._text_input.text
+        GameContext.get_instance().game_name = self._create_new_game_command(
+            CreateNewGameCommand(self._text_input.text)
+        ).game_id
+
         App.get_running_app().switch_to_club_selection()
 
 

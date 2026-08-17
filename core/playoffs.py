@@ -207,7 +207,7 @@ class DdPlayoff(DdAbstractCompetition):
     def title(self) -> str:
         return "Cup"
 
-    def GetClubFame(self, club_pk):
+    def get_club_fame(self, club_pk):
         if club_pk not in self._participants:
             return 0
 
@@ -221,7 +221,7 @@ class DdPlayoff(DdAbstractCompetition):
 
         return Apow(wins, 125)
 
-    def Update(self):
+    def update(self):
         if self.is_over:
             return None
 
@@ -258,7 +258,7 @@ class DdPlayoff(DdAbstractCompetition):
 
     def _GetClubPos(self, club_pk: int) -> int:
         for i, row in enumerate(self._standings):
-            if row.club_pk == club_pk:
+            if row.club_id == club_pk:
                 return i
         return -1
 
@@ -272,8 +272,8 @@ class DdPlayoff(DdAbstractCompetition):
             for top, bottom in self._LONG:
                 series = DdPlayoffSeries(self._params)
                 series.pair = (
-                    self._standings[predraw[top]].club_pk,
-                    self._standings[predraw[bottom]].club_pk,
+                    self._standings[predraw[top]].club_id,
+                    self._standings[predraw[bottom]].club_id,
                 )
                 self._series.append(series)
                 self._participants.extend(series.pair)
@@ -282,8 +282,8 @@ class DdPlayoff(DdAbstractCompetition):
             for top, bottom in self._SHORT:
                 series = DdPlayoffSeries(self._params)
                 series.pair = (
-                    self._standings[predraw[top]].club_pk,
-                    self._standings[predraw[bottom]].club_pk,
+                    self._standings[predraw[top]].club_id,
+                    self._standings[predraw[bottom]].club_id,
                 )
                 self._series.append(series)
                 self._participants.extend(series.pair)
@@ -307,9 +307,9 @@ class DdPlayoff(DdAbstractCompetition):
                 new_series.pair = (pair[0][0], pair[1][0])
                 new_round.append(new_series)
             self._series = new_round
-        self._MakeSchedule()
+        self._make_schedule()
 
-    def _MakeSchedule(self):
+    def _make_schedule(self):
         self._InsertGap()
         for i in self._params.series_matches_pattern:
             day = []
