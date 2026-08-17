@@ -128,32 +128,6 @@ class GameService:
     def get_saved_games(self):
         return SavedGamesInfo(names=self._game_repository.get_game_ids())
 
-    def get_manager_club(self, game_id):
-        game = self._game_repository.get_game(game_id)
-
-        if game is None:
-            return None
-
-        return game.manager_club_id
-
-    def game_is_over(self, game_id):
-        game = self._game_repository.get_game(game_id)
-        return game.is_over
-
-    def get_agents_list_screen_info(self, game_id, manager_club_id):
-        # This should actually sit in PlayerService
-        # Or, better, use ports and adapters and make it a query
-        game = self._game_repository.get_game(game_id)
-
-        if game is None:
-            return None
-
-        game_agents = game.get_context(manager_club_id)["free_agents"]
-        return [
-            _agent_to_list_info(player[0], i, player[1])
-            for i, player in enumerate(game_agents)
-        ]
-
     def get_main_screen_info(self, game_id, manager_club_id):
         game = self._game_repository.get_game(game_id)
         context = game.get_context(manager_club_id)
@@ -181,48 +155,6 @@ class GameService:
             opponent=_opponent_dto_to_info(context.get("opponent", None)),
         )
 
-    def get_player_list_info(self, game_id, manager_club_id):
-        context = self._game_repository.get_game(game_id).get_context(
-            manager_club_id
-        )
-
-        players = [
-            _player_to_row_info(
-                player.player, i, player.is_selected, player.coach_level
-            )
-            for i, player in enumerate(context["user_players"])
-        ]
-
-        return PlayerListScreenInfo(
-            players=players,
-            practice_cost=context["practice_cost"],
-        )
-
-    def hire_free_agent(self, game_id, manager_club_id, agent_id):
-        game = self._game_repository.get_game(game_id)
-        game.hire_free_agent(manager_club_id, agent_id)
-        self._game_repository.save_game(game)
-
-    def select_coach_for_player(self, game_id, manager_club_id, coach_quality, player_id):
-        game = self._game_repository.get_game(game_id)
-        game.select_coach_for_player(
-            coach_index=coach_quality,
-            player_index=player_id,
-            club_index=manager_club_id,
-        )
-        self._game_repository.save_game(game)
-
-    def get_court_info(self, game_id, manager_club_id):
-        game = self._game_repository.get_game(game_id)
-        court = game.get_context(manager_club_id)["court"]
-
-        return CourtInfo(**court)
-
-    def fire_player(self, game_id, manager_club_id, player_id):
-        game = self._game_repository.get_game(game_id)
-        game.fire_player(player_id, manager_club_id)
-        self._game_repository.save_game(game)
-
     def sign_player(self, game_id, manager_club_id, player_id):
         game = self._game_repository.get_game(game_id)
         game.sign_player(club_id=manager_club_id, player_id=player_id)
@@ -235,10 +167,6 @@ class GameService:
             return
 
         self._game_repository.save_game(game, persistent_save=True)
-
-    def get_game_context(self, game_id):
-        game = self._game_repository.get_game(game_id)
-        return game.get_context(game.manager_club_id)
 
     def proceed(self, game_id):
         game = self._game_repository.get_game(game_id)
@@ -254,26 +182,11 @@ class GameService:
         game.select_player(player_id=player_id, club_id=manager_club_id)
         self._game_repository.save_game(game)
 
-    def get_fames(self, game_id) -> FameRatingsQueryResult:
-        return self._fame_query_handler.handle(FameRatingsQuery(game_id=game_id))
-
     def get_manager_club_id(self, game_id):
         game = self._game_repository.get_game(game_id)
         if game is None:
             return -1
         return game.manager_club_id
-
-
-def _agent_to_list_info(player, player_id, contract_cost):
-    return AgentListInfo(
-        player_id=player_id,
-        age=player.age,
-        technique=player.technique / 10,
-        endurance=player.endurance,
-        speciality=player.speciality,
-        contract_cost=contract_cost,
-        name=f"{player.first_name} {player.last_name}",
-    )
 
 
 def _player_to_row_info(player, player_id, is_selected, coach_level):
