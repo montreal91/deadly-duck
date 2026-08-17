@@ -15,14 +15,16 @@ from client.widgets.factories import make_label
 from client.widgets.layout import make_three_column_layout
 from client.widgets.standings_table_widget import StandingsTableWidget
 from client.widgets.upcoming_match_widget import UpcomingMatchWidget
+from core.ports.inbound.commands.next_day import NextDayCommand
 
 
 class GameScreen(Screen):
-    def __init__(self, game_service, query_handler, **kwargs):
+    def __init__(self, game_service, next_day_command_handler, query_handler, **kwargs):
         super(GameScreen, self).__init__(**kwargs)
 
         self._info = None
         self._game_service = game_service
+        self._next_day_command_handler = next_day_command_handler
         self._query_handler = query_handler
         self._game_id = None
         self._club_id = None
@@ -116,7 +118,7 @@ class GameScreen(Screen):
         self._standings_table.update(gui_info.standings)
 
     def _on_next(self, _):
-        res = self._game_service.next_day(self._game_id)
+        res = self._next_day_command_handler(NextDayCommand(self._game_id))
 
         if res.success:
             self._error_label.text = ""

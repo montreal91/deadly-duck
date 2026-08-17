@@ -42,6 +42,7 @@ class DuckClientApp(App):
 
         self.game_screen = GameScreen(
             game_service=ac.game_service,
+            next_day_command_handler=ac.next_day_command_handler,
             query_handler=ac.game_screen_ui_query_handler,
             name="game"
         )

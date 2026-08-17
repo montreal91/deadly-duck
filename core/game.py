@@ -11,6 +11,7 @@ Created Apr 09, 2019
 
 import json
 import logging
+import time
 import uuid
 from random import choice
 from random import randint
@@ -92,7 +93,6 @@ class Game:
 
     _game_id: str
     _attendance_calculator: Callable
-    _clubs: Dict[int, Club]
     _competition: DdAbstractCompetition
     _contract_calculator: Callable[[int], int]
     _free_agents: List[DdPlayer]
@@ -137,7 +137,7 @@ class Game:
             club_data = json.load(data_file, object_hook=decoder)
 
         for club_id, club in enumerate(club_data):
-            self._add_club(club_id=club_id, club_data=club)
+            self._add_club(club_data=club)
 
         self._competition = RegularChampionship(
             self._clubs, self._params.championship_params
@@ -360,6 +360,9 @@ class Game:
         if self._competition.is_over:
             self._update_season_fame()
             self._start_playoff()
+
+        self._updated_ts = time.time_ns() // 1_000_000
+
         return True, "Ok"
 
     @property
@@ -437,7 +440,7 @@ class Game:
 
         return len(matches) > 0
 
-    def _add_club(self, club_id: int, club_data: Dict[str, Any]):
+    def _add_club(self, club_data):
         club = Club(
             club_id=uuid.uuid4(),
             game_id=self._game_id,
@@ -460,7 +463,7 @@ class Game:
         ))
 
         self._clubs[club.club_id] = club
-        self._season_fame[club_id] = 0
+        self._season_fame[club.club_id] = 0
 
     def _calculate_club_practice_cost(self, club: Club) -> int:
         slots = [(s.player.level, s.coach_level) for s in club.players]

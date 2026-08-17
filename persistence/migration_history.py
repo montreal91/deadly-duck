@@ -37,12 +37,9 @@ def load_migrations(index_file):
     return migrations
 
 
-
 def get_applied_migrations(conn):
-    # res = []
-
     query_res = conn.execute(read_sql_file("data/migrations/_get_migrations.sql")).fetchall()
-    # print(query_res)
+
     return set([row[0] for row in query_res])
 
 

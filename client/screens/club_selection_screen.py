@@ -54,7 +54,7 @@ class ClubSelectionScreen(Screen):
 
     def update(self):
         for btn in self._club_buttons:
-            self._layout.remove(btn)
+            self._layout.remove_widget(btn)
 
         self._club_buttons = []
 

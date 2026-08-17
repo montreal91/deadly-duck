@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 from sqlite3 import connect
 
+from core.ports.inbound.commands.next_day import NextDayCommandHandler
 from core.ports.outbound.club_repository import ClubRepository
 from core.game import GameParams
 from core.game_service import FameQueryHandler
@@ -54,6 +55,8 @@ class ApplicationContext:
             club_repository=self._club_repository,
         )
 
+        self._next_day_command_handler = NextDayCommandHandler(self._game_repository)
+
         self._game_service = GameService(
             game_repository=self._game_repository,
             game_parameters=self._params,
@@ -73,6 +76,10 @@ class ApplicationContext:
     @property
     def game_service(self):
         return self._game_service
+
+    @property
+    def next_day_command_handler(self):
+        return self._next_day_command_handler
 
     @property
     def game_parameters(self):

@@ -276,12 +276,7 @@ class SimplifiedApp:
 
     @user_action
     def __action_next(self):
-        res = self._game_service.next_day(self._game_id)
-        if not res.success:
-            print("You have to select a player.")
-            return
-
-        self.__action_results()
+        pass
 
     @user_action
     def __action_opponent(self):

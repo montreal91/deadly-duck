@@ -67,11 +67,6 @@ class CourtInfo(NamedTuple):
     ticket_price: int
 
 
-class UpdateResult(NamedTuple):
-    success: bool
-    reason: str
-
-
 class FameInfo(NamedTuple):
     club_id: int
     club_name: str
@@ -249,14 +244,6 @@ class GameService:
     def get_game_context(self, game_id):
         game = self._game_repository.get_game(game_id)
         return game.get_context(game.manager_club_id)
-
-    def next_day(self, game_id):
-        game = self._game_repository.get_game(game_id)
-        if game is None:
-            return UpdateResult(success=False, reason=f"Game with id={game_id} not found")
-        res, reason = game.update()
-        self._game_repository.save_game(game, persistent_save=True)
-        return UpdateResult(success=res, reason=reason)
 
     def proceed(self, game_id):
         game = self._game_repository.get_game(game_id)
