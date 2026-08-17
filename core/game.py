@@ -45,6 +45,10 @@ from core.regular_championship import RegularChampionship
 from core.serialization import DdJsonDecoder
 
 _CLUB_ID_ERROR = "Incorrect club id."
+_UNCONTRACTED_PLAYERS_ERROR = (
+    "Your club has uncontracted players.\n"
+    "You should whether contract them or fire."
+)
 
 
 class GameParams(NamedTuple):
@@ -343,6 +347,9 @@ class Game:
         if self.is_over:
             return False, "The game is over"
 
+        if self.season_over and not self._contract_check:
+            return False, _UNCONTRACTED_PLAYERS_ERROR
+
         if self._decision_required:
             return False, "You have to select player for the next match."
 
@@ -354,7 +361,6 @@ class Game:
         self._unselect()
 
         if self.season_over:
-            self._check_contracts()
             self._update_season_fame()
             self._save_competition_results()
             self._next_season()
@@ -487,13 +493,6 @@ class Game:
                 value=250_000,
                 comment="Income"
             ))
-
-    def _check_contracts(self):
-        if not self._contract_check:
-            raise AssertionError(
-                "Your club has uncontracted players.\n"
-                "You should whether contract them or fire."
-            )
 
     def _collect_competition_fame(self):
         for pk in self._clubs:
