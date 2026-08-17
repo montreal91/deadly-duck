@@ -83,6 +83,15 @@ class GameScreen(Screen):
         self._select_player_button.bind(on_press=self._on_select_player)
         self._layout.left_col.add_widget(self._select_player_button)
 
+        self._practice_button = Button(
+            text="Practice",
+            font_size=30,
+            size_hint=(None, None),
+            size=button_size
+        )
+        self._practice_button.bind(on_press=self._on_practice)
+        self._layout.left_col.add_widget(self._practice_button)
+
         self._roster_management_button = Button(
             text="Roster Management",
             font_size=30,
@@ -151,6 +160,9 @@ class GameScreen(Screen):
     def _on_select_player(self, _):
         self._error_label.text = ""
         App.get_running_app().switch_to_player_selection()
+
+    def _on_practice(self, _):
+        App.get_running_app().switch_to_practice()
 
     def _on_roster_management(self, _):
         App.get_running_app().switch_to_roster_management()

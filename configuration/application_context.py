@@ -14,6 +14,7 @@ from core.ports.inbound.commands.fire_player import FirePlayerCommandHandler
 from core.ports.inbound.commands.hire_new_player import HireNewPlayerCommandHandler
 from core.ports.inbound.commands.next_day import NextDayCommandHandler
 from core.ports.inbound.commands.sign_player import SignPlayerCommandHandler
+from core.ports.inbound.commands.select_coach_for_player import SelectCoachForPlayerCommandHandler
 from core.ports.outbound.club_repository import ClubRepository
 from core.game import GameParams
 from core.game_service import FameQueryHandler
@@ -28,7 +29,8 @@ from core.ports.inbound.commands.select_club import SelectClubCommandHandler
 from core.ports.outbound.game_repository import GameRepository
 from core.queries.club_selection_screen_query import ClubSelectionScreenQueryHandler
 from core.queries.day_results_query import DayResultsQueryHandler
-from core.queries.main_screen_ui_query import GameScreenGuiQueryHandler
+from core.queries.main_screen_query import GameScreenGuiQueryHandler
+from core.queries.practice_screen_query import PracticeScreenQueryHandler
 from core.queries.roster_management_screen_query import RosterManagementScreenQueryHandler
 from core.regular_championship import ChampionshipParams
 
@@ -81,6 +83,10 @@ class ApplicationContext:
             self._game_repository,
         )
 
+        self._practice_screen_query_handler = PracticeScreenQueryHandler(
+            self._game_repository,
+        )
+
         self._hire_new_player_command_handler = HireNewPlayerCommandHandler(
             self._game_repository,
         )
@@ -90,6 +96,10 @@ class ApplicationContext:
         )
 
         self._fire_player_command_handler = FirePlayerCommandHandler(
+            self._game_repository,
+        )
+
+        self._select_coach_for_player_command_handler = SelectCoachForPlayerCommandHandler(
             self._game_repository,
         )
 
@@ -130,6 +140,10 @@ class ApplicationContext:
         return self._roster_management_screen_query_handler
 
     @property
+    def practice_screen_query_handler(self):
+        return self._practice_screen_query_handler
+
+    @property
     def hire_new_player_command_handler(self):
         return self._hire_new_player_command_handler
 
@@ -140,6 +154,10 @@ class ApplicationContext:
     @property
     def fire_player_command_handler(self):
         return self._fire_player_command_handler
+
+    @property
+    def select_coach_for_player_command_handler(self):
+        return self._select_coach_for_player_command_handler
 
 
 def _get_params() -> GameParams:

@@ -380,7 +380,7 @@ class Game:
     def _can_practice(self) -> bool:
         if self._competition.current_matches is not None:
             return False
-        return self._competition.title == "Championship"
+        return self._competition_type == CompetitionType.CHAMPIONSHIP
 
     @property
     def _contract_check(self) -> bool:
