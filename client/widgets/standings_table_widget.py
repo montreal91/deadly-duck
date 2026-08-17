@@ -50,7 +50,7 @@ class StandingsTableWidget:
         self._root.add_widget(self._spacer)
         self._root.add_widget(self._table_header)
 
-        for row in standings:
+        for row in standings.rows:
             self._root.add_widget(_make_row(row))
 
         self._root.add_widget(Widget())

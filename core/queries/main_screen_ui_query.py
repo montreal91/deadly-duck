@@ -6,6 +6,9 @@ Created December 24, 2025
 from typing import List
 from typing import NamedTuple
 from typing import Optional
+from typing import Union
+
+from core.competition import CompetitionType
 
 
 class UpcomingMatch(NamedTuple):
@@ -20,15 +23,27 @@ class StandingRow(NamedTuple):
     games: int
 
 
+class ChampionshipStandings(NamedTuple):
+    rows: List[StandingRow]
+
+
+class PlayoffStandings(NamedTuple):
+    flag: bool
+
+
+Standings = Union[ChampionshipStandings, PlayoffStandings]
+
+
 class QueryResult(NamedTuple):
     day: str
     season: int
     balance: int
     club_name: str
     current_competition: str
+    competition_type: CompetitionType
     has_matches: bool
     upcoming_match: Optional[UpcomingMatch]
-    standings: List[StandingRow]
+    standings: Standings
 
 
 class GameScreenGuiQueryHandler:
@@ -54,18 +69,25 @@ class GameScreenGuiQueryHandler:
             else:
                 raise Exception("WTF Happened")
 
-        raw_standings = context.get("standings", [])
-        res_standings = []
-        clubs = self._club_repository.get_club_index(game_id)
+        if context["competition_type"] == CompetitionType.CHAMPIONSHIP:
+            raw_standings = context.get("standings", [])
+            res_standings = []
+            clubs = self._club_repository.get_club_index(game_id)
 
-        for pos, standing in enumerate(raw_standings):
-            res_standings.append(StandingRow(
-                pos=pos + 1,
-                club_id=standing.club_id,
-                sets=standing.sets_won,
-                games=standing.games_won,
-                club_name=clubs[standing.club_id].name,
-            ))
+            for pos, standing in enumerate(raw_standings):
+                res_standings.append(StandingRow(
+                    pos=pos + 1,
+                    club_id=standing.club_id,
+                    sets=standing.sets_won,
+                    games=standing.games_won,
+                    club_name=clubs[standing.club_id].name,
+                ))
+
+            standings = ChampionshipStandings(rows=res_standings)
+        elif context["competition_type"] == CompetitionType.PLAY_OFFS:
+            standings = PlayoffStandings(flag=True)
+        else:
+            raise Exception("Unknown competition type")
 
         return QueryResult(
             day=context["day"],
@@ -73,9 +95,10 @@ class GameScreenGuiQueryHandler:
             balance=context["balance"],
             club_name=context["club_name"],
             current_competition=context["competition"],
+            competition_type=context["competition_type"],
             has_matches=context["has_matches"],
             upcoming_match=upcoming_match,
-            standings=res_standings,
+            standings=standings,
         )
 
 

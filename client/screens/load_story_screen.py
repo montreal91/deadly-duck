@@ -76,12 +76,12 @@ class LoadStoryScreen(Screen):
         return button
 
     def _on_select(self, instance):
-        print(instance.game_name)
+        print(f"Loading {instance.game_name}")
         self._selected_save = instance.game_name
         self._continue_button.disabled = False
 
     def _on_continue(self, _):
-        print(self._selected_save)
+        print(f"Continuing {self._selected_save}")
 
         if self._selected_save is None:
             print("No game is selected")

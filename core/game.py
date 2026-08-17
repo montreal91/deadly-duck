@@ -26,6 +26,7 @@ from typing import Tuple
 from configuration.config_game import DdGameplayConstants
 from core.club import Club
 from core.club import DdClubPlayerSlot
+from core.competition import CompetitionType
 from core.competition import DdAbstractCompetition
 from core.financial import DdPracticeCalculator
 from core.financial import DdStaticContractCalculator
@@ -223,6 +224,7 @@ class Game:
             title=self._competition.title,
             user_players=self._get_user_players(pk),
             competition=self._competition.title,
+            competition_type=self._competition_type,
             has_matches=self._has_matches(),
         )
 
@@ -414,6 +416,14 @@ class Game:
         if standings:
             return standings
         return [DdStandingsRowStruct(i) for i in self._clubs]
+
+    @property
+    def _competition_type(self) -> CompetitionType:
+        if isinstance(self._competition, RegularChampionship):
+            return CompetitionType.CHAMPIONSHIP
+        if isinstance(self._competition, DdPlayoff):
+            return CompetitionType.PLAY_OFFS
+        raise Exception("Unknown competition type.")
 
     @property
     def _training_check(self) -> bool:

@@ -13,8 +13,10 @@ from client.constants import button_size
 from client.game_context import GameContext
 from client.widgets.factories import make_label
 from client.widgets.layout import make_three_column_layout
+from client.widgets.playoffs_bracket_widget import PlayoffsBracketWidget
 from client.widgets.standings_table_widget import StandingsTableWidget
 from client.widgets.upcoming_match_widget import UpcomingMatchWidget
+from core.competition import CompetitionType
 from core.ports.inbound.commands.next_day import NextDayCommand
 
 
@@ -90,10 +92,9 @@ class GameScreen(Screen):
         self._layout.left_col.add_widget(self._back_button)
 
         self._standings_table = StandingsTableWidget()
-        self._layout.center_col.add_widget(self._standings_table.widget)
+        self._playoffs_bracket = PlayoffsBracketWidget()
 
         self._layout.left_col.add_widget(Widget())
-        self._layout.center_col.add_widget(Widget())
         self._layout.right_col.add_widget(Widget())
 
         self.add_widget(self._layout.root)
@@ -115,7 +116,7 @@ class GameScreen(Screen):
         self._info = gui_info
 
         self._upcoming_match_widget.update(gui_info.upcoming_match)
-        self._standings_table.update(gui_info.standings)
+        self._update_center_widget(gui_info)
 
     def _on_next(self, _):
         res = self._next_day_command_handler(NextDayCommand(self._game_id))
@@ -139,6 +140,20 @@ class GameScreen(Screen):
         self._game_service.save_game(self._game_id)
 
         App.get_running_app().switch_to_main(None)
+
+    def _update_center_widget(self, gui_info):
+        self._layout.center_col.clear_widgets()
+
+        if gui_info.competition_type == CompetitionType.CHAMPIONSHIP:
+            self._standings_table.update(gui_info.standings)
+            self._layout.center_col.add_widget(self._standings_table.widget)
+        elif gui_info.competition_type == CompetitionType.PLAY_OFFS:
+            self._playoffs_bracket.update(gui_info.standings)
+            self._layout.center_col.add_widget(self._playoffs_bracket.widget)
+        else:
+            raise Exception("Unknown competition type.")
+
+        self._layout.center_col.add_widget(Widget())
 
 
 def _on_results(_):
