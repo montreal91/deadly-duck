@@ -13,6 +13,7 @@ from client.screens.day_results_screen import DayResultsScreen
 from client.screens.game_screen import GameScreen
 from client.screens.load_story_screen import LoadStoryScreen
 from client.screens.player_selection_screen import PlayerSelectionScreen
+from client.screens.roster_management_screen import RosterManagementScreen
 from client.screens.splash_screen import SplashScreen
 from client.screens.main_screen import MainScreen
 from client.screens.story_name_screen import StoryNameScreen
@@ -30,6 +31,7 @@ class DuckClientApp(App):
         self._club_selection_screen = None
         self._load_story_screen = None
         self._player_selection_screen = None
+        self._roster_management_screen = None
 
         self.sm = None
 
@@ -44,7 +46,6 @@ class DuckClientApp(App):
             game_service=ac.game_service,
             next_day_command_handler=ac.next_day_command_handler,
             query_handler=ac.game_screen_ui_query_handler,
-            hire_new_player_command_handler=ac.hire_new_player_command_handler,
             name="game"
         )
 
@@ -52,6 +53,11 @@ class DuckClientApp(App):
         self._club_selection_screen = ClubSelectionScreen(name="club_selection")
         self._load_story_screen = LoadStoryScreen(name="load_story")
         self._player_selection_screen = PlayerSelectionScreen(name="player_selection")
+        self._roster_management_screen = RosterManagementScreen(
+            query_handler=ac.roster_management_screen_query_handler,
+            hire_new_player_command_handler=ac.hire_new_player_command_handler,
+            name="roster_management",
+        )
         self._day_results_screen = DayResultsScreen(
             name="day_results",
             day_results_query_handler=ac.day_results_query_handler,
@@ -64,6 +70,7 @@ class DuckClientApp(App):
         self.sm.add_widget(self._club_selection_screen)
         self.sm.add_widget(self._load_story_screen)
         self.sm.add_widget(self._player_selection_screen)
+        self.sm.add_widget(self._roster_management_screen)
         self.sm.add_widget(self._day_results_screen)
 
         Clock.schedule_once(self.switch_to_main, timeout=1)
@@ -85,6 +92,10 @@ class DuckClientApp(App):
     def switch_to_player_selection(self):
         self.sm.current = "player_selection"
         self._player_selection_screen.update()
+
+    def switch_to_roster_management(self):
+        self.sm.current = "roster_management"
+        self._roster_management_screen.update()
 
     def switch_to_load_story(self):
         self.sm.current = "load_story"

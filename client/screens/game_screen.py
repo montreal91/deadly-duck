@@ -17,7 +17,6 @@ from client.widgets.playoffs_bracket_widget import PlayoffsBracketWidget
 from client.widgets.standings_table_widget import StandingsTableWidget
 from client.widgets.upcoming_match_widget import UpcomingMatchWidget
 from core.competition import CompetitionType
-from core.ports.inbound.commands.hire_new_player import HireNewPlayerCommand
 from core.ports.inbound.commands.next_day import NextDayCommand
 
 
@@ -26,7 +25,6 @@ class GameScreen(Screen):
             self,
             game_service,
             next_day_command_handler,
-            hire_new_player_command_handler,
             query_handler,
             **kwargs
     ):
@@ -36,7 +34,6 @@ class GameScreen(Screen):
         self._game_service = game_service
         self._next_day_command_handler = next_day_command_handler
         self._query_handler = query_handler
-        self._hire_new_player_command_handler = hire_new_player_command_handler
 
         self._game_id = None
         self._club_id = None
@@ -86,14 +83,14 @@ class GameScreen(Screen):
         self._select_player_button.bind(on_press=self._on_select_player)
         self._layout.left_col.add_widget(self._select_player_button)
 
-        self._hire_new_player_button = Button(
-            text="Hire A New Player",
+        self._roster_management_button = Button(
+            text="Roster Management",
             font_size=30,
             size_hint=(None, None),
             size=button_size
         )
-        self._hire_new_player_button.bind(on_press=self._on_hire_new_player)
-        self._layout.left_col.add_widget(self._hire_new_player_button)
+        self._roster_management_button.bind(on_press=self._on_roster_management)
+        self._layout.left_col.add_widget(self._roster_management_button)
 
         self._res_button = Button(
             text="Results",
@@ -155,15 +152,8 @@ class GameScreen(Screen):
         self._error_label.text = ""
         App.get_running_app().switch_to_player_selection()
 
-    def _on_hire_new_player(self, _):
-        print("Hire A New Player button pressed.")
-
-        command = HireNewPlayerCommand(
-            game_id=self._game_id,
-            club_id=self._club_id,
-        )
-        result = self._hire_new_player_command_handler(command)
-        print(f"Hire new player command result: {result}")
+    def _on_roster_management(self, _):
+        App.get_running_app().switch_to_roster_management()
 
 
     def _back_to_main_screen(self, _):

@@ -27,6 +27,7 @@ from core.ports.outbound.game_repository import GameRepository
 from core.queries.club_selection_screen_query import ClubSelectionScreenQueryHandler
 from core.queries.day_results_query import DayResultsQueryHandler
 from core.queries.main_screen_ui_query import GameScreenGuiQueryHandler
+from core.queries.roster_management_screen_query import RosterManagementScreenQueryHandler
 from core.regular_championship import ChampionshipParams
 
 
@@ -74,6 +75,10 @@ class ApplicationContext:
             self._club_repository,
         )
 
+        self._roster_management_screen_query_handler = RosterManagementScreenQueryHandler(
+            self._game_repository,
+        )
+
         self._hire_new_player_command_handler = HireNewPlayerCommandHandler(
             self._game_repository,
         )
@@ -109,6 +114,10 @@ class ApplicationContext:
     @property
     def day_results_query_handler(self):
         return self._day_results_query_handler
+
+    @property
+    def roster_management_screen_query_handler(self):
+        return self._roster_management_screen_query_handler
 
     @property
     def hire_new_player_command_handler(self):
