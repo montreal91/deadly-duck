@@ -223,11 +223,6 @@ class GameService:
         game.fire_player(player_id, manager_club_id)
         self._game_repository.save_game(game)
 
-    def hire_player(self, game_id, manager_club_id, surface):
-        game = self._game_repository.get_game(game_id)
-        game.hire_new_player(surface, manager_club_id)
-        self._game_repository.save_game(game)
-
     def sign_player(self, game_id, manager_club_id, player_id):
         game = self._game_repository.get_game(game_id)
         game.sign_player(club_id=manager_club_id, player_id=player_id)

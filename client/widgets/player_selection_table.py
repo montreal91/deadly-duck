@@ -25,7 +25,7 @@ class PlayerSelectionTable:
 
         self._header = _PlayerTableHeader()
         self._root.add_widget(self._header.widget)
-        self._root.bind(size=self._root.setter("size"))
+        self._root.bind(minimum_height=self._root.setter("height"))
 
     @property
     def widget(self):
@@ -116,7 +116,7 @@ class _PlayerTableHeader:
 
 
 def _make_cell(value):
-    return Label(
+    cell = Label(
         text=value,
         markup=True,
         halign="left",
@@ -124,6 +124,8 @@ def _make_cell(value):
         size_hint_x=None,
         width=dp(_DEFAULT_COL_WIDTH),
     )
+    cell.bind(size=lambda w, *_: setattr(w, "text_size", w.size))
+    return cell
 
 
 def _update_bg(self, *_):

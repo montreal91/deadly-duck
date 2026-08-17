@@ -44,6 +44,7 @@ class DuckClientApp(App):
             game_service=ac.game_service,
             next_day_command_handler=ac.next_day_command_handler,
             query_handler=ac.game_screen_ui_query_handler,
+            hire_new_player_command_handler=ac.hire_new_player_command_handler,
             name="game"
         )
 

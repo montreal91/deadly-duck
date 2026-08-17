@@ -44,7 +44,7 @@ from core.regular_championship import ChampionshipParams
 from core.regular_championship import RegularChampionship
 from core.serialization import DdJsonDecoder
 
-_CLUB_INDEX_ERROR = "Incorrect club id."
+_CLUB_ID_ERROR = "Incorrect club id."
 
 
 class GameParams(NamedTuple):
@@ -190,7 +190,7 @@ class Game:
     def fire_player(self, i: int, pk: int):
         """Fires the selected player from user's club."""
 
-        assert 0 <= pk < len(self._clubs), _CLUB_INDEX_ERROR
+        assert 0 <= pk < len(self._clubs), _CLUB_ID_ERROR
 
         assert i >= 0, "Player index should be positive."
         assert i < len(self._clubs[pk].players), (
@@ -206,7 +206,7 @@ class Game:
     def get_context(self, pk: int) -> Dict[str, Any]:
         """A dictionary with information available for user."""
 
-        assert pk in self._clubs, _CLUB_INDEX_ERROR
+        assert pk in self._clubs, _CLUB_ID_ERROR
 
         # TODO: Replace this dict with a NamedTuple class
         return dict(
@@ -269,7 +269,7 @@ class Game:
         Selects a coach (bad, normal, or good) for the player in the club.
         """
 
-        assert club_index in self._clubs, _CLUB_INDEX_ERROR
+        assert club_index in self._clubs, _CLUB_ID_ERROR
         assert 0 <= player_index < len(self._clubs[club_index].players), (
             "Incorrect player index."
         )
@@ -284,7 +284,7 @@ class Game:
     def select_player(self, player_id: int, club_id: int):
         """Sets selected player for user."""
 
-        assert club_id in self._clubs, _CLUB_INDEX_ERROR
+        assert club_id in self._clubs, _CLUB_ID_ERROR
         assert 0 <= player_id < len(self._clubs[club_id].players), (
             "Incorrect player index."
         )
@@ -293,7 +293,7 @@ class Game:
     def set_managed(self, club_id, is_controlled):
         """Sets flag whether club is controlled by a user or not."""
 
-        assert club_id in self._clubs, _CLUB_INDEX_ERROR
+        assert club_id in self._clubs, _CLUB_ID_ERROR
         self._manager_club_id = club_id
         self._clubs[club_id].set_controlled(is_controlled)
 
@@ -667,7 +667,7 @@ class Game:
         self._hire_players_if_needed()
 
     def _process_player_hire(self, club_pk: int, player: DdPlayer):
-        assert club_pk in self._clubs, _CLUB_INDEX_ERROR
+        assert club_pk in self._clubs, _CLUB_ID_ERROR
 
         cost = self._contract_calculator(player.level)
 

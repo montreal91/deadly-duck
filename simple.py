@@ -2,7 +2,7 @@
 Created Apr 09, 2019
 
 Support for the console client is discontinued.
-If it throws error at start, it throws error at stort, won't fix.
+If it throws error at start, won't fix.
 
 Kept for historical record.
 
@@ -198,11 +198,7 @@ class SimplifiedApp:
 
     @user_action
     def __action_hire(self, surface: str):
-        self._game_service.hire_player(
-            self._game_id,
-            self._manager_club_id,
-            surface
-        )
+        pass
 
     @user_action
     def __action_history(self, season: str):
