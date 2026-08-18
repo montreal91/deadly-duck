@@ -138,9 +138,7 @@ class Game:
 
         decoder = DdJsonDecoder()
         decoder.register(Player)
-        decoder.register_alias("DdPlayer", Player)
         decoder.register(ClubPlayerSlot)
-        decoder.register_alias("DdClubPlayerSlot", ClubPlayerSlot)
         with open("data/clubs.json", "r") as data_file:
             club_data = json.load(data_file, object_hook=decoder)
 

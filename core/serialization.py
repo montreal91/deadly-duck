@@ -75,11 +75,6 @@ class DdJsonDecoder:
 
         self._registry[some_type.__name__] = some_type
 
-    def register_alias(self, alias, some_type):
-        """Marks legacy JSON class name as serializable for the decoder."""
-
-        self._registry[alias] = some_type
-
     def _get_type_name(self, obj) -> Optional[str]:
         for key in self._registry:
             if key in obj:

@@ -115,13 +115,6 @@ class Player(Jsonable):
         self._reputation = 0
         self._stats = PlayerStats()
 
-    def __from_json__(self, data: Dict[str, Any]):
-        data = {
-            **data,
-            "player_id": data.get("player_id", str(uuid.uuid4())),
-        }
-        super().__from_json__(data)
-
     @property
     def age(self):
         return self._age
@@ -194,8 +187,6 @@ class Player(Jsonable):
 
     @property
     def player_id(self) -> str:
-        if not hasattr(self, "_player_id"):
-            self._player_id = str(uuid.uuid4())
         return self._player_id
 
     @property
