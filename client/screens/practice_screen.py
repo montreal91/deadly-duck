@@ -75,8 +75,7 @@ class PracticeScreen(Screen):
             player_id=player_id,
             coach_index=coach_index,
         )
-        result = self._select_coach_for_player_command_handler(command)
-        print(f"Select coach for player command result: {result}")
+        self._select_coach_for_player_command_handler(command)
         self.update()
 
 

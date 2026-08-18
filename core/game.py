@@ -607,14 +607,6 @@ class Game:
 
         return True
 
-    def _log_training_costs(self, club: Club):
-        with open(".logs/trainings.csv", "a") as log_file:
-            cost = self._calculate_club_practice_cost(club)
-            print(
-                f"{len(self._history) + 1},{self._competition.day},{cost}",
-                file=log_file
-            )
-
     def _next_season(self):
         previous_standings = self._history[-1][CompetitionType.CHAMPIONSHIP]
         for row in previous_standings:
@@ -650,10 +642,6 @@ class Game:
             return
 
         for club in self._clubs.values():
-            # This cruft is for debugging/balance adjusting reasons.
-            if club.is_controlled:
-                self._log_training_costs(club)
-
             if club.is_controlled:
                 club.account.ProcessTransaction(DdTransaction(
                     -self._calculate_club_practice_cost(club),
