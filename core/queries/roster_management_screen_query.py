@@ -7,6 +7,8 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 
+from configuration.config_game import DdGameplayConstants
+
 
 class RosterManagementScreenQuery(NamedTuple):
     game_id: str
@@ -21,6 +23,7 @@ class PlayerRosterInfo(NamedTuple):
     endurance: float
     age: int
     contract_cost: Optional[int]
+    contract_status: str
 
 
 class RosterManagementScreenQueryResult(NamedTuple):
@@ -62,8 +65,15 @@ class RosterManagementScreenQueryHandler:
 def _player_slot_to_roster_info(player_slot, player_id):
     player = player_slot.player
     contract_cost = None
-    if not player_slot.has_next_contract:
+    contract_status = "Signed"
+    next_age = player.age + 1
+    is_last_season = next_age >= DdGameplayConstants.RETIREMENT_AGE.value
+
+    if not player_slot.has_next_contract and not is_last_season:
         contract_cost = player_slot.contract_cost
+        contract_status = str(player_slot.contract_cost)
+    elif is_last_season:
+        contract_status = "Not Available"
 
     return PlayerRosterInfo(
         player_id=player_id,
@@ -73,4 +83,5 @@ def _player_slot_to_roster_info(player_slot, player_id):
         endurance=player.endurance,
         age=player.age,
         contract_cost=contract_cost,
+        contract_status=contract_status,
     )

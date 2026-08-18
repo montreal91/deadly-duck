@@ -17,14 +17,18 @@ class PlayerDetailsWidget:
         self._right_col = BoxLayout(orientation="vertical")
 
         self._player_name_label = make_label("Placeholder")
+        self._player_name_label.markup = True
         self._root.add_widget(self._player_name_label)
 
+        self._root.add_widget(make_label(" ", font_size=10))
 
+        self._left_col.add_widget(make_label("Age:", font_size=25))
         self._left_col.add_widget(make_label("Level:", font_size=25))
         self._left_col.add_widget(make_label("Technique:", font_size=25))
         self._left_col.add_widget(make_label("Endurance:", font_size=25))
-        self._left_col.add_widget(make_label("Age:", font_size=25))
-        self._left_col.add_widget(make_label("Speciality:", font_size=25))
+
+        self._age_value_label = make_label("Placeholder", font_size=25)
+        self._right_col.add_widget(self._age_value_label)
 
         self._level_value_label = make_label("Placeholder", font_size=25)
         self._right_col.add_widget(self._level_value_label)
@@ -34,12 +38,6 @@ class PlayerDetailsWidget:
 
         self._endurance_value_label = make_label("Placeholder",font_size=25)
         self._right_col.add_widget(self._endurance_value_label)
-
-        self._age_value_label = make_label("Placeholder", font_size=25)
-        self._right_col.add_widget(self._age_value_label)
-
-        self._speciality_value_label = make_label("Placeholder", font_size=25)
-        self._right_col.add_widget(self._speciality_value_label)
 
         self._root.add_widget(self._wrapper)
 
@@ -60,9 +58,8 @@ class PlayerDetailsWidget:
         if player_info is None:
             raise Exception("player_info should not be None")
 
-        self._player_name_label.text = player_info.name
+        self._player_name_label.text = f"[b]{player_info.name}[/b]"
         self._technique_value_label.text = str(player_info.technique)
         self._endurance_value_label.text = str(player_info.endurance)
         self._age_value_label.text = str(player_info.age)
         self._level_value_label.text = str(player_info.level)
-        self._speciality_value_label.text = player_info.speciality

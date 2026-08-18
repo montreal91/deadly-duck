@@ -10,9 +10,13 @@ from typing import Union
 
 from core.competition import CompetitionType
 
+_NO_PLAYOFF_CLUB_ID = -1
+_NO_PLAYOFF_VALUE = "N/A"
+
 
 class UpcomingMatch(NamedTuple):
     opponent_club_name: str
+    home_away: str
 
 
 class StandingRow(NamedTuple):
@@ -31,10 +35,10 @@ class PlayoffSeriesRow(NamedTuple):
     round_number: int
     top_club_id: int
     top_club_name: str
-    top_score: int
+    top_score: Union[int, str]
     bottom_club_id: int
     bottom_club_name: str
-    bottom_score: int
+    bottom_score: Union[int, str]
     contains_manager_club: bool
 
 
@@ -73,10 +77,16 @@ class GameScreenGuiQueryHandler:
         if match:
             if match.home_pk == manager_club_id:
                 opponent_club = game.clubs[match.away_pk].name
-                upcoming_match = UpcomingMatch(opponent_club)
+                upcoming_match = UpcomingMatch(
+                    opponent_club_name=opponent_club,
+                    home_away="Home",
+                )
             elif match.away_pk == manager_club_id:
                 opponent_club = game.clubs[match.home_pk].name
-                upcoming_match = UpcomingMatch(opponent_club)
+                upcoming_match = UpcomingMatch(
+                    opponent_club_name=opponent_club,
+                    home_away="Away",
+                )
             else:
                 raise Exception("WTF Happened")
 
@@ -123,6 +133,12 @@ def _make_playoff_standings(
         manager_club_id,
 ) -> PlayoffStandings:
     rows = []
+
+    if not raw_standings:
+        return PlayoffStandings(rows=rows)
+
+    first_round_size = _largest_power_of_two(len(raw_standings))
+
     for round_number, standing in _playoff_rounds(raw_standings):
         top_club_id = standing["clubs"][0]
         bottom_club_id = standing["clubs"][1]
@@ -138,7 +154,45 @@ def _make_playoff_standings(
             contains_manager_club=manager_club_id in standing["clubs"],
         ))
 
+    rows.extend(_make_future_playoff_rounds(
+        first_round_size=first_round_size,
+        rendered_series=len(raw_standings),
+    ))
+
     return PlayoffStandings(rows=rows)
+
+
+def _make_future_playoff_rounds(first_round_size, rendered_series):
+    rows = []
+    round_number = 1
+    round_size = first_round_size
+    skipped_series = rendered_series
+
+    while round_size > 0:
+        if skipped_series >= round_size:
+            skipped_series -= round_size
+        else:
+            for _ in range(round_size - skipped_series):
+                rows.append(_make_empty_playoff_series(round_number))
+            skipped_series = 0
+
+        round_size //= 2
+        round_number += 1
+
+    return rows
+
+
+def _make_empty_playoff_series(round_number):
+    return PlayoffSeriesRow(
+        round_number=round_number,
+        top_club_id=_NO_PLAYOFF_CLUB_ID,
+        top_club_name=_NO_PLAYOFF_VALUE,
+        top_score=_NO_PLAYOFF_VALUE,
+        bottom_club_id=_NO_PLAYOFF_CLUB_ID,
+        bottom_club_name=_NO_PLAYOFF_VALUE,
+        bottom_score=_NO_PLAYOFF_VALUE,
+        contains_manager_club=False,
+    )
 
 
 def _playoff_rounds(raw_standings):

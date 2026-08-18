@@ -172,8 +172,10 @@ class GameService:
 
     def set_player(self, game_id, manager_club_id, player_id):
         game = self._game_repository.get_game(game_id)
-        if game is None:
+
+        if game is None or player_id is None:
             return
+
         game.select_player(player_id=player_id, club_id=manager_club_id)
         self._game_repository.save_game(game)
 

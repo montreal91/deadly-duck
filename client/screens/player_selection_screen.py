@@ -49,16 +49,15 @@ class PlayerSelectionScreen(Screen):
 
         self._layout.center_col.add_widget(make_label(""))
         self._selection_table = PlayerSelectionTable()
-        self._layout.center_col.add_widget(self._selection_table.widget)
+        self._empty_label = make_label(text="No match today.", font_size=30)
 
-        submit_button = Button(
+        self._submit_button = Button(
             text="Submit",
             font_size=30,
             size_hint=(None, None),
             size=button_size
         )
-        submit_button.bind(on_press=self._on_submit)
-        self._layout.center_col.add_widget(submit_button)
+        self._submit_button.bind(on_press=self._on_submit)
 
         self._layout.left_col.add_widget(Widget())
         self._layout.right_col.add_widget(Widget())
@@ -73,8 +72,14 @@ class PlayerSelectionScreen(Screen):
         )
 
         self._layout.right_col.clear_widgets()
+        self._layout.center_col.clear_widgets()
 
         if info.opponent is None:
+            self._selection_table.update([])
+            self._layout.center_col.add_widget(self._empty_label)
+            self._layout.center_col.add_widget(Widget())
+            self._layout.right_col.add_widget(make_label(text="No opponent today.", font_size=30))
+            self._layout.right_col.add_widget(Widget())
             return
 
         self._opp_club_label.text = f"vs. {info.opponent.club_name}"
@@ -82,6 +87,9 @@ class PlayerSelectionScreen(Screen):
         self._layout.right_col.add_widget(self._home_away_label)
 
         self._selection_table.update(info.players)
+        self._layout.center_col.add_widget(make_label(""))
+        self._layout.center_col.add_widget(self._selection_table.widget)
+        self._layout.center_col.add_widget(self._submit_button)
 
         if info.opponent.player is not None:
             self._home_away_label.text = "Home"
@@ -92,6 +100,7 @@ class PlayerSelectionScreen(Screen):
             self._home_away_label.text = "Away"
 
         self._layout.right_col.add_widget(Widget())
+        self._layout.center_col.add_widget(Widget())
 
     def _on_submit(self, _):
         self._game_service.set_player(

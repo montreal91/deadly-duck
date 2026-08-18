@@ -24,7 +24,10 @@ class SignPlayerCommandHandler:
 
     def __call__(self, command: SignPlayerCommand) -> SignPlayerCommandResult:
         game = self._game_repository.get_game(command.game_id)
-        game.sign_player(club_id=command.club_id, player_id=command.player_id)
+        success, message = game.sign_player(
+            club_id=command.club_id,
+            player_id=command.player_id,
+        )
         self._game_repository.save_game(game)
 
-        return SignPlayerCommandResult(success=True, message="")
+        return SignPlayerCommandResult(success=success, message=message)

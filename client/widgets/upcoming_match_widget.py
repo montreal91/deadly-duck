@@ -14,6 +14,7 @@ class UpcomingMatchWidget:
         self._root = BoxLayout(orientation="vertical")
 
         self._teaser_label = make_label(text = " ", font_size=20)
+        self._home_away_label = make_label(text = " ", font_size=25)
         self._opponent_club_label = make_label(text = " ", font_size=40)
 
     @property
@@ -25,11 +26,14 @@ class UpcomingMatchWidget:
 
         if opp is None:
             self._teaser_label.text = "No matches today. Chill."
+            self._home_away_label.text = " "
             self._opponent_club_label.text = " "
         else:
             self._teaser_label.text = "Upcoming match"
+            self._home_away_label.text = opp.home_away
             self._opponent_club_label.text = opp.opponent_club_name
 
         self._root.add_widget(self._teaser_label)
         self._root.add_widget(self._opponent_club_label)
+        self._root.add_widget(self._home_away_label)
         self._root.add_widget(Widget())

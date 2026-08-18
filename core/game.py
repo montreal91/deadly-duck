@@ -182,7 +182,7 @@ class Game:
     def season_over(self) -> bool:
         """Checks if season is over."""
 
-        return self._competition.title == "Cup" and self._competition.is_over
+        return isinstance(self._competition, DdPlayoff) and self._competition.is_over
 
     @property
     def created_ts(self):
@@ -317,7 +317,8 @@ class Game:
         if players[player_id].has_next_contract:
             return False, "This player already has a contract for the next season."
 
-        if players[player_id].player.age >= DdGameplayConstants.RETIREMENT_AGE.value:
+        next_age = players[player_id].player.age + 1
+        if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
             return False, f"{players[player_id].player.initials} is too old to play next season."
 
         cost = self._contract_calculator(players[player_id].player.level)

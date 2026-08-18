@@ -89,7 +89,7 @@ def _make_player_row(player, on_sign_player, on_fire_player):
     row.add_widget(_make_cell(str(player.age)))
     row.add_widget(_make_cell(str(player.technique)))
     row.add_widget(_make_cell(str(player.endurance)))
-    row.add_widget(_make_cell(_format_contract_cost(player.contract_cost)))
+    row.add_widget(_make_cell(player.contract_status))
     row.add_widget(_make_action_cell(player, on_sign_player, on_fire_player))
 
     return row
@@ -108,12 +108,6 @@ def _make_cell(value, width=_DEFAULT_COL_WIDTH, is_header=False):
     )
     cell.bind(size=lambda w, *_: setattr(w, "text_size", w.size))
     return cell
-
-
-def _format_contract_cost(contract_cost):
-    if contract_cost is None:
-        return "Signed"
-    return str(contract_cost)
 
 
 def _get_col_width(title):
