@@ -248,7 +248,7 @@ class Club:
             self._coach_power = val
 
             for slot in self.players:
-                slot.coach_power = val
+                slot.coach_level = val
 
 
     def set_controlled(self, val: bool):
