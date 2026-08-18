@@ -205,7 +205,7 @@ class DdPlayoff(DdAbstractCompetition):
 
     @property
     def title(self) -> str:
-        return "Cup"
+        return "Katelyn Cup Playoffs"
 
     def get_club_fame(self, club_pk):
         if club_pk not in self._participants:

@@ -13,19 +13,28 @@ from client.constants import button_size
 from client.game_context import GameContext
 from client.widgets.factories import make_label
 from client.widgets.layout import make_three_column_layout
+from client.widgets.playoffs_bracket_widget import PlayoffsBracketWidget
 from client.widgets.standings_table_widget import StandingsTableWidget
 from client.widgets.upcoming_match_widget import UpcomingMatchWidget
+from core.competition import CompetitionType
 from core.ports.inbound.commands.next_day import NextDayCommand
 
 
 class GameScreen(Screen):
-    def __init__(self, game_service, next_day_command_handler, query_handler, **kwargs):
+    def __init__(
+            self,
+            game_service,
+            next_day_command_handler,
+            query_handler,
+            **kwargs
+    ):
         super(GameScreen, self).__init__(**kwargs)
 
         self._info = None
         self._game_service = game_service
         self._next_day_command_handler = next_day_command_handler
         self._query_handler = query_handler
+
         self._game_id = None
         self._club_id = None
 
@@ -74,6 +83,24 @@ class GameScreen(Screen):
         self._select_player_button.bind(on_press=self._on_select_player)
         self._layout.left_col.add_widget(self._select_player_button)
 
+        self._practice_button = Button(
+            text="Practice",
+            font_size=30,
+            size_hint=(None, None),
+            size=button_size
+        )
+        self._practice_button.bind(on_press=self._on_practice)
+        self._layout.left_col.add_widget(self._practice_button)
+
+        self._roster_management_button = Button(
+            text="Roster Management",
+            font_size=30,
+            size_hint=(None, None),
+            size=button_size
+        )
+        self._roster_management_button.bind(on_press=self._on_roster_management)
+        self._layout.left_col.add_widget(self._roster_management_button)
+
         self._res_button = Button(
             text="Results",
             font_size=30,
@@ -90,10 +117,9 @@ class GameScreen(Screen):
         self._layout.left_col.add_widget(self._back_button)
 
         self._standings_table = StandingsTableWidget()
-        self._layout.center_col.add_widget(self._standings_table.widget)
+        self._playoffs_bracket = PlayoffsBracketWidget()
 
         self._layout.left_col.add_widget(Widget())
-        self._layout.center_col.add_widget(Widget())
         self._layout.right_col.add_widget(Widget())
 
         self.add_widget(self._layout.root)
@@ -115,7 +141,7 @@ class GameScreen(Screen):
         self._info = gui_info
 
         self._upcoming_match_widget.update(gui_info.upcoming_match)
-        self._standings_table.update(gui_info.standings)
+        self._update_center_widget(gui_info)
 
     def _on_next(self, _):
         res = self._next_day_command_handler(NextDayCommand(self._game_id))
@@ -135,10 +161,31 @@ class GameScreen(Screen):
         self._error_label.text = ""
         App.get_running_app().switch_to_player_selection()
 
+    def _on_practice(self, _):
+        App.get_running_app().switch_to_practice()
+
+    def _on_roster_management(self, _):
+        App.get_running_app().switch_to_roster_management()
+
+
     def _back_to_main_screen(self, _):
         self._game_service.save_game(self._game_id)
 
         App.get_running_app().switch_to_main(None)
+
+    def _update_center_widget(self, gui_info):
+        self._layout.center_col.clear_widgets()
+
+        if gui_info.competition_type == CompetitionType.CHAMPIONSHIP:
+            self._standings_table.update(gui_info.standings)
+            self._layout.center_col.add_widget(self._standings_table.widget)
+        elif gui_info.competition_type == CompetitionType.PLAY_OFFS:
+            self._playoffs_bracket.update(gui_info.standings)
+            self._layout.center_col.add_widget(self._playoffs_bracket.widget)
+        else:
+            raise Exception("Unknown competition type.")
+
+        self._layout.center_col.add_widget(Widget())
 
 
 def _on_results(_):

@@ -22,10 +22,12 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
+from uuid import UUID
 
 from configuration.config_game import DdGameplayConstants
 from core.club import Club
 from core.club import DdClubPlayerSlot
+from core.competition import CompetitionType
 from core.competition import DdAbstractCompetition
 from core.financial import DdPracticeCalculator
 from core.financial import DdStaticContractCalculator
@@ -43,7 +45,11 @@ from core.regular_championship import ChampionshipParams
 from core.regular_championship import RegularChampionship
 from core.serialization import DdJsonDecoder
 
-_CLUB_INDEX_ERROR = "Incorrect club id."
+_CLUB_ID_ERROR = "Incorrect club id."
+_UNCONTRACTED_PLAYERS_ERROR = (
+    "Your club has uncontracted players.\n"
+    "You should whether contract them or fire."
+)
 
 
 class GameParams(NamedTuple):
@@ -96,7 +102,7 @@ class Game:
     _competition: DdAbstractCompetition
     _contract_calculator: Callable[[int], int]
     _free_agents: List[DdPlayer]
-    _history: List[Dict[str, Any]]
+    _history: List[Dict[CompetitionType, Any]]
     _params: GameParams
     _player_factory: DdPlayerFactory
     _season_fame: Dict[int, int]
@@ -176,7 +182,7 @@ class Game:
     def season_over(self) -> bool:
         """Checks if season is over."""
 
-        return self._competition.title == "Cup" and self._competition.is_over
+        return isinstance(self._competition, DdPlayoff) and self._competition.is_over
 
     @property
     def created_ts(self):
@@ -186,17 +192,17 @@ class Game:
     def updated_ts(self):
         return self._updated_ts
 
-    def fire_player(self, i: int, pk: int):
+    def fire_player(self, player_id: int, club_id: uuid.UUID):
         """Fires the selected player from user's club."""
 
-        assert 0 <= pk < len(self._clubs), _CLUB_INDEX_ERROR
+        assert club_id in self._clubs, _CLUB_ID_ERROR
 
-        assert i >= 0, "Player index should be positive."
-        assert i < len(self._clubs[pk].players), (
+        assert player_id >= 0, "Player index should be positive."
+        assert player_id < len(self._clubs[club_id].players), (
             "There is no player with such index in your club."
         )
 
-        player = self._clubs[pk].pop_player(i)
+        player = self._clubs[club_id].pop_player(player_id)
         player.has_next_contract = False
         player.RecoverStamina(player.max_stamina)
 
@@ -205,7 +211,7 @@ class Game:
     def get_context(self, pk: int) -> Dict[str, Any]:
         """A dictionary with information available for user."""
 
-        assert pk in self._clubs, _CLUB_INDEX_ERROR
+        assert pk in self._clubs, _CLUB_ID_ERROR
 
         # TODO: Replace this dict with a NamedTuple class
         return dict(
@@ -223,6 +229,7 @@ class Game:
             title=self._competition.title,
             user_players=self._get_user_players(pk),
             competition=self._competition.title,
+            competition_type=self._competition_type,
             has_matches=self._has_matches(),
         )
 
@@ -267,7 +274,7 @@ class Game:
         Selects a coach (bad, normal, or good) for the player in the club.
         """
 
-        assert club_index in self._clubs, _CLUB_INDEX_ERROR
+        assert club_index in self._clubs, _CLUB_ID_ERROR
         assert 0 <= player_index < len(self._clubs[club_index].players), (
             "Incorrect player index."
         )
@@ -282,7 +289,7 @@ class Game:
     def select_player(self, player_id: int, club_id: int):
         """Sets selected player for user."""
 
-        assert club_id in self._clubs, _CLUB_INDEX_ERROR
+        assert club_id in self._clubs, _CLUB_ID_ERROR
         assert 0 <= player_id < len(self._clubs[club_id].players), (
             "Incorrect player index."
         )
@@ -291,40 +298,41 @@ class Game:
     def set_managed(self, club_id, is_controlled):
         """Sets flag whether club is controlled by a user or not."""
 
-        assert club_id in self._clubs, _CLUB_INDEX_ERROR
+        assert club_id in self._clubs, _CLUB_ID_ERROR
         self._manager_club_id = club_id
         self._clubs[club_id].set_controlled(is_controlled)
 
-    def sign_player(self, club_id: int, player_id: int):
+    def sign_player(self, club_id: UUID, player_id: int):
         """Signs a new contract with a player for the next season."""
 
-        assert 0 <= club_id < len(self._clubs), "Incorrect club pk."
+        if club_id not in self._clubs:
+            return False, _CLUB_ID_ERROR
 
         club = self._clubs[club_id]
         players = self._clubs[club_id].players
-        assert 0 <= player_id < len(players), (
-            "Incorrect player index."
-        )
-        assert not players[player_id].has_next_contract, (
-            "This player already has a contract for the next season."
-        )
-        assert (
-                players[player_id].player.age + 1 < DdGameplayConstants.RETIREMENT_AGE.value
-        ), (
-            f"{players[player_id].player.initials} is too old to play next season."
-        )
+
+        if not 0 <= player_id < len(players):
+            return False, "Incorrect player id."
+
+        if players[player_id].has_next_contract:
+            return False, "This player already has a contract for the next season."
+
+        next_age = players[player_id].player.age + 1
+        if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
+            return False, f"{players[player_id].player.initials} is too old to play next season."
 
         cost = self._contract_calculator(players[player_id].player.level)
-        assert self._clubs[club_id].account.balance >= cost, (
-            "Insufficient funds.\n"
-            f"You need at least ${cost}."
-        )
+
+        if self._clubs[club_id].account.balance < cost:
+            return False, f"Insufficient funds.\nYou need at least ${cost}."
 
         club.contract_player(player_id)
         club.account.ProcessTransaction(DdTransaction(
             -cost,
             f"Renewed player contract with {players[player_id].player.initials} "
         ))
+
+        return True, "Ok"
 
     def update(self):
         """
@@ -341,6 +349,9 @@ class Game:
         if self.is_over:
             return False, "The game is over"
 
+        if self.season_over and not self._contract_check:
+            return False, _UNCONTRACTED_PLAYERS_ERROR
+
         if self._decision_required:
             return False, "You have to select player for the next match."
 
@@ -352,13 +363,14 @@ class Game:
         self._unselect()
 
         if self.season_over:
-            self._check_contracts()
             self._update_season_fame()
+            self._save_competition_results()
             self._next_season()
             self._drop_stats()
 
         if self._competition.is_over:
             self._update_season_fame()
+            self._save_competition_results()
             self._start_playoff()
 
         self._updated_ts = time.time_ns() // 1_000_000
@@ -369,7 +381,7 @@ class Game:
     def _can_practice(self) -> bool:
         if self._competition.current_matches is not None:
             return False
-        return self._competition.title == "Championship"
+        return self._competition_type == CompetitionType.CHAMPIONSHIP
 
     @property
     def _contract_check(self) -> bool:
@@ -414,6 +426,14 @@ class Game:
         if standings:
             return standings
         return [DdStandingsRowStruct(i) for i in self._clubs]
+
+    @property
+    def _competition_type(self) -> CompetitionType:
+        if isinstance(self._competition, RegularChampionship):
+            return CompetitionType.CHAMPIONSHIP
+        if isinstance(self._competition, DdPlayoff):
+            return CompetitionType.PLAY_OFFS
+        raise Exception("Unknown competition type.")
 
     @property
     def _training_check(self) -> bool:
@@ -475,13 +495,6 @@ class Game:
                 value=250_000,
                 comment="Income"
             ))
-
-    def _check_contracts(self):
-        if not self._contract_check:
-            raise AssertionError(
-                "Your club has uncontracted players.\n"
-                "You should whether contract them or fire."
-            )
 
     def _collect_competition_fame(self):
         for pk in self._clubs:
@@ -603,7 +616,7 @@ class Game:
             )
 
     def _next_season(self):
-        previous_standings = self._history[-1]["Championship"]
+        previous_standings = self._history[-1][CompetitionType.CHAMPIONSHIP]
         for row in previous_standings:
             club: Club = self._clubs[row.club_id]
             for slot in club.players:
@@ -655,7 +668,7 @@ class Game:
         self._hire_players_if_needed()
 
     def _process_player_hire(self, club_pk: int, player: DdPlayer):
-        assert club_pk in self._clubs, _CLUB_INDEX_ERROR
+        assert club_pk in self._clubs, _CLUB_ID_ERROR
 
         cost = self._contract_calculator(player.level)
 
@@ -683,6 +696,9 @@ class Game:
     def _simulate(self, years):
         while len(self._history) < years:
             self.update()
+
+    def _save_competition_results(self):
+        self._history[-1][self._competition_type] = self._competition.standings
 
     def _start_playoff(self):
         self._competition = DdPlayoff(

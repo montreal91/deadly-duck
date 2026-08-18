@@ -8,11 +8,14 @@ from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.screenmanager import NoTransition
 from kivy.clock import Clock
 
+from client.screens.about_screen import AboutScreen
 from client.screens.club_selection_screen import ClubSelectionScreen
 from client.screens.day_results_screen import DayResultsScreen
 from client.screens.game_screen import GameScreen
 from client.screens.load_story_screen import LoadStoryScreen
 from client.screens.player_selection_screen import PlayerSelectionScreen
+from client.screens.practice_screen import PracticeScreen
+from client.screens.roster_management_screen import RosterManagementScreen
 from client.screens.splash_screen import SplashScreen
 from client.screens.main_screen import MainScreen
 from client.screens.story_name_screen import StoryNameScreen
@@ -30,6 +33,9 @@ class DuckClientApp(App):
         self._club_selection_screen = None
         self._load_story_screen = None
         self._player_selection_screen = None
+        self._practice_screen = None
+        self._roster_management_screen = None
+        self._about_screen = None
 
         self.sm = None
 
@@ -37,6 +43,7 @@ class DuckClientApp(App):
         self.sm = ScreenManager(transition=NoTransition())
         self.splash_screen = SplashScreen(name="splash")
         self.main_screen = MainScreen(name="main")
+        self._about_screen = AboutScreen(name="about")
 
         ac = get_application_context()
 
@@ -51,6 +58,18 @@ class DuckClientApp(App):
         self._club_selection_screen = ClubSelectionScreen(name="club_selection")
         self._load_story_screen = LoadStoryScreen(name="load_story")
         self._player_selection_screen = PlayerSelectionScreen(name="player_selection")
+        self._practice_screen = PracticeScreen(
+            query_handler=ac.practice_screen_query_handler,
+            select_coach_for_player_command_handler=ac.select_coach_for_player_command_handler,
+            name="practice",
+        )
+        self._roster_management_screen = RosterManagementScreen(
+            query_handler=ac.roster_management_screen_query_handler,
+            hire_new_player_command_handler=ac.hire_new_player_command_handler,
+            sign_player_command_handler=ac.sign_player_command_handler,
+            fire_player_command_handler=ac.fire_player_command_handler,
+            name="roster_management",
+        )
         self._day_results_screen = DayResultsScreen(
             name="day_results",
             day_results_query_handler=ac.day_results_query_handler,
@@ -58,11 +77,14 @@ class DuckClientApp(App):
 
         self.sm.add_widget(self.splash_screen)
         self.sm.add_widget(self.main_screen)
+        self.sm.add_widget(self._about_screen)
         self.sm.add_widget(self.game_screen)
         self.sm.add_widget(self.story_name_screen)
         self.sm.add_widget(self._club_selection_screen)
         self.sm.add_widget(self._load_story_screen)
         self.sm.add_widget(self._player_selection_screen)
+        self.sm.add_widget(self._practice_screen)
+        self.sm.add_widget(self._roster_management_screen)
         self.sm.add_widget(self._day_results_screen)
 
         Clock.schedule_once(self.switch_to_main, timeout=1)
@@ -85,6 +107,14 @@ class DuckClientApp(App):
         self.sm.current = "player_selection"
         self._player_selection_screen.update()
 
+    def switch_to_practice(self):
+        self.sm.current = "practice"
+        self._practice_screen.update()
+
+    def switch_to_roster_management(self):
+        self.sm.current = "roster_management"
+        self._roster_management_screen.update()
+
     def switch_to_load_story(self):
         self.sm.current = "load_story"
         self._load_story_screen.update_saved_games()
@@ -92,6 +122,9 @@ class DuckClientApp(App):
     def switch_to_story_name(self):
         self.sm.current = "story_name"
         self.story_name_screen.update()
+
+    def switch_to_about(self):
+        self.sm.current = "about"
 
     def switch_to_club_selection(self):
         self.sm.current = "club_selection"

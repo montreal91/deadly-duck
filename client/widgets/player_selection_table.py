@@ -11,6 +11,15 @@ from kivy.uix.label import Label
 from kivy.uix.togglebutton import ToggleButton
 
 _DEFAULT_COL_WIDTH = 100
+_PLAYER_ID_COL_WIDTH = 35
+_PLAYER_NAME_COL_WIDTH = 180
+_TABLE_PADDING = 8
+_TABLE_WIDTH = (
+    _PLAYER_ID_COL_WIDTH
+    + _PLAYER_NAME_COL_WIDTH
+    + 5 * _DEFAULT_COL_WIDTH
+    + _DEFAULT_COL_WIDTH
+)
 
 
 class PlayerSelectionTable:
@@ -18,14 +27,16 @@ class PlayerSelectionTable:
         self._root = BoxLayout(
             orientation="vertical",
             size_hint_y=None,
-            padding=(dp(8), dp(8)),
-            spacing=dp(4)
+            padding=(dp(_TABLE_PADDING), dp(_TABLE_PADDING)),
+            spacing=dp(4),
+            size_hint_x=None,
+            width=dp(_TABLE_WIDTH + 2 * _TABLE_PADDING),
         )
         self._selected_player_id = None
 
         self._header = _PlayerTableHeader()
         self._root.add_widget(self._header.widget)
-        self._root.bind(size=self._root.setter("size"))
+        self._root.bind(minimum_height=self._root.setter("height"))
 
     @property
     def widget(self):
@@ -43,28 +54,36 @@ class PlayerSelectionTable:
         for pos, player in enumerate(players):
             self._root.add_widget(self._make_table_row(pos, player, player.is_selected))
 
-    def _make_select_player_button(self, player_id):
+    def _make_select_player_button(self, player_id, selected=False):
         button = ToggleButton(
             text="Select",
             group="players",
             size_hint=(None, None),
-            size=(100, 35)
+            size=(dp(_DEFAULT_COL_WIDTH), dp(35)),
+            state="down" if selected else "normal",
         )
         button.player_id = player_id
         button.bind(on_press=self._on_select)
         return button
 
     def _make_table_row(self, pos, player, selected=False):
-        row = BoxLayout(orientation="horizontal", size_hint_y=None, height=dp(36))
+        row = BoxLayout(
+            orientation="horizontal",
+            size_hint=(None, None),
+            width=dp(_TABLE_WIDTH),
+            height=dp(36),
+        )
 
         if selected:
+            self._selected_player_id = player.player_id
             with row.canvas.before:
-                row._bg_color = Color(rgba=(.2, .2, .2, 1))
+                row._bg_color = Color(rgba=(.18, .26, .34, 1))
                 row._bg_rect = Rectangle(pos=row.pos, size=row.size)
             row.bind(pos=_update_bg, size=_update_bg)
 
-        row.add_widget(_make_cell(str(pos)))
-        row.add_widget(_make_cell(player.name))
+        row.add_widget(_make_cell(str(pos), width=_PLAYER_ID_COL_WIDTH))
+        row.add_widget(_make_cell(player.name, width=_PLAYER_NAME_COL_WIDTH))
+        row.add_widget(_make_cell(str(player.age)))
         row.add_widget(_make_cell(str(player.level)))
         row.add_widget(_make_cell(
             f"{player.actual_technique} / {player.technique}"
@@ -73,9 +92,8 @@ class PlayerSelectionTable:
             f"{player.current_stamina} / {player.maximum_stamina}"
         ))
         row.add_widget(_make_cell(str(player.exhaustion)))
-        row.add_widget(_make_cell(player.speciality))
 
-        row.add_widget(self._make_select_player_button(player.player_id))
+        row.add_widget(self._make_select_player_button(player.player_id, selected))
 
         return row
 
@@ -85,27 +103,32 @@ class PlayerSelectionTable:
 
 class _PlayerTableHeader:
     def __init__(self):
-        self._root = BoxLayout(orientation="horizontal", size_hint_y=None, height=dp(36))
+        self._root = BoxLayout(
+            orientation="horizontal",
+            size_hint=(None, None),
+            width=dp(_TABLE_WIDTH),
+            height=dp(36),
+        )
 
         cols = (
             "#",
             "Name",
+            "Age",
             "Level",
             "Technique",
             "Stamina",
             "Exhaustion",
-            "Speciality",
-            ""
+            "Action"
         )
 
         for title in cols:
             lbl = Label(
                 text=f"[b]{title}[/b]",
                 markup=True,
-                halign="center",
+                halign="left",
                 valign="middle",
                 size_hint_x=None,
-                width=dp(_DEFAULT_COL_WIDTH)
+                width=dp(_get_col_width(title))
             )
             lbl.bind(size=lambda w, *_: setattr(w, "text_size", w.size))
             self._root.add_widget(lbl)
@@ -115,15 +138,25 @@ class _PlayerTableHeader:
         return self._root
 
 
-def _make_cell(value):
-    return Label(
+def _make_cell(value, width=_DEFAULT_COL_WIDTH):
+    cell = Label(
         text=value,
         markup=True,
         halign="left",
         valign="middle",
         size_hint_x=None,
-        width=dp(_DEFAULT_COL_WIDTH),
+        width=dp(width),
     )
+    cell.bind(size=lambda w, *_: setattr(w, "text_size", w.size))
+    return cell
+
+
+def _get_col_width(title):
+    if title == "#":
+        return _PLAYER_ID_COL_WIDTH
+    if title == "Name":
+        return _PLAYER_NAME_COL_WIDTH
+    return _DEFAULT_COL_WIDTH
 
 
 def _update_bg(self, *_):

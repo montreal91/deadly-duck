@@ -5,6 +5,7 @@ Created May 20, 2019
 @author montreal91
 """
 from copy import copy
+from enum import Enum
 from itertools import chain
 from typing import Any
 from typing import Dict
@@ -19,6 +20,11 @@ from core.match import DdScheduledMatchStruct
 
 
 ScheduleDay = List[DdScheduledMatchStruct]
+
+
+class CompetitionType(Enum):
+    CHAMPIONSHIP = "championship"
+    PLAY_OFFS = "play_offs"
 
 
 class DdAbstractCompetition:

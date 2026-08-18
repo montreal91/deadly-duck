@@ -18,15 +18,6 @@ class MainScreen(Screen):
 
         layout, anchor_layout = make_default_layout("Legends of the Courts")
 
-        new_story_button = Button(
-            text="New Story",
-            font_size=30,
-            size_hint=(None, None),
-            size=button_size
-        )
-        new_story_button.bind(on_press=self.show_story)
-        layout.add_widget(new_story_button)
-
         continue_story_button = Button(
             text="Continue Story",
             font_size=30,
@@ -36,14 +27,23 @@ class MainScreen(Screen):
         continue_story_button.bind(on_press=_continue_story)
         layout.add_widget(continue_story_button)
 
-        credits_button = Button(
-            text="Credits",
+        new_story_button = Button(
+            text="New Story",
             font_size=30,
             size_hint=(None, None),
             size=button_size
         )
-        credits_button.bind(on_press=self.show_credits)
-        layout.add_widget(credits_button)
+        new_story_button.bind(on_press=self.show_story)
+        layout.add_widget(new_story_button)
+
+        about_button = Button(
+            text="About",
+            font_size=30,
+            size_hint=(None, None),
+            size=button_size
+        )
+        about_button.bind(on_press=self.show_about)
+        layout.add_widget(about_button)
 
         exit_button = Button(
             text="Exit",
@@ -61,9 +61,8 @@ class MainScreen(Screen):
         GameContext.new_context()
         App.get_running_app().switch_to_story_name()
 
-    def show_credits(self, instance):
-        print("Credits button pressed")
-        # Here you could switch to a credits screen or display credits information
+    def show_about(self, _):
+        App.get_running_app().switch_to_about()
 
     @staticmethod
     def exit_app(_):

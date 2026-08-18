@@ -19,7 +19,7 @@ class GameRepository:
         self._get_games_sql = read_sql_file("data/sql/get_game.sql")
         self._get_game_ids_sql = read_sql_file("data/sql/get_game_ids.sql")
 
-    def get_game(self, game_id) -> Game:
+    def get_game(self, game_id):
         if game_id not in self._games:
             self._load_game(game_id)
 

@@ -38,6 +38,7 @@ class StandingsTableWidget:
 
         self._table_header = _make_table_header()
         self._root.add_widget(self._table_header)
+        self._header_gap = Widget(size_hint_y=None, height=dp(8))
 
     @property
     def widget(self):
@@ -49,8 +50,9 @@ class StandingsTableWidget:
         self._root.add_widget(self._title)
         self._root.add_widget(self._spacer)
         self._root.add_widget(self._table_header)
+        self._root.add_widget(self._header_gap)
 
-        for row in standings:
+        for row in standings.rows:
             self._root.add_widget(_make_row(row))
 
         self._root.add_widget(Widget())
