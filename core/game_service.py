@@ -19,7 +19,7 @@ class MainScreenInfo(NamedTuple):
 
 
 class PlayerListInfo(NamedTuple):
-    player_id: int
+    player_id: str
     name: str
     level: int
     actual_technique: float
@@ -35,7 +35,7 @@ class PlayerListInfo(NamedTuple):
 
 
 class OpponentPlayerInfo(NamedTuple):
-    player_id: int
+    player_id: str
     name: str
     level: int
     technique: float
@@ -145,9 +145,9 @@ class GameService:
 
         players = [
             _player_to_row_info(
-                player.player, i, player.is_selected, player.coach_level
+                player.player, player.is_selected, player.coach_level
             )
-            for i, player in enumerate(context["user_players"])
+            for player in context["user_players"]
         ]
 
         return PlayerSelectionScreenInfo(
@@ -186,10 +186,10 @@ class GameService:
         return game.manager_club_id
 
 
-def _player_to_row_info(player, player_id, is_selected, coach_level):
+def _player_to_row_info(player, is_selected, coach_level):
     # Again, this method is weird, but okay for now :)
     plr = {
-        "player_id": player_id,
+        "player_id": player.player_id,
         "name": f"{player.first_name} {player.last_name}",
         "level": player.level,
         "actual_technique": player.actual_technique,
@@ -214,7 +214,7 @@ def _opponent_dto_to_info(opponent_dto):
 
     if opponent_dto.player is not None:
         player_info = OpponentPlayerInfo(
-            player_id=-1,
+            player_id=opponent_dto.player.player_id,
             name=f"{opponent_dto.player.first_name} {opponent_dto.player.last_name}",
             level=opponent_dto.player.level,
             technique=opponent_dto.player.technique,

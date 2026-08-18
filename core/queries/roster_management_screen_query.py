@@ -16,7 +16,8 @@ class RosterManagementScreenQuery(NamedTuple):
 
 
 class PlayerRosterInfo(NamedTuple):
-    player_id: int
+    player_id: str
+    pos: int
     name: str
     level: int
     technique: float
@@ -50,8 +51,8 @@ class RosterManagementScreenQueryHandler:
 
         context = game.get_context(query.manager_club_id)
         roster = [
-            _player_slot_to_roster_info(player_slot, player_id)
-            for player_id, player_slot in enumerate(context["user_players"])
+            _player_slot_to_roster_info(player_slot, player_pos)
+            for player_pos, player_slot in enumerate(context["user_players"])
         ]
 
         return RosterManagementScreenQueryResult(
@@ -62,7 +63,7 @@ class RosterManagementScreenQueryHandler:
         )
 
 
-def _player_slot_to_roster_info(player_slot, player_id):
+def _player_slot_to_roster_info(player_slot, player_pos):
     player = player_slot.player
     contract_cost = None
     contract_status = "Signed"
@@ -76,7 +77,8 @@ def _player_slot_to_roster_info(player_slot, player_id):
         contract_status = "Not Available"
 
     return PlayerRosterInfo(
-        player_id=player_id,
+        player_id=player.player_id,
+        pos=player_pos,
         name=f"{player.first_name} {player.last_name}",
         level=player.level,
         technique=player.technique,

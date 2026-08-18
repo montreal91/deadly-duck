@@ -13,7 +13,8 @@ class PracticeScreenQuery(NamedTuple):
 
 
 class PlayerPracticeInfo(NamedTuple):
-    player_id: int
+    player_id: str
+    pos: int
     name: str
     age: int
     level: int
@@ -47,8 +48,8 @@ class PracticeScreenQueryHandler:
 
         context = game.get_context(query.manager_club_id)
         players = [
-            _player_slot_to_practice_info(game, player_slot, player_id)
-            for player_id, player_slot in enumerate(context["user_players"])
+            _player_slot_to_practice_info(game, player_slot, player_pos)
+            for player_pos, player_slot in enumerate(context["user_players"])
         ]
 
         return PracticeScreenQueryResult(
@@ -58,10 +59,11 @@ class PracticeScreenQueryHandler:
         )
 
 
-def _player_slot_to_practice_info(game, player_slot, player_id):
+def _player_slot_to_practice_info(game, player_slot, player_pos):
     player = player_slot.player
     return PlayerPracticeInfo(
-        player_id=player_id,
+        player_id=player.player_id,
+        pos=player_pos,
         name=f"{player.first_name} {player.last_name}",
         age=player.age,
         level=player.level,

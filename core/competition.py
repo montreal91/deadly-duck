@@ -49,7 +49,7 @@ class DdAbstractCompetition:
 
         if self._day < len(self._schedule):
             return self._schedule[self._day]
-        return None
+        return []
 
     @property
     def day(self):

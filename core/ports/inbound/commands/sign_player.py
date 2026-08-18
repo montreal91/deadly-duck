@@ -10,7 +10,7 @@ from uuid import UUID
 class SignPlayerCommand(NamedTuple):
     game_id: str
     club_id: UUID
-    player_id: int
+    player_id: str
 
 
 class SignPlayerCommandResult(NamedTuple):

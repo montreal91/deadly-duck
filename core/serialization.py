@@ -22,7 +22,7 @@ class DdField(NamedTuple):
     json_name: str
 
 
-class DdJsonable:
+class Jsonable:
     """
     Base class for all JSON serializable and deserializable objects.
 
@@ -49,7 +49,7 @@ class DdJsonEncoder(JSONEncoder):
     """Encoder for jsonable objects."""
 
     def default(self, o):
-        if issubclass(type(o), DdJsonable):
+        if issubclass(type(o), Jsonable):
             return o.__to_json__()
         return super().default(o)
 
@@ -74,6 +74,11 @@ class DdJsonDecoder:
         """Marks class as serializable for the decoder."""
 
         self._registry[some_type.__name__] = some_type
+
+    def register_alias(self, alias, some_type):
+        """Marks legacy JSON class name as serializable for the decoder."""
+
+        self._registry[alias] = some_type
 
     def _get_type_name(self, obj) -> Optional[str]:
         for key in self._registry:

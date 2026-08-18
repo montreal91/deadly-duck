@@ -15,7 +15,7 @@ from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 
-from core.player import DdPlayer
+from core.player import Player
 from stat_tools import LoadedToss
 
 
@@ -97,7 +97,7 @@ class DdMatchResult:
 
         if self.home_player_snapshot is None:
             return 0
-        return DdPlayer.CalculateNewExperience(
+        return Player.CalculateNewExperience(
             self.away_sets, self.home_player_snapshot["level"]
         )
 
@@ -146,7 +146,7 @@ class DdMatchResult:
 
         if self.away_player_snapshot is None:
             return 0
-        return DdPlayer.CalculateNewExperience(
+        return Player.CalculateNewExperience(
             self.home_sets, self.away_player_snapshot["level"]
         )
 
@@ -212,8 +212,8 @@ class DdMatchProcessor:
             "away": 0,
         }
 
-    def ProcessMatch(
-        self, home_player: DdPlayer, away_player: DdPlayer
+    def process_match(
+        self, home_player: Player, away_player: Player
     ) -> DdMatchResult:
         """Processes match and returns the results."""
 
@@ -333,7 +333,7 @@ class DdMatchProcessor:
             set_status=DdSetStatuses.REGULAR,
         )
 
-    def _UpdateStats(self, player: DdPlayer, is_home: bool):
+    def _UpdateStats(self, player: Player, is_home: bool):
         sets_won = self._res.home_sets if is_home else self._res.away_sets
 
         home_won = int(self._res.home_sets > self._res.away_sets)
@@ -400,7 +400,7 @@ class DdStandingsRowStruct:
         )
 
 
-class DdExhaustionCalculator:
+class ExhaustionCalculator:
     """Callable class to calculate exhaustion gained in a match."""
 
     _coefficient: int
@@ -412,14 +412,14 @@ class DdExhaustionCalculator:
         self._coefficient = coefficient
 
 
-def NaiveProbabilityFunction(home_skill: float, away_skill: float) -> float:
+def naive_probability_function(home_skill: float, away_skill: float) -> float:
     total_skill = home_skill + away_skill
     return home_skill / total_skill
 
 
 class DdLinearProbabilityCalculator:
     """
-    Probability of winnig a game by home player.
+    Probability of winning a game by home player.
 
     This function grows linearly on [-50, 50] interval depending on the
     difference between home and away skills. It takes values from
