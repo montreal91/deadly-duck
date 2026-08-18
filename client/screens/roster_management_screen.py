@@ -91,8 +91,8 @@ class RosterManagementScreen(Screen):
             game_id=GameContext.get_instance().game_name,
             club_id=GameContext.get_instance().club_id,
         )
-        result = self._hire_new_player_command_handler(command)
-        print(f"Hire new player command result: {result}")
+
+        self._hire_new_player_command_handler(command)
         self.update()
 
     def _on_sign_player(self, player_id):
@@ -101,8 +101,8 @@ class RosterManagementScreen(Screen):
             club_id=GameContext.get_instance().club_id,
             player_id=player_id,
         )
-        result = self._sign_player_command_handler(command)
-        print(f"Sign player command result: {result}")
+
+        self._sign_player_command_handler(command)
         self.update()
 
     def _on_fire_player(self, player_id):
@@ -111,8 +111,7 @@ class RosterManagementScreen(Screen):
             club_id=GameContext.get_instance().club_id,
             player_id=player_id,
         )
-        result = self._fire_player_command_handler(command)
-        print(f"Fire player command result: {result}")
+        self._fire_player_command_handler(command)
         self.update()
 
 

@@ -14,3 +14,6 @@ configuration/oauth_*
 .saves
 *.csv
 .logs/traceback*
+dist/
+main.spec
+build/

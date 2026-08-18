@@ -56,7 +56,7 @@ class DdRatingsParamerers:
 
 
 class DdMiscConstants(Enum):
-    CURRENT_VERSION = "0.1"
+    CURRENT_VERSION = "0.2"
 
 
 class DdTrainingTypes(Enum):
