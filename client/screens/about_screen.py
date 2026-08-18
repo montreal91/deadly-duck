@@ -32,7 +32,7 @@ class AboutScreen(Screen):
         title_label.halign = "center"
         layout.add_widget(title_label)
 
-        genre_label = make_label("jRPG/Tennis Manager", font_size=30)
+        genre_label = make_label("A jRPG-flavoured Tennis Manager", font_size=30)
         genre_label.halign = "center"
         layout.add_widget(genre_label)
 
