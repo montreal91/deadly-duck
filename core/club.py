@@ -85,14 +85,12 @@ class Club:
     _name: str
     _players: Dict[UUID, ClubPlayerSlot]
     _selected_player: Optional[str]
-    _surface: str
 
     def __init__(
             self,
             club_id,
             game_id,
             name: str,
-            surface: str,
             coach_power: int
     ):
         self._club_id = club_id
@@ -103,7 +101,6 @@ class Club:
         self._name = name
         self._players = {}
         self._selected_player = None
-        self._surface = surface
         self._coach_power = coach_power
 
     @property
@@ -165,12 +162,6 @@ class Club:
         if selected_slot is None:
             return max(raw_players, key=player_model_comparator, default=None)
         return selected_slot.player
-
-    @property
-    def surface(self) -> str:
-        """Court surface where club plays its home matches."""
-
-        return self._surface
 
     def add_fame(self, value: int):
         """Adds new fame instance to the club."""

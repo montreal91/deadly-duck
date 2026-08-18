@@ -95,7 +95,6 @@ class RegularChampionship(DdAbstractCompetition):
         day_results = []
         for match in self.current_matches:
             processor = self._match_processor
-            processor.SetMatchSurface(self._clubs[match.home_pk].surface)
             res = processor.process_match(
                 self._clubs[match.home_pk].selected_player,
                 self._clubs[match.away_pk].selected_player,

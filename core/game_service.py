@@ -31,7 +31,6 @@ class PlayerListInfo(NamedTuple):
     is_selected: bool
     age: int
     exhaustion: int
-    speciality: str
 
 
 class OpponentPlayerInfo(NamedTuple):
@@ -43,7 +42,6 @@ class OpponentPlayerInfo(NamedTuple):
     maximum_stamina: int
     age: int
     exhaustion: int
-    speciality: str
 
 
 class PlayerListScreenInfo(NamedTuple):
@@ -56,7 +54,6 @@ class AgentListInfo(NamedTuple):
     age: int
     technique: float
     endurance: float
-    speciality: str
     contract_cost: int
     name: str
 
@@ -87,7 +84,6 @@ class SavedGamesInfo(NamedTuple):
 
 class OpponentInfo(NamedTuple):
     club_name: str
-    match_surface: str
     player: Optional[PlayerListInfo]
 
 
@@ -200,7 +196,6 @@ def _player_to_row_info(player, is_selected, coach_level):
         "is_selected": is_selected,
         "age": player.age,
         "exhaustion": player.exhaustion,
-        "speciality": player.speciality
     }
 
     return PlayerListInfo(**plr)
@@ -222,11 +217,9 @@ def _opponent_dto_to_info(opponent_dto):
             maximum_stamina=opponent_dto.player.max_stamina,
             age=opponent_dto.player.age,
             exhaustion=opponent_dto.player.exhaustion,
-            speciality=opponent_dto.player.speciality,
         )
 
     return OpponentInfo(
         club_name=opponent_dto.club_name,
-        match_surface=opponent_dto.match_surface,
         player=player_info,
     )

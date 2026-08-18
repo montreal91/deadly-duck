@@ -165,7 +165,6 @@ def _get_params() -> GameParams:
     config = configparser.ConfigParser()
     config.read(path)
     match_params = DdMatchParams(
-        speciality_bonus=config["match"].getfloat("speciality_bonus", 0.0),
         games_to_win=config["match"].getint("games_to_win", 0),
         sets_to_win=config["match"].getint("sets_to_win", 0),
         exhaustion_function=ExhaustionCalculator(

@@ -4,7 +4,7 @@ Plans for upcoming versions
 
 ## 0.2 (in progress)
 
-* Stable IDs for players and clubs
+* ~~Stable IDs for players and clubs~~
 * Persistence for players and clubs
 * Contract as first-class relationship
 * Skill selection on level up

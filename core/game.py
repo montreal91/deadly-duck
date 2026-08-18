@@ -13,7 +13,6 @@ import json
 import logging
 import time
 import uuid
-from random import choice
 from random import randint
 from typing import Any
 from typing import Callable
@@ -35,7 +34,6 @@ from core.financial import DdTransaction
 from core.match import DdMatchResult
 from core.match import DdScheduledMatchStruct
 from core.match import DdStandingsRowStruct
-from core.player import DdCourtSurface
 from core.player import ExhaustedLinearRecovery
 from core.player import Player
 from core.player import PlayerFactory
@@ -70,7 +68,6 @@ class GameParams(NamedTuple):
 class OpponentDto:
     """Passive class to store information about opponent for the next match."""
     club_name: str
-    match_surface: str
     player: Optional[Player]
     fame: Optional[int]
 
@@ -90,12 +87,6 @@ class Game:
     Public methods of this class validate user inputs. If input is incorrect,
     an error with (hopefully) descriptive message is raised.
     """
-
-    _SURFACES = (
-        DdCourtSurface.CLAY,
-        DdCourtSurface.GRASS,
-        DdCourtSurface.HARD,
-    )
 
     _game_id: str
     _attendance_calculator: Callable
@@ -243,19 +234,12 @@ class Game:
         self._process_player_hire(club_pk=club_pk, player=player)
         self._free_agents.pop(player_pk)
 
-    def hire_new_player(self, surface: str, club_id: int):
+    def hire_new_player(self, club_id: int):
         """Hires a new player for the given club."""
 
-        choices = "|".join(self._SURFACES)
-        assert surface in self._SURFACES, (
-            "You can't choose such speciality.\n"
-            "Choices are: "
-            f"{choices}"
-        )
         player = self._player_factory.create_player(
             level=0,
             age=DdGameplayConstants.STARTING_AGE.value,
-            speciality=surface
         )
         self._process_player_hire(club_pk=club_id, player=player)
 
@@ -464,7 +448,6 @@ class Game:
             club_id=uuid.uuid4(),
             game_id=self._game_id,
             name=club_data["name"],
-            surface=club_data["surface"],
             coach_power=club_data["coach_power"],
         )
 
@@ -513,10 +496,9 @@ class Game:
                     DdGameplayConstants.RETIREMENT_AGE.value - 1
                 ),
                 level=randint(1, 10),
-                speciality=choice(self._SURFACES),
             ))
         new_agents.sort(
-            key=lambda x: (x.speciality, x.level),
+            key=lambda x: x.level,
             reverse=True,
         )
         self._free_agents = new_agents
@@ -551,7 +533,6 @@ class Game:
             res = OpponentDto()
             opponent_club: Club = self._clubs[actual_match.away_pk]
             res.club_name = opponent_club.name
-            res.match_surface = self._clubs[pk].surface
             res.player = opponent_club.selected_player
             res.fame = opponent_club.fame
             return res
@@ -560,7 +541,6 @@ class Game:
             res = OpponentDto()
             opponent_club = self._clubs[actual_match.home_pk]
             res.club_name = opponent_club.name
-            res.match_surface = opponent_club.surface
             res.player = None
             res.fame = None
             return res
@@ -582,7 +562,6 @@ class Game:
                 new_player = self._player_factory.create_player(
                     level=0,
                     age=DdGameplayConstants.STARTING_AGE.value,
-                    speciality=club.surface
                 )
                 club.add_player(new_player)
 
@@ -624,7 +603,6 @@ class Game:
             club.add_player(self._player_factory.create_player(
                 age=DdGameplayConstants.STARTING_AGE.value,
                 level=randint(5, 10),
-                speciality=club.surface
             ))
 
         self._generate_free_agents()
@@ -666,8 +644,7 @@ class Game:
         self._clubs[club_pk].add_player(player)
         self._clubs[club_pk].account.ProcessTransaction(DdTransaction(
             -cost,
-            f"New player contract with {player.initials} "
-            f"speciality {player.speciality}."
+            f"New player contract with {player.initials}."
         ))
 
     def _recover(self):
