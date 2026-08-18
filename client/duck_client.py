@@ -8,6 +8,7 @@ from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.screenmanager import NoTransition
 from kivy.clock import Clock
 
+from client.screens.about_screen import AboutScreen
 from client.screens.club_selection_screen import ClubSelectionScreen
 from client.screens.day_results_screen import DayResultsScreen
 from client.screens.game_screen import GameScreen
@@ -34,6 +35,7 @@ class DuckClientApp(App):
         self._player_selection_screen = None
         self._practice_screen = None
         self._roster_management_screen = None
+        self._about_screen = None
 
         self.sm = None
 
@@ -41,6 +43,7 @@ class DuckClientApp(App):
         self.sm = ScreenManager(transition=NoTransition())
         self.splash_screen = SplashScreen(name="splash")
         self.main_screen = MainScreen(name="main")
+        self._about_screen = AboutScreen(name="about")
 
         ac = get_application_context()
 
@@ -74,6 +77,7 @@ class DuckClientApp(App):
 
         self.sm.add_widget(self.splash_screen)
         self.sm.add_widget(self.main_screen)
+        self.sm.add_widget(self._about_screen)
         self.sm.add_widget(self.game_screen)
         self.sm.add_widget(self.story_name_screen)
         self.sm.add_widget(self._club_selection_screen)
@@ -118,6 +122,9 @@ class DuckClientApp(App):
     def switch_to_story_name(self):
         self.sm.current = "story_name"
         self.story_name_screen.update()
+
+    def switch_to_about(self):
+        self.sm.current = "about"
 
     def switch_to_club_selection(self):
         self.sm.current = "club_selection"
