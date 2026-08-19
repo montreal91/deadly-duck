@@ -166,15 +166,6 @@ class GameService:
         game.proceed_to_next_competition()
         self._game_repository.save_game(game, persistent_save=True)
 
-    def set_player(self, game_id, manager_club_id, player_id):
-        game = self._game_repository.get_game(game_id)
-
-        if game is None or player_id is None:
-            return
-
-        game.select_player(player_id=player_id, club_id=manager_club_id)
-        self._game_repository.save_game(game)
-
     def get_manager_club_id(self, game_id):
         game = self._game_repository.get_game(game_id)
         if game is None:
