@@ -147,6 +147,10 @@ class Club:
         return self._is_controlled and self._selected_player is None
 
     @property
+    def has_selected_player(self) -> bool:
+        return self._selected_player is not None
+
+    @property
     def players(self) -> List[ClubPlayerSlot]:
         """List of club players."""
         return list(self._players.values())

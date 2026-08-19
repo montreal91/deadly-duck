@@ -395,9 +395,9 @@ class Game:
         if self._competition.current_matches is None:
             return False
         for match in self._competition.current_matches:
-            if self._clubs[match.home_pk].needs_decision:
-                return True
-            if self._clubs[match.away_pk].needs_decision:
+            if self._manager_club_id not in (match.home_pk, match.away_pk):
+                continue
+            if not self._clubs[self._manager_club_id].has_selected_player:
                 return True
         return False
 
