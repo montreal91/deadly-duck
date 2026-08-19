@@ -29,5 +29,5 @@ class NextDayCommandHandler:
             )
 
         res, reason = game.update()
-        self._game_repository.save_game(game, persistent_save=True)
+        self._game_repository.save_game(game)
         return NextDayCommandResult(success=res, reason=reason)

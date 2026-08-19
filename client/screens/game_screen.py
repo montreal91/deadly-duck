@@ -161,16 +161,17 @@ class GameScreen(Screen):
         self._error_label.text = ""
         App.get_running_app().switch_to_player_selection()
 
-    def _on_practice(self, _):
+    @staticmethod
+    def _on_practice(_):
         App.get_running_app().switch_to_practice()
 
-    def _on_roster_management(self, _):
+    @staticmethod
+    def _on_roster_management(_):
         App.get_running_app().switch_to_roster_management()
 
 
-    def _back_to_main_screen(self, _):
-        self._game_service.save_game(self._game_id)
-
+    @staticmethod
+    def _back_to_main_screen(_):
         App.get_running_app().switch_to_main(None)
 
     def _update_center_widget(self, gui_info):

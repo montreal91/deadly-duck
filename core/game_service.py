@@ -151,20 +151,12 @@ class GameService:
             opponent=_opponent_dto_to_info(context.get("opponent", None)),
         )
 
-    def save_game(self, game_id):
-        game = self._game_repository.get_game(game_id)
-
-        if game is None:
-            return
-
-        self._game_repository.save_game(game, persistent_save=True)
-
     def proceed(self, game_id):
         game = self._game_repository.get_game(game_id)
         if game is None:
             return
         game.proceed_to_next_competition()
-        self._game_repository.save_game(game, persistent_save=True)
+        self._game_repository.save_game(game)
 
     def get_manager_club_id(self, game_id):
         game = self._game_repository.get_game(game_id)

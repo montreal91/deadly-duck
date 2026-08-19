@@ -29,11 +29,9 @@ class GameRepository:
         query_res = self._conn.execute(self._get_game_ids_sql).fetchall()
         return [row[0] for row in query_res]
 
-    def save_game(self, game, persistent_save=False):
+    def save_game(self, game):
         self._games[game.game_id] = game
-
-        if persistent_save:
-            self._save_game_to_file(game)
+        self._save_game_to_file(game)
 
     def _load_game(self, game_id):
         res = self._conn.execute(self._get_games_sql, {"id": game_id}).fetchone()
