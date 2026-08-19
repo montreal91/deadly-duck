@@ -65,7 +65,7 @@ class CourtInfo(NamedTuple):
 
 
 class FameInfo(NamedTuple):
-    club_id: int
+    club_id: str
     club_name: str
     fame: int
 

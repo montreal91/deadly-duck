@@ -30,13 +30,13 @@ class CompetitionType(Enum):
 class DdAbstractCompetition:
     """Abstract competition class."""
 
-    _clubs: Dict[int, Club]
+    _clubs: Dict[str, Club]
     _schedule: List[Optional[ScheduleDay]]
     _day: int
     _params: Any
     _results: List[List[DdMatchResult]]
 
-    def __init__(self, clubs: Dict[int, Club], params: Any):
+    def __init__(self, clubs: Dict[str, Club], params: Any):
         self._clubs = clubs
         self._day = 0
         self._params = params
@@ -88,7 +88,7 @@ class DdAbstractCompetition:
         """Title of the competition."""
         return ""
 
-    def get_club_schedule(self, club_pk: int) -> List[DdScheduledMatchStruct]:
+    def get_club_schedule(self, club_pk: str) -> List[DdScheduledMatchStruct]:
         """List of matches scheduled for a club."""
 
         schedule = []
@@ -102,7 +102,7 @@ class DdAbstractCompetition:
                     schedule.append(match)
         return schedule
 
-    def get_club_fame(self, club_pk: int) -> int:
+    def get_club_fame(self, club_pk: str) -> int:
         """Fame earned by club in the competition."""
 
     def update(self) -> Optional[List[DdMatchResult]]:

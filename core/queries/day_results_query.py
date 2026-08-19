@@ -14,8 +14,8 @@ class DayResultsQuery:
 
 
 class SingleMatchResult(NamedTuple):
-    home_club_id: int
-    away_club_id: int
+    home_club_id: str
+    away_club_id: str
     home_club_name: str
     away_club_name: str
     home_player_name: str

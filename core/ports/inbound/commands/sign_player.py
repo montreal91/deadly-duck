@@ -4,12 +4,11 @@ Created August 17, 2026
 @author montreal91
 """
 from typing import NamedTuple
-from uuid import UUID
 
 
 class SignPlayerCommand(NamedTuple):
     game_id: str
-    club_id: UUID
+    club_id: str
     player_id: str
 
 

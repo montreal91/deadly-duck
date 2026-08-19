@@ -4,11 +4,10 @@ Created August 17, 2026
 @author montreal91
 """
 from typing import NamedTuple
-from uuid import UUID
 
 
 class HireNewPlayerCommand(NamedTuple):
-    club_id: UUID
+    club_id: str
     game_id: str
 
 

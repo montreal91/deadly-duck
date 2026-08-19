@@ -10,7 +10,7 @@ from typing import Union
 
 from core.competition import CompetitionType
 
-_NO_PLAYOFF_CLUB_ID = -1
+_NO_PLAYOFF_CLUB_ID = ""
 _NO_PLAYOFF_VALUE = "N/A"
 
 
@@ -21,7 +21,7 @@ class UpcomingMatch(NamedTuple):
 
 class StandingRow(NamedTuple):
     pos: int
-    club_id: int
+    club_id: str
     club_name: str
     sets: int
     games: int
@@ -33,10 +33,10 @@ class ChampionshipStandings(NamedTuple):
 
 class PlayoffSeriesRow(NamedTuple):
     round_number: int
-    top_club_id: int
+    top_club_id: str
     top_club_name: str
     top_score: Union[int, str]
-    bottom_club_id: int
+    bottom_club_id: str
     bottom_club_name: str
     bottom_score: Union[int, str]
     contains_manager_club: bool

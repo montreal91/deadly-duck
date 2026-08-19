@@ -12,7 +12,6 @@ Created Apr 09, 2019
 import json
 import logging
 import time
-import uuid
 from random import randint
 from typing import Any
 from typing import Callable
@@ -21,7 +20,6 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
-from uuid import UUID
 
 from configuration.config_game import DdGameplayConstants
 from core.club import Club
@@ -96,7 +94,7 @@ class Game:
     _history: List[Dict[CompetitionType, Any]]
     _params: GameParams
     _player_factory: PlayerFactory
-    _season_fame: Dict[int, int]
+    _season_fame: Dict[str, int]
     _results: List[DdMatchResult]
     _practice_calculator: DdPracticeCalculator
 
@@ -133,7 +131,7 @@ class Game:
         with open("data/clubs.json", "r") as data_file:
             club_data = json.load(data_file, object_hook=decoder)
 
-        for club_id, club in enumerate(club_data):
+        for club in club_data:
             self._add_club(club_data=club)
 
         self._competition = RegularChampionship(
@@ -183,7 +181,7 @@ class Game:
     def updated_ts(self):
         return self._updated_ts
 
-    def fire_player(self, player_id: str, club_id: uuid.UUID):
+    def fire_player(self, player_id: str, club_id: str):
         """Fires the selected player from user's club."""
 
         assert club_id in self._clubs, _CLUB_ID_ERROR
@@ -198,7 +196,7 @@ class Game:
 
         self._free_agents.append(player)
 
-    def get_context(self, pk: int) -> Dict[str, Any]:
+    def get_context(self, pk: str) -> Dict[str, Any]:
         """A dictionary with information available for user."""
 
         assert pk in self._clubs, _CLUB_ID_ERROR
@@ -223,7 +221,7 @@ class Game:
             has_matches=self._has_matches(),
         )
 
-    def hire_free_agent(self, club_pk: int, player_pk: int):
+    def hire_free_agent(self, club_pk: str, player_pk: int):
         """Hires a free agent for the given club."""
 
         assert player_pk in range(len(self._free_agents)), (
@@ -234,7 +232,7 @@ class Game:
         self._process_player_hire(club_pk=club_pk, player=player)
         self._free_agents.pop(player_pk)
 
-    def hire_new_player(self, club_id: int):
+    def hire_new_player(self, club_id: str):
         """Hires a new player for the given club."""
 
         player = self._player_factory.create_player(
@@ -251,7 +249,7 @@ class Game:
             step = self.update()
 
     def select_coach_for_player(
-        self, coach_index: int, player_id: str, club_index: int
+        self, coach_index: int, player_id: str, club_index: str
     ):
         """
         Selects a coach (bad, normal, or good) for the player in the club.
@@ -269,7 +267,7 @@ class Game:
             coach_index=coach_index, player_id=player_id
         )
 
-    def select_player(self, player_id: str, club_id: int):
+    def select_player(self, player_id: str, club_id: str):
         """Sets selected player for user."""
 
         assert club_id in self._clubs, _CLUB_ID_ERROR
@@ -285,7 +283,7 @@ class Game:
         self._manager_club_id = club_id
         self._clubs[club_id].set_controlled(is_controlled)
 
-    def sign_player(self, club_id: UUID, player_id: str):
+    def sign_player(self, club_id: str, player_id: str):
         """Signs a new contract with a player for the next season."""
 
         if club_id not in self._clubs:
@@ -445,7 +443,7 @@ class Game:
 
     def _add_club(self, club_data):
         club = Club(
-            club_id=uuid.uuid4(),
+            club_id=club_data["club_id"],
             game_id=self._game_id,
             name=club_data["name"],
             coach_power=club_data["coach_power"],
@@ -632,7 +630,7 @@ class Game:
         self._recover()
         self._hire_players_if_needed()
 
-    def _process_player_hire(self, club_pk: int, player: Player):
+    def _process_player_hire(self, club_pk: str, player: Player):
         assert club_pk in self._clubs, _CLUB_ID_ERROR
 
         cost = self._contract_calculator(player.level)

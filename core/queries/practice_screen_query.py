@@ -9,7 +9,7 @@ from typing import NamedTuple
 
 class PracticeScreenQuery(NamedTuple):
     game_id: str
-    manager_club_id: int
+    manager_club_id: str
 
 
 class PlayerPracticeInfo(NamedTuple):

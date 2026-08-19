@@ -108,7 +108,7 @@ class RegularChampionship(DdAbstractCompetition):
         self._results.append(day_results)
         return day_results
 
-    def _make_full_schedule(self, pk_list: List[int]):
+    def _make_full_schedule(self, pk_list: List[str]):
         # Alias to shorten length of code lines
         _Match = DdScheduledMatchStruct
 
@@ -159,20 +159,20 @@ class RegularChampionship(DdAbstractCompetition):
         self._schedule.append(None)
 
 
-def _make_basic_schedule(pk_list: List[int]):
-    def make_pairs(lst: List[int]) -> ScheduleDay:
+def _make_basic_schedule(pk_list: List[str]):
+    def make_pairs(lst: List[str]) -> ScheduleDay:
         num = len(lst) - 1
         mid = len(lst) // 2
         return [
             DdScheduledMatchStruct(lst[i], lst[num-i]) for i in range(mid)
         ]
 
-    def shift(lst: List[int], num: int) -> List[int]:
+    def shift(lst: List[str], num: int) -> List[str]:
         if num == 0:
             return list(lst)
         return [lst[0]] + lst[-num:] + lst[1:-num]
 
-    def shift_gen(lst: List[int]) -> Generator[List[int], None, None]:
+    def shift_gen(lst: List[str]) -> Generator[List[str], None, None]:
         for i in range(len(lst) - 1):
             yield shift(lst, i)
 

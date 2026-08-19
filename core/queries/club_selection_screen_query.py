@@ -5,7 +5,6 @@ Created December 29, 2025
 """
 from typing import List
 from typing import NamedTuple
-from uuid import UUID
 
 
 class ClubSelectionScreenQuery(NamedTuple):
@@ -14,7 +13,7 @@ class ClubSelectionScreenQuery(NamedTuple):
 
 class ClubInfo(NamedTuple):
     club_name: str
-    club_id: UUID
+    club_id: str
 
 
 class ClubSelectionScreenQueryResult(NamedTuple):

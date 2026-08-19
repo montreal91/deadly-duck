@@ -79,6 +79,7 @@ class Club:
 
     COACH_LEVELS = (0, 1, 2, 3)
 
+    _club_id: str
     _account: DdFinancialAccount
     _fame_tracker: DdFameTracker
     _is_controlled: bool
@@ -110,7 +111,7 @@ class Club:
         return self._account
 
     @property
-    def club_id(self) -> int:
+    def club_id(self) -> str:
         return self._club_id
 
     @property

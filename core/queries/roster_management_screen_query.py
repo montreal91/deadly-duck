@@ -12,7 +12,7 @@ from configuration.config_game import DdGameplayConstants
 
 class RosterManagementScreenQuery(NamedTuple):
     game_id: str
-    manager_club_id: int
+    manager_club_id: str
 
 
 class PlayerRosterInfo(NamedTuple):
