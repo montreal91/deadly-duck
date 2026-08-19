@@ -53,6 +53,9 @@ class TemporalClubProvider:
         for club in club_data:
             self._add_club(game_id=game_id, club_data=club)
 
+    def set_clubs_for_game(self, game_id: str, clubs: Dict[str, Club]):
+        self._clubs[game_id] = clubs
+
     def _add_club(self, game_id: str, club_data: Dict[str, Any]):
         club = Club(
             club_id=club_data["club_id"],

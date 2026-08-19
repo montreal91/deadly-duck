@@ -88,10 +88,10 @@ class RegularChampionship(DdAbstractCompetition):
 
         return 0
 
-    def update(self) -> Optional[List[DdMatchResult]]:
+    def update(self) -> List[DdMatchResult]:
         if self.current_matches is None:
             self._day += 1
-            return None
+            return []
         day_results = []
         for match in self.current_matches:
             processor = self._match_processor

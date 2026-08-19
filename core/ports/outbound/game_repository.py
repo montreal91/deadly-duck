@@ -39,6 +39,7 @@ class GameRepository:
     def _load_game(self, game_id):
         res = self._conn.execute(self._get_games_sql, {"id": game_id}).fetchone()
         game = pickle.loads(res[1])
+        game.rebind_clubs_to_provider()
         self._games[game_id] = game
 
     def _save_game_to_file(self, game: Game):

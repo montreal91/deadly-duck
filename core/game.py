@@ -17,6 +17,7 @@ from typing import Dict
 from typing import List
 from typing import NamedTuple
 from typing import Optional
+from typing import Set
 from typing import Tuple
 
 from configuration.config_game import DdGameplayConstants
@@ -177,6 +178,16 @@ class Game:
     @property
     def _clubs(self):
         return TemporalClubProvider.get_instance().get_clubs_for_game(self._game_id)
+
+    def rebind_clubs_to_provider(self):
+        provider = TemporalClubProvider.get_instance()
+        clubs = provider.get_clubs_for_game(self._game_id)
+
+        if not clubs:
+            clubs = self._competition._clubs
+            provider.set_clubs_for_game(self._game_id, clubs)
+
+        self._competition._clubs = clubs
 
     def fire_player(self, player_id: str, club_id: str):
         """Fires the selected player from user's club."""
@@ -598,9 +609,14 @@ class Game:
             club.perform_practice()
 
     def _play_one_day(self):
+        current_matches = self._competition.current_matches
+        playing_player_ids = self._get_playing_player_ids(current_matches)
+
         self._results = self._competition.update()
         self._calculate_match_income()
-        self._recover()
+
+        self._recover(excluded_player_ids=playing_player_ids)
+
         self._hire_players_if_needed()
 
     def _process_player_hire(self, club_pk: str, player: Player):
@@ -618,15 +634,30 @@ class Game:
             f"New player contract with {player.initials}."
         ))
 
-    def _recover(self):
+    def _recover(self, excluded_player_ids: Set[str]):
         recovery_function = ExhaustedLinearRecovery(
             self._params.exhaustion_factor
         )
         for club in self._clubs.values():
             for slot in club.players:
+                if slot.player.player_id in excluded_player_ids:
+                    continue
                 slot.player.RecoverStamina(
                     recovery_function(slot.player)
                 )
+
+    def _get_playing_player_ids(self, matches) -> Set[str]:
+        if matches is None:
+            return set()
+
+        player_ids = set()
+        for match in matches:
+            for club_id in (match.home_pk, match.away_pk):
+                player = self._clubs[club_id].selected_player
+                if player is not None:
+                    player_ids.add(player.player_id)
+
+        return player_ids
 
     def _simulate(self, years):
         while len(self._history) < years:

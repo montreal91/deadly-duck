@@ -105,7 +105,7 @@ class DdAbstractCompetition:
     def get_club_fame(self, club_pk: str) -> int:
         """Fame earned by club in the competition."""
 
-    def update(self) -> Optional[List[DdMatchResult]]:
+    def update(self) -> List[DdMatchResult]:
         """Updates the state of the competition."""
 
     @property

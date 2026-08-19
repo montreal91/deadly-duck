@@ -223,13 +223,13 @@ class DdPlayoff(DdAbstractCompetition):
 
     def update(self):
         if self.is_over:
-            return None
+            return []
 
         if self.current_matches is None:
             self._day += 1
             if self._day == len(self._schedule) and not self.is_over:
                 self._MakeNewRound()
-            return None
+            return []
 
         day_results = []
         for match in self.current_matches:

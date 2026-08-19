@@ -255,10 +255,12 @@ class Player(Jsonable):
 
     def RecoverStamina(self, recovered_stamina: int):
         self._current_stamina += recovered_stamina
+        self._current_stamina = max(self._current_stamina, 0)
         self._current_stamina = min(self._current_stamina, self.max_stamina)
 
     def RemoveStaminaLostInMatch(self, lost_stamina: int):
         self._current_stamina -= lost_stamina
+        self._current_stamina = max(self._current_stamina, 0)
 
     @staticmethod
     def CalculateNewExperience(sets_won: int, opponent_level: int) -> int:
