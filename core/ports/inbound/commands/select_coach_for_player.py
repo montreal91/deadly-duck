@@ -19,8 +19,9 @@ class SelectCoachForPlayerCommandResult(NamedTuple):
 
 
 class SelectCoachForPlayerCommandHandler:
-    def __init__(self, game_repository):
+    def __init__(self, game_repository, club_provider):
         self._game_repository = game_repository
+        self._club_provider = club_provider
 
     def __call__(
             self,
@@ -40,5 +41,6 @@ class SelectCoachForPlayerCommandHandler:
             club_index=command.club_id,
         )
         self._game_repository.save_game(game)
+        self._club_provider.save_clubs(game.clubs.values())
 
         return SelectCoachForPlayerCommandResult(success=True, message="")

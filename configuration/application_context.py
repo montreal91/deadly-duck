@@ -62,9 +62,13 @@ class ApplicationContext:
         self._create_game_command_handler = CreateNewGameCommandHandler(
             self._game_repository,
             self._params,
+            self._temporal_club_provider,
         )
 
-        self._select_club_command_handler = SelectClubCommandHandler(self._game_repository)
+        self._select_club_command_handler = SelectClubCommandHandler(
+            self._game_repository,
+            self._temporal_club_provider,
+        )
 
         self._club_selection_screen_query_handler = ClubSelectionScreenQueryHandler(
             club_provider=self._temporal_club_provider,
@@ -100,22 +104,27 @@ class ApplicationContext:
 
         self._hire_new_player_command_handler = HireNewPlayerCommandHandler(
             self._game_repository,
+            self._temporal_club_provider,
         )
 
         self._sign_player_command_handler = SignPlayerCommandHandler(
             self._game_repository,
+            self._temporal_club_provider,
         )
 
         self._fire_player_command_handler = FirePlayerCommandHandler(
             self._game_repository,
+            self._temporal_club_provider,
         )
 
         self._select_coach_for_player_command_handler = SelectCoachForPlayerCommandHandler(
             self._game_repository,
+            self._temporal_club_provider,
         )
 
         self._select_player_for_match_command_handler = SelectPlayerForMatchCommandHandler(
             self._game_repository,
+            self._temporal_club_provider,
         )
 
     @property

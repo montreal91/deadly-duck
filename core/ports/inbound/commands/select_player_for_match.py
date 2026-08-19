@@ -19,8 +19,9 @@ class SelectPlayerForMatchCommandResult(NamedTuple):
 
 
 class SelectPlayerForMatchCommandHandler:
-    def __init__(self, game_repository):
+    def __init__(self, game_repository, club_provider):
         self._game_repository = game_repository
+        self._club_provider = club_provider
 
     def __call__(
             self,
@@ -42,5 +43,6 @@ class SelectPlayerForMatchCommandHandler:
 
         game.select_player(club_id=command.club_id, player_id=command.player_id)
         self._game_repository.save_game(game)
+        self._club_provider.save_clubs(game.clubs.values())
 
         return SelectPlayerForMatchCommandResult(success=True, message="OK")

@@ -18,8 +18,9 @@ class SelectClubCommandResult(NamedTuple):
 
 
 class SelectClubCommandHandler:
-    def __init__(self, game_repository: GameRepository):
+    def __init__(self, game_repository: GameRepository, club_provider):
         self._game_repository = game_repository
+        self._club_provider = club_provider
 
     def __call__(self, query):
         game = self._game_repository.get_game(query.game_id)
@@ -29,5 +30,6 @@ class SelectClubCommandHandler:
 
         game.set_managed(query.club_id, True)
         self._game_repository.save_game(game)
+        self._club_provider.save_clubs(game.clubs.values())
 
         return SelectClubCommandResult(success=True)

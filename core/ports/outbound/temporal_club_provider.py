@@ -19,8 +19,6 @@ from core.serialization import DdJsonDecoder
 class TemporalClubProvider:
     _INSTANCE = None
 
-    _clubs: Dict[str, Dict[str, Club]]
-
     @staticmethod
     def initialize(conn=None):
         TemporalClubProvider._INSTANCE = TemporalClubProvider(conn)
@@ -33,16 +31,14 @@ class TemporalClubProvider:
         return TemporalClubProvider._INSTANCE
 
     def __init__(self, conn=None):
-        self._clubs = {}
         self._conn = conn
 
         if self._conn is not None:
             self._conn.row_factory = Row
             self._conn.execute("PRAGMA foreign_keys = ON;")
 
-    def init_clubs_for_game(self, game_id: str):
-        self._clubs[game_id] = {}
-
+    def init_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
+        clubs = {}
         decoder = DdJsonDecoder()
         decoder.register(Player)
         decoder.register(ClubPlayerSlot)
@@ -51,12 +47,16 @@ class TemporalClubProvider:
             club_data = json.load(data_file, object_hook=decoder)
 
         for club in club_data:
-            self._add_club(game_id=game_id, club_data=club)
+            self._add_club(clubs=clubs, game_id=game_id, club_data=club)
 
-    def set_clubs_for_game(self, game_id: str, clubs: Dict[str, Club]):
-        self._clubs[game_id] = clubs
+        return clubs
 
-    def _add_club(self, game_id: str, club_data: Dict[str, Any]):
+    def _add_club(
+            self,
+            clubs: Dict[str, Club],
+            game_id: str,
+            club_data: Dict[str, Any],
+    ):
         club = Club(
             club_id=club_data["club_id"],
             game_id=game_id,
@@ -77,7 +77,7 @@ class TemporalClubProvider:
             "Initial balance",
         ))
 
-        self._clubs[game_id][club.club_id] = club
+        clubs[club.club_id] = club
 
     def save_clubs(self, clubs: Iterable[Club]):
         clubs = list(clubs)
@@ -99,17 +99,13 @@ class TemporalClubProvider:
             self._save_club(club, delete_existing_roster=True)
 
     def get_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
-        if game_id not in self._clubs:
-            self._load_clubs_for_game(game_id)
+        return self._load_clubs_for_game(game_id)
 
-        return self._clubs[game_id]
-
-    def _load_clubs_for_game(self, game_id: str):
-        self._clubs[game_id] = {}
-
+    def _load_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
         if self._conn is None:
-            return
+            return {}
 
+        clubs = {}
         players = self._load_players_for_game(game_id)
         club_rows = self._conn.execute(
             """
@@ -159,7 +155,9 @@ class TemporalClubProvider:
                 slot.has_next_contract = bool(roster_row["has_next_contract"])
 
             club.select_player(club_row["selected_player_id"])
-            self._clubs[game_id][club.club_id] = club
+            clubs[club.club_id] = club
+
+        return clubs
 
     def _load_players_for_game(self, game_id: str) -> Dict[str, Player]:
         rows = self._conn.execute(

@@ -124,10 +124,10 @@ class Game:
         self._updated_ts = updated_ts
 
         tcp = TemporalClubProvider.get_instance()
-        tcp.init_clubs_for_game(self._game_id)
+        clubs = tcp.init_clubs_for_game(self._game_id)
 
         self._competition = RegularChampionship(
-            tcp.get_clubs_for_game(self._game_id),
+            clubs,
             self._params.championship_params
         )
 
@@ -144,7 +144,7 @@ class Game:
 
     @property
     def clubs(self):
-        return TemporalClubProvider.get_instance().get_clubs_for_game(self._game_id)
+        return self._competition._clubs
 
     @property
     def game_id(self) -> str:
@@ -177,7 +177,7 @@ class Game:
     # TODO: Get rid of this hack
     @property
     def _clubs(self):
-        return TemporalClubProvider.get_instance().get_clubs_for_game(self._game_id)
+        return self._competition._clubs
 
     def rebind_clubs_to_provider(self):
         provider = TemporalClubProvider.get_instance()
@@ -185,7 +185,6 @@ class Game:
 
         if not clubs:
             clubs = self._competition._clubs
-            provider.set_clubs_for_game(self._game_id, clubs)
 
         self._competition._clubs = clubs
 
