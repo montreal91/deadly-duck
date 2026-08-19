@@ -248,11 +248,7 @@ class DdMatchProcessor:
         return deepcopy(self._res)
 
     def _CalculateActualSkill(self, player, actual_stamina=0):
-        stamina_factor = actual_stamina / player.max_stamina
-        return max(
-            player.technique * stamina_factor,
-            5
-        )
+        return player.calculate_actual_technique(actual_stamina)
 
     def _CalculateActualStamina(self, player, lost_stamina=0):
         return player.current_stamina - lost_stamina

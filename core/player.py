@@ -106,8 +106,15 @@ class Player(Jsonable):
 
     @property
     def actual_technique(self) -> float:
-        stamina_factor = self._current_stamina / self.max_stamina
-        return round(self._technique * stamina_factor, _PRECISION)
+        return self.calculate_actual_technique(self._current_stamina)
+
+    def calculate_actual_technique(self, actual_stamina: float) -> float:
+        stamina_factor = actual_stamina / self.max_stamina
+        min_technique = self._technique * 0.1
+        return round(
+            max(self._technique * stamina_factor, min_technique),
+            _PRECISION,
+        )
 
     @property
     def current_stamina(self) -> int:
