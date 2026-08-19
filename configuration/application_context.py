@@ -9,6 +9,7 @@ import configparser
 import json
 from pathlib import Path
 from sqlite3 import connect
+from sqlite3 import Row
 
 from core.ports.inbound.commands.fire_player import FirePlayerCommandHandler
 from core.ports.inbound.commands.hire_new_player import HireNewPlayerCommandHandler
@@ -28,16 +29,13 @@ from core.playoffs import DdPlayoffParams
 from core.ports.inbound.commands.create_new_game import CreateNewGameCommandHandler
 from core.ports.inbound.commands.select_club import SelectClubCommandHandler
 from core.ports.outbound.game_repository import GameRepository
-from core.ports.outbound.game_state_repository_tmp import GameStateRepositoryTmp
-from core.ports.outbound.player_repository import PlayerRepository
-from core.ports.outbound.roster_entry_repository import RosterEntryRepository
-from core.ports.outbound.sqlite_club_repository import SqliteClubRepository
 from core.queries.club_selection_screen_query import ClubSelectionScreenQueryHandler
 from core.queries.day_results_query import DayResultsQueryHandler
 from core.queries.main_screen_query import GameScreenGuiQueryHandler
 from core.queries.practice_screen_query import PracticeScreenQueryHandler
 from core.queries.roster_management_screen_query import RosterManagementScreenQueryHandler
 from core.regular_championship import ChampionshipParams
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 
 def _make_db_connection(db_path):
@@ -45,6 +43,7 @@ def _make_db_connection(db_path):
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     conn = connect(db_path)
+    conn.row_factory = Row
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
@@ -52,17 +51,10 @@ def _make_db_connection(db_path):
 class ApplicationContext:
     def __init__(self):
         self._db_connection = _make_db_connection("data/duck.db")
-        self._player_repository = PlayerRepository(self._db_connection)
-        self._sqlite_club_repository = SqliteClubRepository(self._db_connection)
-        self._roster_entry_repository = RosterEntryRepository(self._db_connection)
-        self._game_state_repository_tmp = GameStateRepositoryTmp(
-            player_repository=self._player_repository,
-            club_repository=self._sqlite_club_repository,
-            roster_entry_repository=self._roster_entry_repository,
-        )
+        TemporalClubProvider.initialize(self._db_connection)
+        self._temporal_club_provider = TemporalClubProvider.get_instance()
         self._game_repository = GameRepository(
             self._db_connection,
-            # game_state_repository_tmp=self._game_state_repository_tmp,
         )
         self._club_repository = ClubRepository(self._game_repository)
         self._params = _get_params()
@@ -79,7 +71,10 @@ class ApplicationContext:
             club_repository=self._club_repository,
         )
 
-        self._next_day_command_handler = NextDayCommandHandler(self._game_repository)
+        self._next_day_command_handler = NextDayCommandHandler(
+            self._game_repository,
+            self._temporal_club_provider,
+        )
 
         self._game_service = GameService(
             game_repository=self._game_repository,
@@ -136,18 +131,6 @@ class ApplicationContext:
     @property
     def game_parameters(self):
         return self._params
-
-    @property
-    def player_repository(self):
-        return self._player_repository
-
-    @property
-    def sqlite_club_repository(self):
-        return self._sqlite_club_repository
-
-    @property
-    def roster_entry_repository(self):
-        return self._roster_entry_repository
 
     @property
     def create_game_command_handler(self):

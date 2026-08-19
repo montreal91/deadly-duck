@@ -5,12 +5,15 @@ Created December 26, 2025
 """
 import pickle
 from sqlite3 import Binary
+from typing import Dict, Optional
 
 from core.game import Game
 from persistence.sql import read_sql_file
 
 
 class GameRepository:
+    _games: Dict[str, Game]
+
     def __init__(self, conn):
         self._games = {}
         self._conn = conn
@@ -19,7 +22,7 @@ class GameRepository:
         self._get_games_sql = read_sql_file("data/sql/get_game.sql")
         self._get_game_ids_sql = read_sql_file("data/sql/get_game_ids.sql")
 
-    def get_game(self, game_id):
+    def get_game(self, game_id) -> Optional[Game]:
         if game_id not in self._games:
             self._load_game(game_id)
 

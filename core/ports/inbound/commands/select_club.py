@@ -5,6 +5,8 @@ Created December 30, 2025
 """
 from typing import NamedTuple
 
+from core.ports.outbound.game_repository import GameRepository
+
 
 class SelectClubCommand(NamedTuple):
     club_id: str
@@ -16,7 +18,7 @@ class SelectClubCommandResult(NamedTuple):
 
 
 class SelectClubCommandHandler:
-    def __init__(self, game_repository):
+    def __init__(self, game_repository: GameRepository):
         self._game_repository = game_repository
 
     def __call__(self, query):
@@ -26,5 +28,6 @@ class SelectClubCommandHandler:
             return SelectClubCommandResult(success=False)
 
         game.set_managed(query.club_id, True)
-        self._game_repository.save_game(game, True)
+        self._game_repository.save_game(game)
+
         return SelectClubCommandResult(success=True)

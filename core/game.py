@@ -8,8 +8,6 @@ Created Apr 09, 2019
 
 @author montreal91
 """
-
-import json
 import logging
 import time
 from random import randint
@@ -39,7 +37,7 @@ from core.playoffs import DdPlayoff
 from core.playoffs import DdPlayoffParams
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import RegularChampionship
-from core.serialization import DdJsonDecoder
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 _CLUB_ID_ERROR = "Incorrect club id."
 _UNCONTRACTED_PLAYERS_ERROR = (
@@ -113,7 +111,6 @@ class Game:
         self._player_factory = PlayerFactory()
         self._results = []
 
-        self._clubs = {}
         self._season_fame = {}
         self._contract_calculator = DdStaticContractCalculator(
             self._params.contracts
@@ -125,17 +122,12 @@ class Game:
         self._created_ts = created_ts
         self._updated_ts = updated_ts
 
-        decoder = DdJsonDecoder()
-        decoder.register(Player)
-        decoder.register(ClubPlayerSlot)
-        with open("data/clubs.json", "r") as data_file:
-            club_data = json.load(data_file, object_hook=decoder)
-
-        for club in club_data:
-            self._add_club(club_data=club)
+        tcp = TemporalClubProvider.get_instance()
+        tcp.init_clubs_for_game(self._game_id)
 
         self._competition = RegularChampionship(
-            self._clubs, self._params.championship_params
+            tcp.get_clubs_for_game(self._game_id),
+            self._params.championship_params
         )
 
         self._simulate(self._params.years_to_simulate)
@@ -151,7 +143,7 @@ class Game:
 
     @property
     def clubs(self):
-        return self._clubs
+        return TemporalClubProvider.get_instance().get_clubs_for_game(self._game_id)
 
     @property
     def game_id(self) -> str:
@@ -180,6 +172,11 @@ class Game:
     @property
     def updated_ts(self):
         return self._updated_ts
+
+    # TODO: Get rid of this hack
+    @property
+    def _clubs(self):
+        return TemporalClubProvider.get_instance().get_clubs_for_game(self._game_id)
 
     def fire_player(self, player_id: str, club_id: str):
         """Fires the selected player from user's club."""
@@ -441,30 +438,6 @@ class Game:
 
         return len(matches) > 0
 
-    def _add_club(self, club_data):
-        club = Club(
-            club_id=club_data["club_id"],
-            game_id=self._game_id,
-            name=club_data["name"],
-            coach_power=club_data["coach_power"],
-        )
-
-        for value in club_data["fame"]:
-            club.add_fame(value)
-
-        for slot in club_data["player_data"]:
-            club.add_player(slot.player)
-            if slot.has_next_contract:
-                club.contract_player(player_id=slot.player.player_id)
-
-        club.account.ProcessTransaction(DdTransaction(
-            club_data["balance"],
-            "Initial balance",
-        ))
-
-        self._clubs[club.club_id] = club
-        self._season_fame[club.club_id] = 0
-
     def _calculate_club_practice_cost(self, club: Club) -> int:
         slots = [(s.player.level, s.coach_level) for s in club.players]
         return sum(self._practice_calculator(*slot) for slot in slots)
@@ -507,7 +480,7 @@ class Game:
             res.append((agent, self._contract_calculator(agent.level),))
         return res
 
-    def _get_opponent(self, pk: int) -> Optional[OpponentDto]:
+    def _get_opponent(self, pk: str) -> Optional[OpponentDto]:
         def schedule_filter(pair: DdScheduledMatchStruct):
             if pair.home_pk == pk:
                 return True
@@ -544,7 +517,7 @@ class Game:
             return res
         raise Exception("Bad schedule.")
 
-    def _get_user_players(self, pk: int):
+    def _get_user_players(self, pk: str):
         def set_contract_prices(slot: ClubPlayerSlot) -> ClubPlayerSlot:
             slot.contract_cost = self._contract_calculator(slot.player.level)
             return slot
@@ -563,7 +536,7 @@ class Game:
                 )
                 club.add_player(new_player)
 
-    def _is_club_valid(self, pk: int) -> bool:
+    def _is_club_valid(self, pk: str) -> bool:
         opponent = self._get_opponent(pk)
         club: Club = self._clubs[pk]
         if opponent is None or not club.is_controlled:

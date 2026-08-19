@@ -173,6 +173,10 @@ class Player(Jsonable):
         )
 
     @property
+    def second_name(self):
+        return self._second_name
+
+    @property
     def last_name(self):
         return self._last_name
 
