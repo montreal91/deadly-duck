@@ -9,6 +9,7 @@ from typing import Optional
 from typing import Union
 
 from core.competition import CompetitionType
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 _NO_PLAYOFF_CLUB_ID = ""
 _NO_PLAYOFF_VALUE = "N/A"
@@ -62,13 +63,14 @@ class QueryResult(NamedTuple):
 
 
 class GameScreenGuiQueryHandler:
-    def __init__(self, game_repository, club_repository):
+    def __init__(self, game_repository, club_provider: TemporalClubProvider):
         self._game_repository = game_repository
-        self._club_repository = club_repository
+        self._club_provider = club_provider
 
     def __call__(self, game_id, manager_club_id):
         game = self._game_repository.get_game(game_id)
         context = game.get_context(manager_club_id)
+        clubs = self._club_provider.get_clubs_for_game(game_id)
 
         match = _get_match(competition=game.competition, club_id=manager_club_id)
 
@@ -93,7 +95,6 @@ class GameScreenGuiQueryHandler:
         if context["competition_type"] == CompetitionType.CHAMPIONSHIP:
             raw_standings = context.get("standings", [])
             res_standings = []
-            clubs = self._club_repository.get_club_index(game_id)
 
             for pos, standing in enumerate(raw_standings):
                 res_standings.append(StandingRow(
@@ -108,7 +109,7 @@ class GameScreenGuiQueryHandler:
         elif context["competition_type"] == CompetitionType.PLAY_OFFS:
             standings = _make_playoff_standings(
                 raw_standings=context.get("standings", []),
-                clubs=self._club_repository.get_club_index(game_id),
+                clubs=clubs,
                 manager_club_id=manager_club_id,
             )
         else:

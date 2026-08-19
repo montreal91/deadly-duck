@@ -17,9 +17,7 @@ from core.ports.inbound.commands.next_day import NextDayCommandHandler
 from core.ports.inbound.commands.select_player_for_match import SelectPlayerForMatchCommandHandler
 from core.ports.inbound.commands.sign_player import SignPlayerCommandHandler
 from core.ports.inbound.commands.select_coach_for_player import SelectCoachForPlayerCommandHandler
-from core.ports.outbound.club_repository import ClubRepository
 from core.game import GameParams
-from core.game_service import FameQueryHandler
 from core.game_service import GameService
 from core.match import ExhaustionCalculator
 from core.match import DdLinearProbabilityCalculator
@@ -51,14 +49,15 @@ def _make_db_connection(db_path):
 class ApplicationContext:
     def __init__(self):
         self._db_connection = _make_db_connection("data/duck.db")
+
         TemporalClubProvider.initialize(self._db_connection)
         self._temporal_club_provider = TemporalClubProvider.get_instance()
+
         self._game_repository = GameRepository(
             self._db_connection,
         )
-        self._club_repository = ClubRepository(self._game_repository)
+
         self._params = _get_params()
-        self._fame_query_handler = FameQueryHandler(self._club_repository)
 
         self._create_game_command_handler = CreateNewGameCommandHandler(
             self._game_repository,
@@ -68,7 +67,7 @@ class ApplicationContext:
         self._select_club_command_handler = SelectClubCommandHandler(self._game_repository)
 
         self._club_selection_screen_query_handler = ClubSelectionScreenQueryHandler(
-            club_repository=self._club_repository,
+            club_provider=self._temporal_club_provider,
         )
 
         self._next_day_command_handler = NextDayCommandHandler(
@@ -79,17 +78,16 @@ class ApplicationContext:
         self._game_service = GameService(
             game_repository=self._game_repository,
             game_parameters=self._params,
-            fame_query_handler=self._fame_query_handler,
         )
 
         self._game_screen_ui_query_handler = GameScreenGuiQueryHandler(
             self._game_repository,
-            self._club_repository
+            self._temporal_club_provider,
         )
 
         self._day_results_query_handler = DayResultsQueryHandler(
             self._game_repository,
-            self._club_repository,
+            self._temporal_club_provider,
         )
 
         self._roster_management_screen_query_handler = RosterManagementScreenQueryHandler(

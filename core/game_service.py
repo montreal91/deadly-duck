@@ -9,8 +9,6 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 
-from core.ports.outbound.club_repository import ClubRepository
-
 
 class MainScreenInfo(NamedTuple):
     day: int
@@ -64,20 +62,6 @@ class CourtInfo(NamedTuple):
     ticket_price: int
 
 
-class FameInfo(NamedTuple):
-    club_id: str
-    club_name: str
-    fame: int
-
-
-class FameRatingsQuery(NamedTuple):
-    game_id: str
-
-
-class FameRatingsQueryResult(NamedTuple):
-    fame_ratings: List[FameInfo]
-
-
 class SavedGamesInfo(NamedTuple):
     names: List[str]
 
@@ -92,34 +76,14 @@ class PlayerSelectionScreenInfo(NamedTuple):
     opponent: OpponentInfo
 
 
-class FameQueryHandler:
-    _club_repository: ClubRepository
-
-    def __init__(self, club_repository: ClubRepository):
-        self._club_repository = club_repository
-
-    def handle(self, request: FameRatingsQuery) -> FameRatingsQueryResult:
-        clubs = self._club_repository.get_all_clubs(request.game_id)
-        fames = [
-            FameInfo(club_id=club.club_id, club_name=club.name, fame=club.fame)
-            for club in clubs
-        ]
-
-        return FameRatingsQueryResult(
-            fame_ratings=sorted(fames, key=lambda fame: fame.fame, reverse=True),
-        )
-
-
 class GameService:
     def __init__(
             self,
             game_repository,
             game_parameters,
-            fame_query_handler,
     ):
         self._game_repository = game_repository
         self._parameters = game_parameters
-        self._fame_query_handler = fame_query_handler
 
     def get_saved_games(self):
         return SavedGamesInfo(names=self._game_repository.get_game_ids())
