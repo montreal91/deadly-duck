@@ -17,3 +17,6 @@ Just download contents of this repository as an archive and then unpack it.
 
 ### Quickstart
 Run `python main.py` in your console.
+
+### Trivia
+Official birthday of the project is **Dec 18, 2015**

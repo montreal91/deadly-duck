@@ -53,9 +53,14 @@ class DayResultsScreen(Screen):
 
         self._layout.center_col.clear_widgets()
 
-        for res in q_res.match_results_list:
+        cid = GameContext.get_instance().club_id
+        match_results = _sort_manager_club_results_first(
+            q_res.match_results_list,
+            cid,
+        )
+
+        for res in match_results:
             line = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(80))
-            cid = GameContext.get_instance().club_id
 
             if res.home_club_id == cid or res.away_club_id == cid:
                 with line.canvas.before:
@@ -82,6 +87,15 @@ class DayResultsScreen(Screen):
 
 def _on_to_game(_):
     App.get_running_app().return_to_game()
+
+
+def _sort_manager_club_results_first(results, manager_club_id):
+    return sorted(
+        results,
+        key=lambda result: int(
+            manager_club_id not in (result.home_club_id, result.away_club_id)
+        ),
+    )
 
 
 def _update_bg(self, *_):
