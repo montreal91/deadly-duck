@@ -13,6 +13,7 @@ from client.screens.club_selection_screen import ClubSelectionScreen
 from client.screens.day_results_screen import DayResultsScreen
 from client.screens.game_screen import GameScreen
 from client.screens.load_story_screen import LoadStoryScreen
+from client.screens.player_details_screen import PlayerDetailsScreen
 from client.screens.player_selection_screen import PlayerSelectionScreen
 from client.screens.practice_screen import PracticeScreen
 from client.screens.roster_management_screen import RosterManagementScreen
@@ -33,6 +34,7 @@ class DuckClientApp(App):
         self._club_selection_screen = None
         self._load_story_screen = None
         self._player_selection_screen = None
+        self._player_details_screen = None
         self._practice_screen = None
         self._roster_management_screen = None
         self._about_screen = None
@@ -62,6 +64,10 @@ class DuckClientApp(App):
             select_player_for_match_command_handler=ac.select_player_for_match_command_handler,
             name="player_selection",
         )
+        self._player_details_screen = PlayerDetailsScreen(
+            query_handler=ac.player_details_screen_query_handler,
+            name="player_details",
+        )
         self._practice_screen = PracticeScreen(
             query_handler=ac.practice_screen_query_handler,
             select_coach_for_player_command_handler=ac.select_coach_for_player_command_handler,
@@ -87,6 +93,7 @@ class DuckClientApp(App):
         self.sm.add_widget(self._club_selection_screen)
         self.sm.add_widget(self._load_story_screen)
         self.sm.add_widget(self._player_selection_screen)
+        self.sm.add_widget(self._player_details_screen)
         self.sm.add_widget(self._practice_screen)
         self.sm.add_widget(self._roster_management_screen)
         self.sm.add_widget(self._day_results_screen)
@@ -110,6 +117,10 @@ class DuckClientApp(App):
     def switch_to_player_selection(self):
         self.sm.current = "player_selection"
         self._player_selection_screen.update()
+
+    def switch_to_player_details(self, player_id):
+        self.sm.current = "player_details"
+        self._player_details_screen.open_player(player_id)
 
     def switch_to_practice(self):
         self.sm.current = "practice"

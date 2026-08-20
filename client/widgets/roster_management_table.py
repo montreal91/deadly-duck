@@ -12,13 +12,14 @@ from kivy.uix.widget import Widget
 _DEFAULT_COL_WIDTH = 100
 _PLAYER_ID_COL_WIDTH = 35
 _PLAYER_NAME_COL_WIDTH = 180
-_ACTION_COL_WIDTH = 160
+_ACTION_COL_WIDTH = 230
 
 
 class RosterManagementTable:
-    def __init__(self, on_sign_player, on_fire_player):
+    def __init__(self, on_sign_player, on_fire_player, on_show_player_details):
         self._on_sign_player = on_sign_player
         self._on_fire_player = on_fire_player
+        self._on_show_player_details = on_show_player_details
         self._root = BoxLayout(
             orientation="vertical",
             size_hint_y=None,
@@ -42,6 +43,7 @@ class RosterManagementTable:
                 player,
                 self._on_sign_player,
                 self._on_fire_player,
+                self._on_show_player_details,
             ))
 
 
@@ -76,7 +78,12 @@ class _RosterManagementTableHeader:
         return self._root
 
 
-def _make_player_row(player, on_sign_player, on_fire_player):
+def _make_player_row(
+        player,
+        on_sign_player,
+        on_fire_player,
+        on_show_player_details,
+):
     row = BoxLayout(
         orientation="horizontal",
         size_hint_y=None,
@@ -90,7 +97,12 @@ def _make_player_row(player, on_sign_player, on_fire_player):
     row.add_widget(_make_cell(str(player.technique)))
     row.add_widget(_make_cell(str(player.endurance)))
     row.add_widget(_make_cell(player.contract_status))
-    row.add_widget(_make_action_cell(player, on_sign_player, on_fire_player))
+    row.add_widget(_make_action_cell(
+        player,
+        on_sign_player,
+        on_fire_player,
+        on_show_player_details,
+    ))
 
     return row
 
@@ -144,7 +156,24 @@ def _make_sign_button(player_id, on_sign_player):
     return button
 
 
-def _make_action_cell(player, on_sign_player, on_fire_player):
+def _make_details_button(player_id, on_show_player_details):
+    button = Button(
+        text="Details",
+        size_hint=(None, None),
+        size=(dp(80), dp(35)),
+    )
+    button.player_id = player_id
+    button.on_show_player_details = on_show_player_details
+    button.bind(on_press=_on_details)
+    return button
+
+
+def _make_action_cell(
+        player,
+        on_sign_player,
+        on_fire_player,
+        on_show_player_details,
+):
     cell = BoxLayout(
         orientation="horizontal",
         spacing=dp(4),
@@ -153,6 +182,10 @@ def _make_action_cell(player, on_sign_player, on_fire_player):
     )
 
     cell.add_widget(Widget())
+    cell.add_widget(_make_details_button(
+        player.player_id,
+        on_show_player_details,
+    ))
 
     if player.contract_cost is not None:
         cell.add_widget(_make_sign_button(player.player_id, on_sign_player))
@@ -169,3 +202,7 @@ def _on_fire(button):
 
 def _on_sign(button):
     button.on_sign_player(button.player_id)
+
+
+def _on_details(button):
+    button.on_show_player_details(button.player_id)

@@ -83,6 +83,15 @@ class GameScreen(Screen):
         self._select_player_button.bind(on_press=self._on_select_player)
         self._layout.left_col.add_widget(self._select_player_button)
 
+        self._level_up_button = Button(
+            text="Level Up",
+            font_size=30,
+            size_hint=(None, None),
+            size=button_size,
+            disabled=True,
+        )
+        self._layout.left_col.add_widget(self._level_up_button)
+
         self._practice_button = Button(
             text="Practice",
             font_size=30,

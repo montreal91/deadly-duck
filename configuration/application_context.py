@@ -27,9 +27,11 @@ from core.playoffs import DdPlayoffParams
 from core.ports.inbound.commands.create_new_game import CreateNewGameCommandHandler
 from core.ports.inbound.commands.select_club import SelectClubCommandHandler
 from core.ports.outbound.game_repository import GameRepository
+from core.ports.outbound.player_repository import PlayerRepository
 from core.queries.club_selection_screen_query import ClubSelectionScreenQueryHandler
 from core.queries.day_results_query import DayResultsQueryHandler
 from core.queries.main_screen_query import GameScreenGuiQueryHandler
+from core.queries.player_details_screen_query import PlayerDetailsScreenQueryHandler
 from core.queries.practice_screen_query import PracticeScreenQueryHandler
 from core.queries.roster_management_screen_query import RosterManagementScreenQueryHandler
 from core.regular_championship import ChampionshipParams
@@ -54,6 +56,9 @@ class ApplicationContext:
         self._temporal_club_provider = TemporalClubProvider.get_instance()
 
         self._game_repository = GameRepository(
+            self._db_connection,
+        )
+        self._player_repository = PlayerRepository(
             self._db_connection,
         )
 
@@ -100,6 +105,10 @@ class ApplicationContext:
 
         self._practice_screen_query_handler = PracticeScreenQueryHandler(
             self._game_repository,
+        )
+
+        self._player_details_screen_query_handler = PlayerDetailsScreenQueryHandler(
+            self._player_repository,
         )
 
         self._hire_new_player_command_handler = HireNewPlayerCommandHandler(
@@ -166,6 +175,10 @@ class ApplicationContext:
     @property
     def practice_screen_query_handler(self):
         return self._practice_screen_query_handler
+
+    @property
+    def player_details_screen_query_handler(self):
+        return self._player_details_screen_query_handler
 
     @property
     def hire_new_player_command_handler(self):

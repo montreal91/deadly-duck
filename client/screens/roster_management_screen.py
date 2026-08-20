@@ -68,6 +68,7 @@ class RosterManagementScreen(Screen):
         self._roster_table = RosterManagementTable(
             on_sign_player=self._on_sign_player,
             on_fire_player=self._on_fire_player,
+            on_show_player_details=self._on_show_player_details,
         )
         self._layout.center_col.add_widget(self._roster_table.widget)
 
@@ -113,6 +114,9 @@ class RosterManagementScreen(Screen):
         )
         self._fire_player_command_handler(command)
         self.update()
+
+    def _on_show_player_details(self, player_id):
+        App.get_running_app().switch_to_player_details(player_id)
 
 
 def _on_back(_):
