@@ -83,7 +83,7 @@ def _make_player_row(player, on_sign_player, on_fire_player):
         height=dp(36),
     )
 
-    row.add_widget(_make_cell(str(player.player_id), width=_PLAYER_ID_COL_WIDTH))
+    row.add_widget(_make_cell(str(player.pos), width=_PLAYER_ID_COL_WIDTH))
     row.add_widget(_make_cell(player.name, width=_PLAYER_NAME_COL_WIDTH))
     row.add_widget(_make_cell(str(player.level)))
     row.add_widget(_make_cell(str(player.age)))

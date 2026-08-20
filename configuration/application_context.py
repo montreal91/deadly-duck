@@ -19,10 +19,10 @@ from core.ports.outbound.club_repository import ClubRepository
 from core.game import GameParams
 from core.game_service import FameQueryHandler
 from core.game_service import GameService
-from core.match import DdExhaustionCalculator
+from core.match import ExhaustionCalculator
 from core.match import DdLinearProbabilityCalculator
 from core.match import DdMatchParams
-from core.player import DdPlayerReputationCalculator
+from core.player import PlayerReputationCalculator
 from core.playoffs import DdPlayoffParams
 from core.ports.inbound.commands.create_new_game import CreateNewGameCommandHandler
 from core.ports.inbound.commands.select_club import SelectClubCommandHandler
@@ -168,10 +168,10 @@ def _get_params() -> GameParams:
         speciality_bonus=config["match"].getfloat("speciality_bonus", 0.0),
         games_to_win=config["match"].getint("games_to_win", 0),
         sets_to_win=config["match"].getint("sets_to_win", 0),
-        exhaustion_function=DdExhaustionCalculator(
+        exhaustion_function=ExhaustionCalculator(
             config["match"].getint("exhaustion_coefficient", 0)
         ),
-        reputation_function=DdPlayerReputationCalculator(
+        reputation_function=PlayerReputationCalculator(
             config["match"].getint("games_to_win", 0),
             config["match"].getint("reputation_coefficient", 0)
         ),

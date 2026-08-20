@@ -26,7 +26,7 @@ from uuid import UUID
 
 from configuration.config_game import DdGameplayConstants
 from core.club import Club
-from core.club import DdClubPlayerSlot
+from core.club import ClubPlayerSlot
 from core.competition import CompetitionType
 from core.competition import DdAbstractCompetition
 from core.financial import DdPracticeCalculator
@@ -36,9 +36,9 @@ from core.match import DdMatchResult
 from core.match import DdScheduledMatchStruct
 from core.match import DdStandingsRowStruct
 from core.player import DdCourtSurface
-from core.player import DdExhaustedLinearRecovery
-from core.player import DdPlayer
-from core.player import DdPlayerFactory
+from core.player import ExhaustedLinearRecovery
+from core.player import Player
+from core.player import PlayerFactory
 from core.playoffs import DdPlayoff
 from core.playoffs import DdPlayoffParams
 from core.regular_championship import ChampionshipParams
@@ -71,7 +71,7 @@ class OpponentDto:
     """Passive class to store information about opponent for the next match."""
     club_name: str
     match_surface: str
-    player: Optional[DdPlayer]
+    player: Optional[Player]
     fame: Optional[int]
 
 
@@ -101,10 +101,10 @@ class Game:
     _attendance_calculator: Callable
     _competition: DdAbstractCompetition
     _contract_calculator: Callable[[int], int]
-    _free_agents: List[DdPlayer]
+    _free_agents: List[Player]
     _history: List[Dict[CompetitionType, Any]]
     _params: GameParams
-    _player_factory: DdPlayerFactory
+    _player_factory: PlayerFactory
     _season_fame: Dict[int, int]
     _results: List[DdMatchResult]
     _practice_calculator: DdPracticeCalculator
@@ -121,7 +121,7 @@ class Game:
         self._free_agents = []
         self._history = [{}]
         self._params = params
-        self._player_factory = DdPlayerFactory()
+        self._player_factory = PlayerFactory()
         self._results = []
 
         self._clubs = {}
@@ -137,8 +137,8 @@ class Game:
         self._updated_ts = updated_ts
 
         decoder = DdJsonDecoder()
-        decoder.register(DdPlayer)
-        decoder.register(DdClubPlayerSlot)
+        decoder.register(Player)
+        decoder.register(ClubPlayerSlot)
         with open("data/clubs.json", "r") as data_file:
             club_data = json.load(data_file, object_hook=decoder)
 
@@ -192,13 +192,12 @@ class Game:
     def updated_ts(self):
         return self._updated_ts
 
-    def fire_player(self, player_id: int, club_id: uuid.UUID):
+    def fire_player(self, player_id: str, club_id: uuid.UUID):
         """Fires the selected player from user's club."""
 
         assert club_id in self._clubs, _CLUB_ID_ERROR
 
-        assert player_id >= 0, "Player index should be positive."
-        assert player_id < len(self._clubs[club_id].players), (
+        assert self._clubs[club_id].has_player(player_id), (
             "There is no player with such index in your club."
         )
 
@@ -253,7 +252,7 @@ class Game:
             "Choices are: "
             f"{choices}"
         )
-        player = self._player_factory.CreatePlayer(
+        player = self._player_factory.create_player(
             level=0,
             age=DdGameplayConstants.STARTING_AGE.value,
             speciality=surface
@@ -268,14 +267,14 @@ class Game:
             step = self.update()
 
     def select_coach_for_player(
-        self, coach_index: int, player_index: int, club_index: int
+        self, coach_index: int, player_id: str, club_index: int
     ):
         """
         Selects a coach (bad, normal, or good) for the player in the club.
         """
 
         assert club_index in self._clubs, _CLUB_ID_ERROR
-        assert 0 <= player_index < len(self._clubs[club_index].players), (
+        assert self._clubs[club_index].has_player(player_id), (
             "Incorrect player index."
         )
         assert 0 <= coach_index < len(Club.COACH_LEVELS), (
@@ -283,14 +282,14 @@ class Game:
         )
 
         self._clubs[club_index].select_coach(
-            coach_index=coach_index, player_index=player_index
+            coach_index=coach_index, player_id=player_id
         )
 
-    def select_player(self, player_id: int, club_id: int):
+    def select_player(self, player_id: str, club_id: int):
         """Sets selected player for user."""
 
         assert club_id in self._clubs, _CLUB_ID_ERROR
-        assert 0 <= player_id < len(self._clubs[club_id].players), (
+        assert self._clubs[club_id].has_player(player_id), (
             "Incorrect player index."
         )
         self._clubs[club_id].select_player(player_id)
@@ -302,26 +301,26 @@ class Game:
         self._manager_club_id = club_id
         self._clubs[club_id].set_controlled(is_controlled)
 
-    def sign_player(self, club_id: UUID, player_id: int):
+    def sign_player(self, club_id: UUID, player_id: str):
         """Signs a new contract with a player for the next season."""
 
         if club_id not in self._clubs:
             return False, _CLUB_ID_ERROR
 
         club = self._clubs[club_id]
-        players = self._clubs[club_id].players
+        player_slot = club.get_player_slot(player_id)
 
-        if not 0 <= player_id < len(players):
+        if player_slot is None:
             return False, "Incorrect player id."
 
-        if players[player_id].has_next_contract:
+        if player_slot.has_next_contract:
             return False, "This player already has a contract for the next season."
 
-        next_age = players[player_id].player.age + 1
+        next_age = player_slot.player.age + 1
         if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
-            return False, f"{players[player_id].player.initials} is too old to play next season."
+            return False, f"{player_slot.player.initials} is too old to play next season."
 
-        cost = self._contract_calculator(players[player_id].player.level)
+        cost = self._contract_calculator(player_slot.player.level)
 
         if self._clubs[club_id].account.balance < cost:
             return False, f"Insufficient funds.\nYou need at least ${cost}."
@@ -329,7 +328,7 @@ class Game:
         club.contract_player(player_id)
         club.account.ProcessTransaction(DdTransaction(
             -cost,
-            f"Renewed player contract with {players[player_id].player.initials} "
+            f"Renewed player contract with {player_slot.player.initials} "
         ))
 
         return True, "Ok"
@@ -472,10 +471,10 @@ class Game:
         for value in club_data["fame"]:
             club.add_fame(value)
 
-        for i, slot in enumerate(club_data["player_data"]):
+        for slot in club_data["player_data"]:
             club.add_player(slot.player)
             if slot.has_next_contract:
-                club.contract_player(player_pk=i)
+                club.contract_player(player_id=slot.player.player_id)
 
         club.account.ProcessTransaction(DdTransaction(
             club_data["balance"],
@@ -508,7 +507,7 @@ class Game:
     def _generate_free_agents(self):
         new_agents = []
         for _ in range(randint(3, 10)):
-            new_agents.append(self._player_factory.CreatePlayer(
+            new_agents.append(self._player_factory.create_player(
                 age=randint(
                     DdGameplayConstants.STARTING_AGE.value,
                     DdGameplayConstants.RETIREMENT_AGE.value - 1
@@ -522,7 +521,7 @@ class Game:
         )
         self._free_agents = new_agents
 
-    def _get_free_agents(self) -> List[Tuple[DdPlayer, int]]:
+    def _get_free_agents(self) -> List[Tuple[Player, int]]:
         res = []
         for agent in self._free_agents:
             res.append((agent, self._contract_calculator(agent.level),))
@@ -568,7 +567,7 @@ class Game:
         raise Exception("Bad schedule.")
 
     def _get_user_players(self, pk: int):
-        def set_contract_prices(slot: DdClubPlayerSlot) -> DdClubPlayerSlot:
+        def set_contract_prices(slot: ClubPlayerSlot) -> ClubPlayerSlot:
             slot.contract_cost = self._contract_calculator(slot.player.level)
             return slot
 
@@ -580,7 +579,7 @@ class Game:
                 continue
             techs = [slot.player.actual_technique < 5 for slot in club.players]
             if all(techs):
-                new_player = self._player_factory.CreatePlayer(
+                new_player = self._player_factory.create_player(
                     level=0,
                     age=DdGameplayConstants.STARTING_AGE.value,
                     speciality=club.surface
@@ -622,7 +621,7 @@ class Game:
             if club.is_controlled:
                 continue
 
-            club.add_player(self._player_factory.CreatePlayer(
+            club.add_player(self._player_factory.create_player(
                 age=DdGameplayConstants.STARTING_AGE.value,
                 level=randint(5, 10),
                 speciality=club.surface
@@ -655,7 +654,7 @@ class Game:
         self._recover()
         self._hire_players_if_needed()
 
-    def _process_player_hire(self, club_pk: int, player: DdPlayer):
+    def _process_player_hire(self, club_pk: int, player: Player):
         assert club_pk in self._clubs, _CLUB_ID_ERROR
 
         cost = self._contract_calculator(player.level)
@@ -672,7 +671,7 @@ class Game:
         ))
 
     def _recover(self):
-        recovery_function = DdExhaustedLinearRecovery(
+        recovery_function = ExhaustedLinearRecovery(
             self._params.exhaustion_factor
         )
         for club in self._clubs.values():

@@ -6,6 +6,7 @@ Created Apr 09, 2019
 """
 
 import json
+import uuid
 from random import choice
 from random import randint
 from typing import Any
@@ -16,7 +17,7 @@ from typing import Tuple
 from configuration.config_game import DdGameplayConstants
 from configuration.config_game import DdPlayerSkills
 from core.serialization import DdField
-from core.serialization import DdJsonable
+from core.serialization import Jsonable
 
 _ENDURANCE_FACTOR = DdPlayerSkills.ENDURANCE_FACTOR
 _PRECISION = 1
@@ -33,7 +34,7 @@ class DdCourtSurface:
     HARD = "hard"
 
 
-class DdPlayerStats(DdJsonable):
+class PlayerStats(Jsonable):
     """A passive data structure to store player stats."""
 
     sets_played: int
@@ -55,10 +56,11 @@ class DdPlayerStats(DdJsonable):
         self.matches_won = 0
 
 
-class DdPlayer(DdJsonable):
+class Player(Jsonable):
     """A class that describes a tennis player."""
 
     _FIELD_MAP = (
+        DdField("_player_id", "player_id"),
         DdField("_first_name", "first_name"),
         DdField("_second_name", "second_name"),
         DdField("_last_name", "last_name"),
@@ -86,7 +88,7 @@ class DdPlayer(DdJsonable):
     _age: int
 
     _reputation: int
-    _stats: DdPlayerStats
+    _stats: PlayerStats
 
     def __init__(
         self,
@@ -98,6 +100,7 @@ class DdPlayer(DdJsonable):
         age: int = 30,
         speciality: str = DdCourtSurface.HARD,
     ):
+        self._player_id = str(uuid.uuid4())
         self._first_name = first_name
         self._second_name = second_name
         self._last_name = last_name
@@ -110,7 +113,7 @@ class DdPlayer(DdJsonable):
         self._experience = 0
         self._current_stamina = self.max_stamina
         self._reputation = 0
-        self._stats = DdPlayerStats()
+        self._stats = PlayerStats()
 
     @property
     def age(self):
@@ -162,6 +165,7 @@ class DdPlayer(DdJsonable):
     @property
     def json(self) -> Dict[str, Any]:
         return dict(
+            player_id=self.player_id,
             first_name=self._first_name,
             second_name=self._second_name,
             last_name=self._last_name,
@@ -182,10 +186,14 @@ class DdPlayer(DdJsonable):
         return self._last_name
 
     @property
+    def player_id(self) -> str:
+        return self._player_id
+
+    @property
     def level(self) -> int:
         """Current level of the player."""
         level = 0
-        while not self._experience < _LevelExp(level + 1):
+        while not self._experience < _level_exp(level + 1):
             level += 1
         return level
 
@@ -196,7 +204,7 @@ class DdPlayer(DdJsonable):
     # 'exp' stands for experience
     @property
     def next_level_exp(self) -> int:
-        return _LevelExp(self.level + 1)
+        return _level_exp(self.level + 1)
 
     @property
     def reputation(self) -> int:
@@ -209,7 +217,7 @@ class DdPlayer(DdJsonable):
         return self._speciality
 
     @property
-    def stats(self) -> DdPlayerStats:
+    def stats(self) -> PlayerStats:
         return self._stats
 
     @property
@@ -252,7 +260,7 @@ class DdPlayer(DdJsonable):
         self._age += 1
 
     def DropStats(self):
-        self._stats = DdPlayerStats()
+        self._stats = PlayerStats()
 
     def RecoverStamina(self, recovered_stamina: int):
         self._current_stamina += recovered_stamina
@@ -271,20 +279,20 @@ class DdPlayer(DdJsonable):
         return int(round(base * factor))
 
 
-class DdPlayerFactory:
+class PlayerFactory:
     _first_names: List[str]
     _last_names: List[str]
 
     def __init__(self):
-        self._first_names, self._last_names = _LoadNames()
+        self._first_names, self._last_names = _load_names()
 
-    def CreatePlayer(self, level: int, age: int, speciality: str) -> DdPlayer:
+    def create_player(self, level: int, age: int, speciality: str) -> Player:
         """
         Creates a player object of given age and level.
         """
         skill_base = DdGameplayConstants.SKILL_BASE.value
 
-        player = DdPlayer(
+        player = Player(
             age=age,
             first_name=choice(self._first_names),
             second_name=choice(self._first_names),
@@ -294,13 +302,13 @@ class DdPlayerFactory:
             speciality=speciality,
         )
 
-        player.AddExperience(_LevelExp(level))
+        player.AddExperience(_level_exp(level))
         player.AfterSeasonRest()
 
         return player
 
 
-class DdPlayerReputationCalculator:
+class PlayerReputationCalculator:
     """
     Simple callable class to calculate player's reputation gained per set.
 
@@ -315,7 +323,7 @@ class DdPlayerReputationCalculator:
         self._k = k
 
 
-def ExhaustedRecovery(player: DdPlayer) -> int:
+def exhausted_recovery(player: Player) -> int:
     """Player recovery function that involves exhaustion.
 
     Naive exhaustion.
@@ -326,14 +334,14 @@ def ExhaustedRecovery(player: DdPlayer) -> int:
     return int(round(res))
 
 
-class DdExhaustedLinearRecovery:
+class ExhaustedLinearRecovery:
     """
     Callable class of recovery functions that involve exhaustion.
 
     Linear exhaustion, i.e. dependency of days to fully recover from exhaustion
     is linear.
     """
-    def __call__(self, player: DdPlayer) -> int:
+    def __call__(self, player: Player) -> int:
         days_to_recover = player.exhaustion // self._exhaustion_factor + 1
         return int(round(player.max_stamina / days_to_recover))
 
@@ -341,12 +349,12 @@ class DdExhaustedLinearRecovery:
         self._exhaustion_factor = exhaustion_factor
 
 
-def PlayerModelComparator(player_model):
+def player_model_comparator(player_model):
     """Function used to compare two players."""
     return player_model.actual_technique * 1.2 + player_model.endurance
 
 
-def _LevelExp(n: int) -> int:
+def _level_exp(n: int) -> int:
     """Total experience required to gain a level.
 
     Formula is based on the sum of arithmetic progression.
@@ -355,7 +363,7 @@ def _LevelExp(n: int) -> int:
     return int((n * (n + 1) / 2) * ec)
 
 
-def _LoadNames() -> Tuple[List[str], List[str]]:
+def _load_names() -> Tuple[List[str], List[str]]:
     """Utility function that loads names from the file on the disk."""
     with open("configuration/names.json") as datafile:
         all_names = json.load(datafile)

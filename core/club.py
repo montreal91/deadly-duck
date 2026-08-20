@@ -5,22 +5,24 @@ Created Apr 09, 2019
 @author montreal91
 """
 
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from uuid import UUID
 
 from configuration.config_game import DdGameplayConstants
 from core.financial import DdFinancialAccount
-from core.player import DdPlayer
-from core.player import PlayerModelComparator
+from core.player import Player
+from core.player import player_model_comparator
 from core.serialization import DdField
-from core.serialization import DdJsonable
+from core.serialization import Jsonable
 
 
-class DdClubPlayerSlot(DdJsonable):
+class ClubPlayerSlot(Jsonable):
     """A passive data structure to store player-related data."""
 
-    player: Optional[DdPlayer]
+    player: Optional[Player]
     coach_level: int
     contract_cost: int
     has_next_contract: bool
@@ -32,7 +34,7 @@ class DdClubPlayerSlot(DdJsonable):
         DdField("has_next_contract", "has_next_contract"),
     )
 
-    def __init__(self, player: Optional[DdPlayer] = None, coach_level: int = 0):
+    def __init__(self, player: Optional[Player] = None, coach_level: int = 0):
         self.player = player
         self.coach_level = coach_level
         self.contract_cost = 0
@@ -81,8 +83,8 @@ class Club:
     _fame_tracker: DdFameTracker
     _is_controlled: bool
     _name: str
-    _players: List[DdClubPlayerSlot]
-    _selected_player: Optional[int]
+    _players: Dict[UUID, ClubPlayerSlot]
+    _selected_player: Optional[str]
     _surface: str
 
     def __init__(
@@ -99,7 +101,7 @@ class Club:
         self._fame_tracker = DdFameTracker()
         self._is_controlled = False
         self._name = name
-        self._players = []
+        self._players = {}
         self._selected_player = None
         self._surface = surface
         self._coach_power = coach_power
@@ -147,19 +149,22 @@ class Club:
         return self._is_controlled and self._selected_player is None
 
     @property
-    def players(self) -> List[DdClubPlayerSlot]:
+    def players(self) -> List[ClubPlayerSlot]:
         """List of club players."""
-        return self._players
+        return list(self._players.values())
 
     @property
-    def selected_player(self) -> Optional[DdPlayer]:
+    def selected_player(self) -> Optional[Player]:
         """Player selected for the next match."""
 
-        raw_players = [p.player for p in self._players]
+        raw_players = [p.player for p in self.players]
 
         if self._selected_player is None:
-            return max(raw_players, key=PlayerModelComparator, default=None)
-        return self._players[self._selected_player].player
+            return max(raw_players, key=player_model_comparator, default=None)
+        selected_slot = self.get_player_slot(self._selected_player)
+        if selected_slot is None:
+            return max(raw_players, key=player_model_comparator, default=None)
+        return selected_slot.player
 
     @property
     def surface(self) -> str:
@@ -172,66 +177,86 @@ class Club:
 
         self._fame_tracker.add_fame_value(value)
 
-    def add_player(self, player: DdPlayer):
+    def add_player(self, player: Player):
         """Adds player to the club."""
         if self._is_controlled:
             coach_level = 0
         else:
             coach_level = self._coach_power
-        self._players.append(DdClubPlayerSlot(player, coach_level))
+        self._players[_normalize_player_id(player.player_id)] = ClubPlayerSlot(
+            player, coach_level
+        )
 
-    def contract_player(self, player_pk):
+    def contract_player(self, player_id):
         """Marks that a player has a contract for the next season."""
 
-        self._players[player_pk].has_next_contract = True
+        player_slot = self.get_player_slot(player_id)
+        if player_slot is not None:
+            player_slot.has_next_contract = True
 
     def expel_retired_players(self):
         """Removes players from the club which are too old to play."""
 
         retirement_age = DdGameplayConstants.RETIREMENT_AGE.value
-        def age_check(player_slot: DdClubPlayerSlot) -> bool:
+        def age_check(player_slot: ClubPlayerSlot) -> bool:
             return player_slot.player.age < retirement_age
 
-        self._players = [p for p in self._players if age_check(p)]
+        self._players = {
+            player_id: player_slot
+            for player_id, player_slot in self._players.items()
+            if age_check(player_slot)
+        }
 
     def perform_practice(self):
         """Performs player practice."""
 
-        for plr in self._players:
+        for plr in self.players:
             plr.player.AddExperience(
                 plr.player.current_stamina * plr.coach_level
             )
 
-    def pop_player(self, index: int) -> DdPlayer:
+    def pop_player(self, player_id: str) -> Player:
         """Removes player from the club."""
 
-        return self._players.pop(index).player
+        return self._players.pop(_normalize_player_id(player_id)).player
 
-    def select_coach(self, coach_index: int, player_index: int):
+    def select_coach(self, coach_index: int, player_id: str):
         """
         Selects a coach.
 
         Possible coach indexes are 0, 1, 2, 3.
         """
 
-        self._players[player_index].coach_level = self.COACH_LEVELS[coach_index]
+        player_slot = self.get_player_slot(player_id)
+        if player_slot is not None:
+            player_slot.coach_level = self.COACH_LEVELS[coach_index]
 
-    def select_player(self, index: Optional[int]):
+    def select_player(self, player_id: Optional[str]):
         """Selects player for the next match."""
 
         if self._selected_player is not None:
-            self._players[self._selected_player].is_selected = False
+            selected_slot = self.get_player_slot(self._selected_player)
+            if selected_slot is not None:
+                selected_slot.is_selected = False
 
-        self._selected_player = index
+        self._selected_player = player_id
 
-        if index is not None:
-            self._players[index].is_selected = True
+        if player_id is not None:
+            selected_slot = self.get_player_slot(player_id)
+            if selected_slot is not None:
+                selected_slot.is_selected = True
+
+    def get_player_slot(self, player_id: str) -> Optional[ClubPlayerSlot]:
+        return self._players.get(_normalize_player_id(player_id))
+
+    def has_player(self, player_id: str) -> bool:
+        return self.get_player_slot(player_id) is not None
 
     def set_coach_power(self, val: int):
         if val in self.COACH_LEVELS:
             self._coach_power = val
 
-            for slot in self._players:
+            for slot in self.players:
                 slot.coach_power = val
 
 
@@ -240,5 +265,11 @@ class Club:
 
         self._is_controlled = val
 
-        for slot in self._players:
+        for slot in self.players:
             slot.coach_level = 0
+
+
+def _normalize_player_id(player_id) -> UUID:
+    if isinstance(player_id, UUID):
+        return player_id
+    return UUID(player_id)

@@ -22,7 +22,7 @@ class DdField(NamedTuple):
     json_name: str
 
 
-class DdJsonable:
+class Jsonable:
     """
     Base class for all JSON serializable and deserializable objects.
 
@@ -49,7 +49,7 @@ class DdJsonEncoder(JSONEncoder):
     """Encoder for jsonable objects."""
 
     def default(self, o):
-        if issubclass(type(o), DdJsonable):
+        if issubclass(type(o), Jsonable):
             return o.__to_json__()
         return super().default(o)
 

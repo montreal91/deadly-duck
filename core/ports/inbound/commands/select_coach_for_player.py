@@ -10,7 +10,7 @@ from uuid import UUID
 class SelectCoachForPlayerCommand(NamedTuple):
     game_id: str
     club_id: UUID
-    player_id: int
+    player_id: str
     coach_index: int
 
 
@@ -37,7 +37,7 @@ class SelectCoachForPlayerCommandHandler:
 
         game.select_coach_for_player(
             coach_index=command.coach_index,
-            player_index=command.player_id,
+            player_id=command.player_id,
             club_index=command.club_id,
         )
         self._game_repository.save_game(game)
