@@ -134,7 +134,7 @@ class DdPlayoffScheduledMatchStruct(DdScheduledMatchStruct):
 
 
 class DdPlayoff(DdAbstractCompetition):
-    """A class to incapsulate playoff (cup) logic."""
+    """A class to encapsulate playoff (cup) logic."""
 
     _LONG: Tuple[ClubPair, ...] = (
         (0, 8),
@@ -233,7 +233,7 @@ class DdPlayoff(DdAbstractCompetition):
 
         day_results = []
         for match in self.current_matches:
-            processor = self._match_processor
+            processor = self._make_match_processor()
             res = processor.process_match(
                 self._clubs[match.home_pk].selected_player,
                 self._clubs[match.away_pk].selected_player,

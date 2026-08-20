@@ -190,8 +190,8 @@ class DdMatchParams(NamedTuple):
     sets_to_win: int = 2
 
 
-class DdMatchProcessor:
-    """This class incapsulates inner logic of a tennis match."""
+class MatchEngine:
+    """This class encapsulates inner logic of a tennis match."""
 
     _GAP: int = 2
 

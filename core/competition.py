@@ -14,7 +14,7 @@ from typing import List
 from typing import Optional
 
 from core.club import Club
-from core.match import DdMatchProcessor
+from core.match import MatchEngine
 from core.match import DdMatchResult
 from core.match import DdScheduledMatchStruct
 
@@ -108,9 +108,8 @@ class DdAbstractCompetition:
     def update(self) -> List[DdMatchResult]:
         """Updates the state of the competition."""
 
-    @property
-    def _match_processor(self) -> DdMatchProcessor:
-        return DdMatchProcessor(self._params.match_params)
+    def _make_match_processor(self) -> MatchEngine:
+        return MatchEngine(self._params.match_params)
 
     def _make_schedule(self):
         pass

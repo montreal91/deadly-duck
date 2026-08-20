@@ -9,7 +9,6 @@ from typing import Dict
 from typing import Generator
 from typing import List
 from typing import NamedTuple
-from typing import Optional
 
 from core.competition import DdAbstractCompetition
 from core.competition import ScheduleDay
@@ -94,7 +93,7 @@ class RegularChampionship(DdAbstractCompetition):
             return []
         day_results = []
         for match in self.current_matches:
-            processor = self._match_processor
+            processor = self._make_match_processor()
             res = processor.process_match(
                 self._clubs[match.home_pk].selected_player,
                 self._clubs[match.away_pk].selected_player,
