@@ -13,3 +13,8 @@ name = "Iinitial Schema"
 id = 2
 file = "v002_clubs_players_roster_entries.sql"
 name = "Clubs Players Roster Entries"
+
+[[migration]]
+id = 3
+file = "v003_player_skill_points.sql"
+name = "Player Skill Points"

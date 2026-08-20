@@ -207,7 +207,7 @@ class Club:
         """Performs player practice."""
 
         for plr in self.players:
-            plr.player.AddExperience(
+            plr.player.add_experience(
                 plr.player.current_stamina * plr.coach_level
             )
 

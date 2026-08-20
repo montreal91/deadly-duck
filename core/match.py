@@ -228,8 +228,8 @@ class MatchEngine:
                 self._reputation_function(set_result.away_games) * sets_played
             )
 
-        home_player.AddExperience(self._res.home_exp)
-        away_player.AddExperience(self._res.away_exp)
+        home_player.add_experience(self._res.home_exp)
+        away_player.add_experience(self._res.away_exp)
 
         home_player.RemoveStaminaLostInMatch(self._stamina_counter["home"])
         away_player.RemoveStaminaLostInMatch(self._stamina_counter["away"])

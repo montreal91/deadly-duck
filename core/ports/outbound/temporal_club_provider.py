@@ -182,6 +182,7 @@ class TemporalClubProvider:
             player._player_id = row["player_id"]
             player._exhaustion = row["exhaustion"]
             player._experience = row["experience"]
+            player._skill_points = row["skill_points"]
             player._current_stamina = row["current_stamina"]
             player._reputation = row["reputation"]
             players[player.player_id] = player
@@ -224,6 +225,7 @@ class TemporalClubProvider:
                 endurance,
                 exhaustion,
                 experience,
+                skill_points,
                 current_stamina,
                 reputation
             )
@@ -238,6 +240,7 @@ class TemporalClubProvider:
                 :endurance,
                 :exhaustion,
                 :experience,
+                :skill_points,
                 :current_stamina,
                 :reputation
             )
@@ -250,6 +253,7 @@ class TemporalClubProvider:
                 endurance = excluded.endurance,
                 exhaustion = excluded.exhaustion,
                 experience = excluded.experience,
+                skill_points = excluded.skill_points,
                 current_stamina = excluded.current_stamina,
                 reputation = excluded.reputation
             """,
@@ -264,6 +268,7 @@ class TemporalClubProvider:
                 "endurance": player.endurance,
                 "exhaustion": player.exhaustion,
                 "experience": player.experience,
+                "skill_points": player.skill_points,
                 "current_stamina": player.current_stamina,
                 "reputation": player.reputation,
             },

@@ -90,6 +90,7 @@ class GameScreen(Screen):
             size=button_size,
             disabled=True,
         )
+        self._level_up_button.bind(on_press=self._on_level_up)
         self._layout.left_col.add_widget(self._level_up_button)
 
         self._practice_button = Button(
@@ -146,6 +147,8 @@ class GameScreen(Screen):
         self._season_label.text = f"Your Season: {gui_info.season}"
         self._current_stage_label.text = f"Current Stage: {gui_info.current_competition}"
         self._balance_label.text = f"Balance: {gui_info.balance:_}".replace("_", " ")
+        self._level_up_button.text = f"Level Up [{gui_info.level_ups_count}]"
+        self._level_up_button.disabled = gui_info.level_ups_count <= 0
 
         self._info = gui_info
 
@@ -169,6 +172,10 @@ class GameScreen(Screen):
     def _on_select_player(self, _):
         self._error_label.text = ""
         App.get_running_app().switch_to_player_selection()
+
+    def _on_level_up(self, _):
+        self._error_label.text = ""
+        App.get_running_app().switch_to_level_up()
 
     @staticmethod
     def _on_practice(_):

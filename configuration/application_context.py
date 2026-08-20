@@ -13,6 +13,9 @@ from sqlite3 import Row
 
 from core.ports.inbound.commands.fire_player import FirePlayerCommandHandler
 from core.ports.inbound.commands.hire_new_player import HireNewPlayerCommandHandler
+from core.ports.inbound.commands.improve_player_skill_command import (
+    ImprovePlayerSkillCommandHandler,
+)
 from core.ports.inbound.commands.next_day import NextDayCommandHandler
 from core.ports.inbound.commands.select_player_for_match import SelectPlayerForMatchCommandHandler
 from core.ports.inbound.commands.sign_player import SignPlayerCommandHandler
@@ -31,6 +34,7 @@ from core.ports.outbound.player_repository import PlayerRepository
 from core.queries.club_selection_screen_query import ClubSelectionScreenQueryHandler
 from core.queries.day_results_query import DayResultsQueryHandler
 from core.queries.game_screen_query import GameScreenGuiQueryHandler
+from core.queries.level_up_screen_query import LevelUpScreenQueryHandler
 from core.queries.player_details_screen_query import PlayerDetailsScreenQueryHandler
 from core.queries.practice_screen_query import PracticeScreenQueryHandler
 from core.queries.roster_management_screen_query import RosterManagementScreenQueryHandler
@@ -111,6 +115,10 @@ class ApplicationContext:
             self._player_repository,
         )
 
+        self._level_up_screen_query_handler = LevelUpScreenQueryHandler(
+            self._temporal_club_provider,
+        )
+
         self._hire_new_player_command_handler = HireNewPlayerCommandHandler(
             self._game_repository,
             self._temporal_club_provider,
@@ -132,6 +140,11 @@ class ApplicationContext:
         )
 
         self._select_player_for_match_command_handler = SelectPlayerForMatchCommandHandler(
+            self._game_repository,
+            self._temporal_club_provider,
+        )
+
+        self._improve_player_skill_command_handler = ImprovePlayerSkillCommandHandler(
             self._game_repository,
             self._temporal_club_provider,
         )
@@ -181,6 +194,10 @@ class ApplicationContext:
         return self._player_details_screen_query_handler
 
     @property
+    def level_up_screen_query_handler(self):
+        return self._level_up_screen_query_handler
+
+    @property
     def hire_new_player_command_handler(self):
         return self._hire_new_player_command_handler
 
@@ -199,6 +216,10 @@ class ApplicationContext:
     @property
     def select_player_for_match_command_handler(self):
         return self._select_player_for_match_command_handler
+
+    @property
+    def improve_player_skill_command_handler(self):
+        return self._improve_player_skill_command_handler
 
 
 def _get_params() -> GameParams:

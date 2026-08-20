@@ -21,6 +21,7 @@ class PlayerRecord(NamedTuple):
     endurance: int
     exhaustion: int
     experience: int
+    skill_points: int
     current_stamina: int
     reputation: int
     club_id: Optional[str]
@@ -42,6 +43,7 @@ class PlayerRecord(NamedTuple):
         player._player_id = self.player_id
         player._exhaustion = self.exhaustion
         player._experience = self.experience
+        player._skill_points = self.skill_points
         player._current_stamina = self.current_stamina
         player._reputation = self.reputation
         return player
@@ -70,6 +72,7 @@ class PlayerRepository:
                 player.endurance,
                 player.exhaustion,
                 player.experience,
+                player.skill_points,
                 player.current_stamina,
                 player.reputation,
                 roster_entry.club_id,
@@ -107,6 +110,7 @@ class PlayerRepository:
             endurance=row["endurance"],
             exhaustion=row["exhaustion"],
             experience=row["experience"],
+            skill_points=row["skill_points"],
             current_stamina=row["current_stamina"],
             reputation=row["reputation"],
             club_id=row["club_id"],

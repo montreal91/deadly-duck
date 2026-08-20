@@ -58,6 +58,7 @@ class QueryResult(NamedTuple):
     current_competition: str
     competition_type: CompetitionType
     has_matches: bool
+    level_ups_count: int
     upcoming_match: Optional[UpcomingMatch]
     standings: Standings
 
@@ -123,9 +124,25 @@ class GameScreenGuiQueryHandler:
             current_competition=context["competition"],
             competition_type=context["competition_type"],
             has_matches=context["has_matches"],
+            level_ups_count=_count_players_with_unspent_skill_points(
+                clubs,
+                manager_club_id,
+            ),
             upcoming_match=upcoming_match,
             standings=standings,
         )
+
+
+def _count_players_with_unspent_skill_points(clubs, manager_club_id) -> int:
+    club = clubs.get(manager_club_id)
+
+    if club is None:
+        return 0
+
+    return sum(
+        int(slot.player.skill_points > 0)
+        for slot in club.players
+    )
 
 
 def _make_playoff_standings(

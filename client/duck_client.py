@@ -12,6 +12,7 @@ from client.screens.about_screen import AboutScreen
 from client.screens.club_selection_screen import ClubSelectionScreen
 from client.screens.day_results_screen import DayResultsScreen
 from client.screens.game_screen import GameScreen
+from client.screens.level_up_screen import LevelUpScreen
 from client.screens.load_story_screen import LoadStoryScreen
 from client.screens.player_details_screen import PlayerDetailsScreen
 from client.screens.player_selection_screen import PlayerSelectionScreen
@@ -32,6 +33,7 @@ class DuckClientApp(App):
         self.splash_screen = None
         self.story_name_screen = None
         self._club_selection_screen = None
+        self._level_up_screen = None
         self._load_story_screen = None
         self._player_selection_screen = None
         self._player_details_screen = None
@@ -58,6 +60,13 @@ class DuckClientApp(App):
 
         self.story_name_screen = StoryNameScreen(name="story_name")
         self._club_selection_screen = ClubSelectionScreen(name="club_selection")
+        self._level_up_screen = LevelUpScreen(
+            query_handler=ac.level_up_screen_query_handler,
+            improve_player_skill_command_handler=(
+                ac.improve_player_skill_command_handler
+            ),
+            name="level_up",
+        )
         self._load_story_screen = LoadStoryScreen(name="load_story")
         self._player_selection_screen = PlayerSelectionScreen(
             game_service=ac.game_service,
@@ -91,6 +100,7 @@ class DuckClientApp(App):
         self.sm.add_widget(self.game_screen)
         self.sm.add_widget(self.story_name_screen)
         self.sm.add_widget(self._club_selection_screen)
+        self.sm.add_widget(self._level_up_screen)
         self.sm.add_widget(self._load_story_screen)
         self.sm.add_widget(self._player_selection_screen)
         self.sm.add_widget(self._player_details_screen)
@@ -121,6 +131,10 @@ class DuckClientApp(App):
     def switch_to_player_details(self, player_id):
         self.sm.current = "player_details"
         self._player_details_screen.open_player(player_id)
+
+    def switch_to_level_up(self):
+        self.sm.current = "level_up"
+        self._level_up_screen.update()
 
     def switch_to_practice(self):
         self.sm.current = "practice"
