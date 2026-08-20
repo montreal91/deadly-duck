@@ -79,20 +79,19 @@ class Club:
 
     COACH_LEVELS = (0, 1, 2, 3)
 
+    _club_id: str
     _account: DdFinancialAccount
     _fame_tracker: DdFameTracker
     _is_controlled: bool
     _name: str
     _players: Dict[UUID, ClubPlayerSlot]
     _selected_player: Optional[str]
-    _surface: str
 
     def __init__(
             self,
             club_id,
             game_id,
             name: str,
-            surface: str,
             coach_power: int
     ):
         self._club_id = club_id
@@ -103,7 +102,6 @@ class Club:
         self._name = name
         self._players = {}
         self._selected_player = None
-        self._surface = surface
         self._coach_power = coach_power
 
     @property
@@ -113,7 +111,7 @@ class Club:
         return self._account
 
     @property
-    def club_id(self) -> int:
+    def club_id(self) -> str:
         return self._club_id
 
     @property
@@ -149,6 +147,10 @@ class Club:
         return self._is_controlled and self._selected_player is None
 
     @property
+    def has_selected_player(self) -> bool:
+        return self._selected_player is not None
+
+    @property
     def players(self) -> List[ClubPlayerSlot]:
         """List of club players."""
         return list(self._players.values())
@@ -165,12 +167,6 @@ class Club:
         if selected_slot is None:
             return max(raw_players, key=player_model_comparator, default=None)
         return selected_slot.player
-
-    @property
-    def surface(self) -> str:
-        """Court surface where club plays its home matches."""
-
-        return self._surface
 
     def add_fame(self, value: int):
         """Adds new fame instance to the club."""
@@ -257,7 +253,7 @@ class Club:
             self._coach_power = val
 
             for slot in self.players:
-                slot.coach_power = val
+                slot.coach_level = val
 
 
     def set_controlled(self, val: bool):

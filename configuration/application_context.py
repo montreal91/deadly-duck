@@ -9,15 +9,15 @@ import configparser
 import json
 from pathlib import Path
 from sqlite3 import connect
+from sqlite3 import Row
 
 from core.ports.inbound.commands.fire_player import FirePlayerCommandHandler
 from core.ports.inbound.commands.hire_new_player import HireNewPlayerCommandHandler
 from core.ports.inbound.commands.next_day import NextDayCommandHandler
+from core.ports.inbound.commands.select_player_for_match import SelectPlayerForMatchCommandHandler
 from core.ports.inbound.commands.sign_player import SignPlayerCommandHandler
 from core.ports.inbound.commands.select_coach_for_player import SelectCoachForPlayerCommandHandler
-from core.ports.outbound.club_repository import ClubRepository
 from core.game import GameParams
-from core.game_service import FameQueryHandler
 from core.game_service import GameService
 from core.match import ExhaustionCalculator
 from core.match import DdLinearProbabilityCalculator
@@ -33,50 +33,65 @@ from core.queries.main_screen_query import GameScreenGuiQueryHandler
 from core.queries.practice_screen_query import PracticeScreenQueryHandler
 from core.queries.roster_management_screen_query import RosterManagementScreenQueryHandler
 from core.regular_championship import ChampionshipParams
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 
 def _make_db_connection(db_path):
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    return connect(db_path)
+    conn = connect(db_path)
+    conn.row_factory = Row
+    conn.execute("PRAGMA foreign_keys = ON;")
+    return conn
 
 
 class ApplicationContext:
     def __init__(self):
         self._db_connection = _make_db_connection("data/duck.db")
-        self._game_repository = GameRepository(self._db_connection)
-        self._club_repository = ClubRepository(self._game_repository)
+
+        TemporalClubProvider.initialize(self._db_connection)
+        self._temporal_club_provider = TemporalClubProvider.get_instance()
+
+        self._game_repository = GameRepository(
+            self._db_connection,
+        )
+
         self._params = _get_params()
-        self._fame_query_handler = FameQueryHandler(self._club_repository)
 
         self._create_game_command_handler = CreateNewGameCommandHandler(
             self._game_repository,
             self._params,
+            self._temporal_club_provider,
         )
 
-        self._select_club_command_handler = SelectClubCommandHandler(self._game_repository)
+        self._select_club_command_handler = SelectClubCommandHandler(
+            self._game_repository,
+            self._temporal_club_provider,
+        )
 
         self._club_selection_screen_query_handler = ClubSelectionScreenQueryHandler(
-            club_repository=self._club_repository,
+            club_provider=self._temporal_club_provider,
         )
 
-        self._next_day_command_handler = NextDayCommandHandler(self._game_repository)
+        self._next_day_command_handler = NextDayCommandHandler(
+            self._game_repository,
+            self._temporal_club_provider,
+        )
 
         self._game_service = GameService(
             game_repository=self._game_repository,
             game_parameters=self._params,
-            fame_query_handler=self._fame_query_handler,
         )
 
         self._game_screen_ui_query_handler = GameScreenGuiQueryHandler(
             self._game_repository,
-            self._club_repository
+            self._temporal_club_provider,
         )
 
         self._day_results_query_handler = DayResultsQueryHandler(
             self._game_repository,
-            self._club_repository,
+            self._temporal_club_provider,
         )
 
         self._roster_management_screen_query_handler = RosterManagementScreenQueryHandler(
@@ -89,18 +104,27 @@ class ApplicationContext:
 
         self._hire_new_player_command_handler = HireNewPlayerCommandHandler(
             self._game_repository,
+            self._temporal_club_provider,
         )
 
         self._sign_player_command_handler = SignPlayerCommandHandler(
             self._game_repository,
+            self._temporal_club_provider,
         )
 
         self._fire_player_command_handler = FirePlayerCommandHandler(
             self._game_repository,
+            self._temporal_club_provider,
         )
 
         self._select_coach_for_player_command_handler = SelectCoachForPlayerCommandHandler(
             self._game_repository,
+            self._temporal_club_provider,
+        )
+
+        self._select_player_for_match_command_handler = SelectPlayerForMatchCommandHandler(
+            self._game_repository,
+            self._temporal_club_provider,
         )
 
     @property
@@ -159,13 +183,16 @@ class ApplicationContext:
     def select_coach_for_player_command_handler(self):
         return self._select_coach_for_player_command_handler
 
+    @property
+    def select_player_for_match_command_handler(self):
+        return self._select_player_for_match_command_handler
+
 
 def _get_params() -> GameParams:
     path = "configuration/short.ini"
     config = configparser.ConfigParser()
     config.read(path)
     match_params = DdMatchParams(
-        speciality_bonus=config["match"].getfloat("speciality_bonus", 0.0),
         games_to_win=config["match"].getint("games_to_win", 0),
         sets_to_win=config["match"].getint("sets_to_win", 0),
         exhaustion_function=ExhaustionCalculator(

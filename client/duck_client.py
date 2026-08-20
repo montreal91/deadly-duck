@@ -57,7 +57,11 @@ class DuckClientApp(App):
         self.story_name_screen = StoryNameScreen(name="story_name")
         self._club_selection_screen = ClubSelectionScreen(name="club_selection")
         self._load_story_screen = LoadStoryScreen(name="load_story")
-        self._player_selection_screen = PlayerSelectionScreen(name="player_selection")
+        self._player_selection_screen = PlayerSelectionScreen(
+            game_service=ac.game_service,
+            select_player_for_match_command_handler=ac.select_player_for_match_command_handler,
+            name="player_selection",
+        )
         self._practice_screen = PracticeScreen(
             query_handler=ac.practice_screen_query_handler,
             select_coach_for_player_command_handler=ac.select_coach_for_player_command_handler,

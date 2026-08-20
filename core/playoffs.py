@@ -21,7 +21,7 @@ from core.match import DdScheduledMatchStruct
 from core.match import DdStandingsRowStruct
 
 
-ClubPair = Tuple[int, int]
+ClubPair = Tuple[str, str]
 Score = Tuple[int, int]
 
 
@@ -38,17 +38,17 @@ class DdPlayoffParams(NamedTuple):
 class DdPlayoffSeries:
     """A class to describe inner logic of a playoff series."""
 
-    _bottom_club_pk: int
+    _bottom_club_pk: str
     _params: DdPlayoffParams
     _results: List[DdMatchResult]
-    _top_club_pk: int
+    _top_club_pk: str
 
     def __init__(self, params: DdPlayoffParams):
         self._params = params
         self._results = []
 
-        self._top_club_pk = -1
-        self._bottom_club_pk = -2
+        self._top_club_pk = "__top_club_not_set__"
+        self._bottom_club_pk = "__bottom_club_not_set__"
 
     @property
     def pair(self) -> ClubPair:
@@ -82,7 +82,7 @@ class DdPlayoffSeries:
         )
 
     @property
-    def winner(self) -> Optional[int]:
+    def winner(self) -> Optional[str]:
         """
         Winner of the series.
 
@@ -123,7 +123,7 @@ class DdPlayoffScheduledMatchStruct(DdScheduledMatchStruct):
     """Passive class for a scheduled playoff match."""
 
     series: Optional[DdPlayoffSeries]
-    def __init__(self, home_pk: int, away_pk: int):
+    def __init__(self, home_pk: str, away_pk: str):
         super().__init__(home_pk, away_pk)
         self.series = None
 
@@ -134,7 +134,7 @@ class DdPlayoffScheduledMatchStruct(DdScheduledMatchStruct):
 
 
 class DdPlayoff(DdAbstractCompetition):
-    """A class to incapsulate playoff (cup) logic."""
+    """A class to encapsulate playoff (cup) logic."""
 
     _LONG: Tuple[ClubPair, ...] = (
         (0, 8),
@@ -158,7 +158,7 @@ class DdPlayoff(DdAbstractCompetition):
 
     def __init__(
         self,
-        clubs: Dict[int, Club],
+        clubs: Dict[str, Club],
         params: DdPlayoffParams,
         standings: List[DdStandingsRowStruct],
     ):
@@ -223,18 +223,17 @@ class DdPlayoff(DdAbstractCompetition):
 
     def update(self):
         if self.is_over:
-            return None
+            return []
 
         if self.current_matches is None:
             self._day += 1
             if self._day == len(self._schedule) and not self.is_over:
                 self._MakeNewRound()
-            return None
+            return []
 
         day_results = []
         for match in self.current_matches:
-            processor = self._match_processor
-            processor.SetMatchSurface(self._clubs[match.home_pk].surface)
+            processor = self._make_match_processor()
             res = processor.process_match(
                 self._clubs[match.home_pk].selected_player,
                 self._clubs[match.away_pk].selected_player,
@@ -256,7 +255,7 @@ class DdPlayoff(DdAbstractCompetition):
             if day is not None:
                 yield day
 
-    def _GetClubPos(self, club_pk: int) -> int:
+    def _get_club_pos(self, club_pk: str) -> int:
         for i, row in enumerate(self._standings):
             if row.club_id == club_pk:
                 return i
@@ -299,8 +298,8 @@ class DdPlayoff(DdAbstractCompetition):
                 winner1 = self._series[i].winner
                 winner2 = self._series[i + 1].winner
                 pair = [
-                    (winner1, self._GetClubPos(winner1)),
-                    (winner2, self._GetClubPos(winner2)),
+                    (winner1, self._get_club_pos(winner1)),
+                    (winner2, self._get_club_pos(winner2)),
                 ]
                 pair.sort(key=lambda x: x[1])
                 new_series = DdPlayoffSeries(self._params)

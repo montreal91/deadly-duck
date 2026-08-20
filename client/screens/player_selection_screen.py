@@ -14,13 +14,19 @@ from client.widgets.factories import make_label
 from client.widgets.layout import make_three_column_layout
 from client.widgets.opponent_player_details import PlayerDetailsWidget
 from client.widgets.player_selection_table import PlayerSelectionTable
-from configuration.application_context import get_application_context
+from core.ports.inbound.commands.select_player_for_match import SelectPlayerForMatchCommand
 
 
 class PlayerSelectionScreen(Screen):
-    def __init__(self, **kwargs):
+    def __init__(
+            self,
+            game_service,
+            select_player_for_match_command_handler,
+            **kwargs,
+    ):
         super(PlayerSelectionScreen, self).__init__(**kwargs)
-        self._game_service = get_application_context().game_service
+        self._game_service = game_service
+        self._select_player_for_match_command_handler = select_player_for_match_command_handler
 
         self._layout = make_three_column_layout(
             title_text="Select Player",
@@ -103,11 +109,12 @@ class PlayerSelectionScreen(Screen):
         self._layout.center_col.add_widget(Widget())
 
     def _on_submit(self, _):
-        self._game_service.set_player(
+        command = SelectPlayerForMatchCommand(
             game_id=GameContext.get_instance().game_name,
-            manager_club_id=GameContext.get_instance().club_id,
+            club_id=GameContext.get_instance().club_id,
             player_id=self._selection_table.selected_player_id,
         )
+        self._select_player_for_match_command_handler(command)
         self.update()
 
 

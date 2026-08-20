@@ -9,7 +9,6 @@ from typing import Dict
 from typing import Generator
 from typing import List
 from typing import NamedTuple
-from typing import Optional
 
 from core.competition import DdAbstractCompetition
 from core.competition import ScheduleDay
@@ -88,14 +87,13 @@ class RegularChampionship(DdAbstractCompetition):
 
         return 0
 
-    def update(self) -> Optional[List[DdMatchResult]]:
+    def update(self) -> List[DdMatchResult]:
         if self.current_matches is None:
             self._day += 1
-            return None
+            return []
         day_results = []
         for match in self.current_matches:
-            processor = self._match_processor
-            processor.SetMatchSurface(self._clubs[match.home_pk].surface)
+            processor = self._make_match_processor()
             res = processor.process_match(
                 self._clubs[match.home_pk].selected_player,
                 self._clubs[match.away_pk].selected_player,
@@ -109,7 +107,7 @@ class RegularChampionship(DdAbstractCompetition):
         self._results.append(day_results)
         return day_results
 
-    def _make_full_schedule(self, pk_list: List[int]):
+    def _make_full_schedule(self, pk_list: List[str]):
         # Alias to shorten length of code lines
         _Match = DdScheduledMatchStruct
 
@@ -160,20 +158,20 @@ class RegularChampionship(DdAbstractCompetition):
         self._schedule.append(None)
 
 
-def _make_basic_schedule(pk_list: List[int]):
-    def make_pairs(lst: List[int]) -> ScheduleDay:
+def _make_basic_schedule(pk_list: List[str]):
+    def make_pairs(lst: List[str]) -> ScheduleDay:
         num = len(lst) - 1
         mid = len(lst) // 2
         return [
             DdScheduledMatchStruct(lst[i], lst[num-i]) for i in range(mid)
         ]
 
-    def shift(lst: List[int], num: int) -> List[int]:
+    def shift(lst: List[str], num: int) -> List[str]:
         if num == 0:
             return list(lst)
         return [lst[0]] + lst[-num:] + lst[1:-num]
 
-    def shift_gen(lst: List[int]) -> Generator[List[int], None, None]:
+    def shift_gen(lst: List[str]) -> Generator[List[str], None, None]:
         for i in range(len(lst) - 1):
             yield shift(lst, i)
 

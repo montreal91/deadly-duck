@@ -8,3 +8,8 @@
 id = 1
 file = "v001_initial.sql"
 name = "Iinitial Schema"
+
+[[migration]]
+id = 2
+file = "v002_clubs_players_roster_entries.sql"
+name = "Clubs Players Roster Entries"

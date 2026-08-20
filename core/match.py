@@ -75,7 +75,6 @@ class DdMatchResult:
         self.away_pk = None
         self.home_player_snapshot = None
         self.away_player_snapshot = None
-        self.surface = None
         self.attendance = 0
         self.income = 0
         self._sets_to_win = sets_to_win
@@ -126,11 +125,9 @@ class DdMatchResult:
         return (
             f"{self.home_player_snapshot['actual_technique']},"
             f"{self.home_player_snapshot['current_stamina']},"
-            f"{int(self.home_player_snapshot['speciality'] == self.surface)},"
             f"{self.home_sets},"
             f"{self.away_player_snapshot['actual_technique']},"
             f"{self.away_player_snapshot['current_stamina']},"
-            f"{int(self.away_player_snapshot['speciality'] == self.surface)},"
             f"{self.away_sets}"
         )
 
@@ -191,15 +188,13 @@ class DdMatchParams(NamedTuple):
 
     games_to_win: int = 6
     sets_to_win: int = 2
-    speciality_bonus: float = 11.0
 
 
-class DdMatchProcessor:
-    """This class incapsulates inner logic of a tennis match."""
+class MatchEngine:
+    """This class encapsulates inner logic of a tennis match."""
 
     _GAP: int = 2
 
-    _match_surface: str
     _res: DdMatchResult
     _params: DdMatchParams
     _stamina_counter: Dict[str, int]
@@ -218,7 +213,6 @@ class DdMatchProcessor:
         """Processes match and returns the results."""
 
         sets_played = 0
-        self._res.surface = self._match_surface
         self._res.home_player_snapshot = home_player.json
         self._res.away_player_snapshot = away_player.json
 
@@ -253,18 +247,8 @@ class DdMatchProcessor:
 
         return deepcopy(self._res)
 
-    def SetMatchSurface(self, surface: str):
-        """Sets surface on which match will be held."""
-        self._match_surface = surface
-
     def _CalculateActualSkill(self, player, actual_stamina=0):
-        stamina_factor = actual_stamina / player.max_stamina
-        good_speciality = player.speciality == self._match_surface
-        bonus = self._params.speciality_bonus if good_speciality else 1.0
-        return max(
-            player.technique * stamina_factor + bonus,
-            5
-        )
+        return player.calculate_actual_technique(actual_stamina)
 
     def _CalculateActualStamina(self, player, lost_stamina=0):
         return player.current_stamina - lost_stamina

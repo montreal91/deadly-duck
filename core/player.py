@@ -23,17 +23,6 @@ _ENDURANCE_FACTOR = DdPlayerSkills.ENDURANCE_FACTOR
 _PRECISION = 1
 
 
-class DdCourtSurface:
-    """
-    All possible surfaces of courts.
-
-    Constant.
-    """
-    CLAY = "clay"
-    GRASS = "grass"
-    HARD = "hard"
-
-
 class PlayerStats(Jsonable):
     """A passive data structure to store player stats."""
 
@@ -68,7 +57,6 @@ class Player(Jsonable):
         DdField("_endurance", "endurance"),
         DdField("_exhaustion", "exhaustion"),
         DdField("_experience", "experience"),
-        DdField("_speciality", "speciality"),
         DdField("_current_stamina", "current_stamina"),
         DdField("_age", "age"),
         DdField("_reputation", "reputation"),
@@ -82,7 +70,6 @@ class Player(Jsonable):
     _endurance: int
     _exhaustion: int
     _experience: int
-    _speciality: str
 
     _current_stamina: int
     _age: int
@@ -98,7 +85,6 @@ class Player(Jsonable):
         technique: int = 1,
         endurance: int = 1,
         age: int = 30,
-        speciality: str = DdCourtSurface.HARD,
     ):
         self._player_id = str(uuid.uuid4())
         self._first_name = first_name
@@ -107,7 +93,6 @@ class Player(Jsonable):
         self._technique = technique
         self._endurance = endurance
         self._age = age
-        self._speciality = speciality
 
         self._exhaustion = 0
         self._experience = 0
@@ -121,8 +106,15 @@ class Player(Jsonable):
 
     @property
     def actual_technique(self) -> float:
-        stamina_factor = self._current_stamina / self.max_stamina
-        return round(self._technique * stamina_factor, _PRECISION)
+        return self.calculate_actual_technique(self._current_stamina)
+
+    def calculate_actual_technique(self, actual_stamina: float) -> float:
+        stamina_factor = actual_stamina / self.max_stamina
+        min_technique = self._technique * 0.1
+        return round(
+            max(self._technique * stamina_factor, min_technique),
+            _PRECISION,
+        )
 
     @property
     def current_stamina(self) -> int:
@@ -178,8 +170,11 @@ class Player(Jsonable):
             age=self._age,
             exhaustion=self._exhaustion,
             reputation=self._reputation,
-            speciality=self._speciality,
         )
+
+    @property
+    def second_name(self):
+        return self._second_name
 
     @property
     def last_name(self):
@@ -211,10 +206,6 @@ class Player(Jsonable):
         """Shows player reputation level among audience."""
 
         return self._reputation
-
-    @property
-    def speciality(self) -> str:
-        return self._speciality
 
     @property
     def stats(self) -> PlayerStats:
@@ -264,10 +255,12 @@ class Player(Jsonable):
 
     def RecoverStamina(self, recovered_stamina: int):
         self._current_stamina += recovered_stamina
+        self._current_stamina = max(self._current_stamina, 0)
         self._current_stamina = min(self._current_stamina, self.max_stamina)
 
     def RemoveStaminaLostInMatch(self, lost_stamina: int):
         self._current_stamina -= lost_stamina
+        self._current_stamina = max(self._current_stamina, 0)
 
     @staticmethod
     def CalculateNewExperience(sets_won: int, opponent_level: int) -> int:
@@ -286,7 +279,7 @@ class PlayerFactory:
     def __init__(self):
         self._first_names, self._last_names = _load_names()
 
-    def create_player(self, level: int, age: int, speciality: str) -> Player:
+    def create_player(self, level: int, age: int) -> Player:
         """
         Creates a player object of given age and level.
         """
@@ -299,7 +292,6 @@ class PlayerFactory:
             last_name=choice(self._last_names),
             technique=skill_base,
             endurance=skill_base,
-            speciality=speciality,
         )
 
         player.AddExperience(_level_exp(level))

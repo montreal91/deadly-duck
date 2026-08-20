@@ -5,7 +5,6 @@
       "country": "New Zealand",
       "city": "Auckland"
     },
-    "surface": "grass",
     "fame": [
       250,
       0,
@@ -28,7 +27,6 @@
           "endurance": 85,
           "exhaustion": 0,
           "experience": 3900,
-          "speciality": "grass",
           "current_stamina": 85,
           "age": 18,
           "reputation": 433,
@@ -49,7 +47,6 @@
           "endurance": 80,
           "exhaustion": 0,
           "experience": 6000,
-          "speciality": "grass",
           "current_stamina": 80,
           "age": 18,
           "reputation": 1200,
@@ -58,11 +55,11 @@
         },
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "auckland_aces"
   },
   {
     "name": "Brisbane Vipers",
-    "surface": "clay",
     "fame": [
       0,
       0,
@@ -89,7 +86,6 @@
           "endurance": 85,
           "exhaustion": 0,
           "experience": 3300,
-          "speciality": "clay",
           "current_stamina": 85,
           "age": 19,
           "reputation": 412,
@@ -110,7 +106,6 @@
           "endurance": 85,
           "exhaustion": 0,
           "experience": 5250,
-          "speciality": "clay",
           "current_stamina": 85,
           "age": 18,
           "reputation": 750,
@@ -119,11 +114,11 @@
         },
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "brisbane_vipers"
   },
   {
     "name": "Canberra Masters",
-    "surface": "hard",
     "fame": [
       250,
       250,
@@ -146,7 +141,6 @@
           "endurance": 70,
           "exhaustion": 0,
           "experience": 4550,
-          "speciality": "hard",
           "current_stamina": 70,
           "age": 19,
           "reputation": 758,
@@ -167,7 +161,6 @@
           "endurance": 60,
           "exhaustion": 0,
           "experience": 3300,
-          "speciality": "hard",
           "current_stamina": 60,
           "age": 18,
           "reputation": 330,
@@ -176,11 +169,11 @@
         },
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "canberra_masters"
   },
   {
     "name": "Dandenong Pianists",
-    "surface": "hard",
     "fame": [
       0,
       0,
@@ -203,7 +196,6 @@
           "endurance": 80,
           "exhaustion": 0,
           "experience": 3300,
-          "speciality": "hard",
           "current_stamina": 80,
           "age": 19,
           "reputation": 550,
@@ -224,7 +216,6 @@
           "endurance": 95,
           "exhaustion": 0,
           "experience": 6000,
-          "speciality": "hard",
           "current_stamina": 95,
           "age": 18,
           "reputation": 857,
@@ -245,7 +236,6 @@
           "endurance": 65,
           "exhaustion": 0,
           "experience": 750,
-          "speciality": "hard",
           "current_stamina": 65,
           "age": 16,
           "reputation": 0,
@@ -254,11 +244,11 @@
         },
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "dandenong_pianists"
   },
   {
     "name": "Melbourne Rockets",
-    "surface": "hard",
     "fame": [
       0,
       0,
@@ -281,7 +271,6 @@
           "endurance": 75,
           "exhaustion": 0,
           "experience": 3900,
-          "speciality": "hard",
           "current_stamina": 75,
           "age": 20,
           "reputation": 487,
@@ -302,7 +291,6 @@
           "endurance": 60,
           "exhaustion": 0,
           "experience": 750,
-          "speciality": "clay",
           "current_stamina": 50,
           "age": 16,
           "reputation": 0,
@@ -311,11 +299,11 @@
         },
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "melbourne_rockets"
   },
   {
     "name": "Sydney Hearts",
-    "surface": "grass",
     "fame": [
       0,
       250,
@@ -335,7 +323,6 @@
           "endurance": 100,
           "exhaustion": 0,
           "experience": 4550,
-          "speciality": "grass",
           "current_stamina": 100,
           "age": 20,
           "reputation": 910,
@@ -356,7 +343,6 @@
           "endurance": 75,
           "exhaustion": 0,
           "experience": 5250,
-          "speciality": "grass",
           "current_stamina": 75,
           "age": 19,
           "reputation": 875,
@@ -368,11 +354,11 @@
         "coach_level": 0,
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "sydney_hearts"
   },
   {
     "name": "Sydney Queens",
-    "surface": "grass",
     "fame": [
       500,
       0,
@@ -392,7 +378,6 @@
           "endurance": 80,
           "exhaustion": 0,
           "experience": 3300,
-          "speciality": "grass",
           "current_stamina": 80,
           "age": 20,
           "reputation": 412,
@@ -413,7 +398,6 @@
           "endurance": 90,
           "exhaustion": 0,
           "experience": 3300,
-          "speciality": "grass",
           "current_stamina": 90,
           "age": 19,
           "reputation": 330,
@@ -425,11 +409,11 @@
         "coach_level": 0,
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "sydney_queens"
   },
   {
     "name": "Tasmanian Devils",
-    "surface": "hard",
     "fame": [
       0,
       0,
@@ -449,7 +433,6 @@
           "endurance": 85,
           "exhaustion": 0,
           "experience": 4550,
-          "speciality": "hard",
           "current_stamina": 85,
           "age": 20,
           "reputation": 758,
@@ -470,7 +453,6 @@
           "endurance": 75,
           "exhaustion": 0,
           "experience": 2750,
-          "speciality": "hard",
           "current_stamina": 75,
           "age": 19,
           "reputation": 275,
@@ -482,11 +464,11 @@
         "coach_level": 0,
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "tasmanian_devils"
   },
   {
     "name": "Adelaide Falcons",
-    "surface": "hard",
     "fame": [
       0,
       0,
@@ -506,7 +488,6 @@
           "endurance": 80,
           "exhaustion": 0,
           "experience": 2750,
-          "speciality": "hard",
           "current_stamina": 80,
           "age": 18,
           "reputation": 550,
@@ -527,7 +508,6 @@
           "endurance": 85,
           "exhaustion": 0,
           "experience": 5250,
-          "speciality": "hard",
           "current_stamina": 85,
           "age": 18,
           "reputation": 656,
@@ -539,7 +519,8 @@
         "coach_level": 0,
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "adelaide_falcons"
   },
   {
     "name": "Saigon Suns",
@@ -547,7 +528,6 @@
       "country": "Vietnam",
       "city": "Ho Chi Minh City"
     },
-    "surface": "hard",
     "fame": [
       0,
       0,
@@ -567,7 +547,6 @@
           "endurance": 65,
           "exhaustion": 0,
           "experience": 5250,
-          "speciality": "hard",
           "current_stamina": 65,
           "age": 20,
           "reputation": 1050,
@@ -588,7 +567,6 @@
           "endurance": 80,
           "exhaustion": 0,
           "experience": 5250,
-          "speciality": "hard",
           "current_stamina": 80,
           "age": 18,
           "reputation": 525,
@@ -600,11 +578,11 @@
         "coach_level": 0,
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "saigon_suns"
   },
   {
     "name": "Darwin Ducks",
-    "surface": "clay",
     "fame": [
       0,
       0,
@@ -617,14 +595,13 @@
     "player_data": [
       {
         "player": {
-          "first_name": "Bellatrice",
-          "second_name": "Storm",
+          "first_name": "Storm",
+          "second_name": "Bellatrice",
           "last_name": "Thompson",
-          "technique": 75,
-          "endurance": 60,
+          "technique": 100,
+          "endurance": 85,
           "exhaustion": 0,
-          "experience": 1400,
-          "speciality": "hard",
+          "experience": 8100,
           "current_stamina": 60,
           "age": 20,
           "reputation": 200,
@@ -645,7 +622,6 @@
           "endurance": 70,
           "exhaustion": 0,
           "experience": 2750,
-          "speciality": "clay",
           "current_stamina": 70,
           "age": 18,
           "reputation": 675,
@@ -666,7 +642,6 @@
           "endurance": 80,
           "exhaustion": 0,
           "experience": 2750,
-          "speciality": "clay",
           "current_stamina": 80,
           "age": 18,
           "reputation": 132,
@@ -687,7 +662,6 @@
           "endurance": 60,
           "exhaustion": 0,
           "experience": 500,
-          "speciality": "clay",
           "current_stamina": 60,
           "age": 16,
           "reputation": 0,
@@ -699,7 +673,8 @@
         "coach_level": 0,
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "darwin_ducks"
   },
   {
     "name": "Jakarta Jaguars",
@@ -707,7 +682,6 @@
       "country": "Indonesia",
       "city": "Jakarta"
     },
-    "surface": "clay",
     "fame": [
       0,
       0,
@@ -727,7 +701,6 @@
           "endurance": 80,
           "exhaustion": 0,
           "experience": 6000,
-          "speciality": "clay",
           "current_stamina": 80,
           "age": 20,
           "reputation": 750,
@@ -748,7 +721,6 @@
           "endurance": 80,
           "exhaustion": 0,
           "experience": 3900,
-          "speciality": "clay",
           "current_stamina": 80,
           "age": 18,
           "reputation": 487,
@@ -760,7 +732,8 @@
         "coach_level": 0,
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "jakarta_jaguars"
   },
   {
     "name": "Perth Punks",
@@ -768,7 +741,6 @@
       "country": "Australia",
       "city": "Perth"
     },
-    "surface": "hard",
     "fame": [
       0,
       1000,
@@ -788,7 +760,6 @@
           "endurance": 95,
           "exhaustion": 0,
           "experience": 3900,
-          "speciality": "hard",
           "current_stamina": 95,
           "age": 19,
           "reputation": 400,
@@ -809,7 +780,6 @@
           "endurance": 80,
           "exhaustion": 0,
           "experience": 6000,
-          "speciality": "hard",
           "current_stamina": 80,
           "age": 18,
           "reputation": 666,
@@ -821,7 +791,8 @@
         "coach_level": 0,
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "perth_punks"
   },
   {
     "name": "Singapore Flowers",
@@ -829,7 +800,6 @@
       "country": "Singapore",
       "city": "Singapore"
     },
-    "surface": "clay",
     "fame": [
       0,
       0,
@@ -849,7 +819,6 @@
           "endurance": 100,
           "exhaustion": 0,
           "experience": 6800,
-          "speciality": "clay",
           "current_stamina": 100,
           "age": 19,
           "reputation": 550,
@@ -861,11 +830,11 @@
         "coach_level": 0,
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "singapore_flowers"
   },
   {
     "name": "Melbourne Legends",
-    "surface": "grass",
     "fame": [
       1000,
       500,
@@ -885,7 +854,6 @@
           "endurance": 85,
           "exhaustion": 0,
           "experience": 5250,
-          "speciality": "grass",
           "current_stamina": 85,
           "age": 20,
           "reputation": 1750,
@@ -906,7 +874,6 @@
           "endurance": 80,
           "exhaustion": 0,
           "experience": 6000,
-          "speciality": "grass",
           "current_stamina": 80,
           "age": 18,
           "reputation": 1200,
@@ -918,7 +885,8 @@
         "coach_level": 0,
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "melbourne_legends"
   },
   {
     "name": "Western Furies",
@@ -926,7 +894,6 @@
       "city": "Perth",
       "country": "Australia"
     },
-    "surface": "hard",
     "fame": [
       0,
       0,
@@ -946,7 +913,6 @@
           "endurance": 80,
           "exhaustion": 0,
           "experience": 4550,
-          "speciality": "clay",
           "current_stamina": 80,
           "age": 20,
           "reputation": 910,
@@ -967,7 +933,6 @@
           "endurance": 70,
           "exhaustion": 0,
           "experience": 3300,
-          "speciality": "clay",
           "current_stamina": 70,
           "age": 18,
           "reputation": 550,
@@ -979,7 +944,8 @@
         "coach_level": 0,
         "ClubPlayerSlot": true
       }
-    ]
+    ],
+    "club_id": "western_furies"
   },
   {
     "name": "Selangor Royals",
@@ -987,7 +953,6 @@
       "country": "Malaysia",
       "city": "Kuala Lumpur"
     },
-    "surface": "hard",
     "fame": [
       0,
       0,
@@ -997,7 +962,9 @@
     ],
     "balance": 5000000,
     "coach_power": 3,
-    "player_data": []
+    "player_data": [
+    ],
+    "club_id": "selangor_royals"
   },
   {
     "name": "Bangkok Braves",
@@ -1005,7 +972,6 @@
       "country": "Thailand",
       "city": "Bangkok"
     },
-    "surface": "hard",
     "fame": [
       0,
       0,
@@ -1015,6 +981,8 @@
     ],
     "balance": 5000000,
     "coach_power": 3,
-    "player_data": []
+    "player_data": [
+    ],
+    "club_id": "bangkok_braves"
   }
 ]

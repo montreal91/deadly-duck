@@ -10,8 +10,8 @@ I want to write a post(s) to introduce new players to my game and ask them to sh
 2. Adequate dates;
 3. Game Actions API; *(this will induce a lot of refactoring)*;
 4. Game AI API and rudimental implementation; *(this too)*;
-5. Remove surfaces and specializations;
-6. Write a compelling blog post;
+5. ~~Remove surfaces and specializations;~~
+6. ~~Write a compelling blog post;~~
 
 ### Good Ideas
 1. Improve the game balance; *(but it's hard to understand what is a good balance, maybe it's already good enough)*

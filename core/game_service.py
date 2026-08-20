@@ -9,8 +9,6 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 
-from core.ports.outbound.club_repository import ClubRepository
-
 
 class MainScreenInfo(NamedTuple):
     day: int
@@ -31,7 +29,6 @@ class PlayerListInfo(NamedTuple):
     is_selected: bool
     age: int
     exhaustion: int
-    speciality: str
 
 
 class OpponentPlayerInfo(NamedTuple):
@@ -43,7 +40,6 @@ class OpponentPlayerInfo(NamedTuple):
     maximum_stamina: int
     age: int
     exhaustion: int
-    speciality: str
 
 
 class PlayerListScreenInfo(NamedTuple):
@@ -56,7 +52,6 @@ class AgentListInfo(NamedTuple):
     age: int
     technique: float
     endurance: float
-    speciality: str
     contract_cost: int
     name: str
 
@@ -67,27 +62,12 @@ class CourtInfo(NamedTuple):
     ticket_price: int
 
 
-class FameInfo(NamedTuple):
-    club_id: int
-    club_name: str
-    fame: int
-
-
-class FameRatingsQuery(NamedTuple):
-    game_id: str
-
-
-class FameRatingsQueryResult(NamedTuple):
-    fame_ratings: List[FameInfo]
-
-
 class SavedGamesInfo(NamedTuple):
     names: List[str]
 
 
 class OpponentInfo(NamedTuple):
     club_name: str
-    match_surface: str
     player: Optional[PlayerListInfo]
 
 
@@ -96,34 +76,14 @@ class PlayerSelectionScreenInfo(NamedTuple):
     opponent: OpponentInfo
 
 
-class FameQueryHandler:
-    _club_repository: ClubRepository
-
-    def __init__(self, club_repository: ClubRepository):
-        self._club_repository = club_repository
-
-    def handle(self, request: FameRatingsQuery) -> FameRatingsQueryResult:
-        clubs = self._club_repository.get_all_clubs(request.game_id)
-        fames = [
-            FameInfo(club_id=club.club_id, club_name=club.name, fame=club.fame)
-            for club in clubs
-        ]
-
-        return FameRatingsQueryResult(
-            fame_ratings=sorted(fames, key=lambda fame: fame.fame, reverse=True),
-        )
-
-
 class GameService:
     def __init__(
             self,
             game_repository,
             game_parameters,
-            fame_query_handler,
     ):
         self._game_repository = game_repository
         self._parameters = game_parameters
-        self._fame_query_handler = fame_query_handler
 
     def get_saved_games(self):
         return SavedGamesInfo(names=self._game_repository.get_game_ids())
@@ -155,28 +115,11 @@ class GameService:
             opponent=_opponent_dto_to_info(context.get("opponent", None)),
         )
 
-    def save_game(self, game_id):
-        game = self._game_repository.get_game(game_id)
-
-        if game is None:
-            return
-
-        self._game_repository.save_game(game, persistent_save=True)
-
     def proceed(self, game_id):
         game = self._game_repository.get_game(game_id)
         if game is None:
             return
         game.proceed_to_next_competition()
-        self._game_repository.save_game(game, persistent_save=True)
-
-    def set_player(self, game_id, manager_club_id, player_id):
-        game = self._game_repository.get_game(game_id)
-
-        if game is None or player_id is None:
-            return
-
-        game.select_player(player_id=player_id, club_id=manager_club_id)
         self._game_repository.save_game(game)
 
     def get_manager_club_id(self, game_id):
@@ -200,7 +143,6 @@ def _player_to_row_info(player, is_selected, coach_level):
         "is_selected": is_selected,
         "age": player.age,
         "exhaustion": player.exhaustion,
-        "speciality": player.speciality
     }
 
     return PlayerListInfo(**plr)
@@ -222,11 +164,9 @@ def _opponent_dto_to_info(opponent_dto):
             maximum_stamina=opponent_dto.player.max_stamina,
             age=opponent_dto.player.age,
             exhaustion=opponent_dto.player.exhaustion,
-            speciality=opponent_dto.player.speciality,
         )
 
     return OpponentInfo(
         club_name=opponent_dto.club_name,
-        match_surface=opponent_dto.match_surface,
         player=player_info,
     )

@@ -6,6 +6,8 @@ Created December 26, 2025
 from typing import List
 from typing import NamedTuple
 
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
+
 
 class DayResultsQuery:
     def __init__(self, game_id, manager_club_id):
@@ -14,8 +16,8 @@ class DayResultsQuery:
 
 
 class SingleMatchResult(NamedTuple):
-    home_club_id: int
-    away_club_id: int
+    home_club_id: str
+    away_club_id: str
     home_club_name: str
     away_club_name: str
     home_player_name: str
@@ -28,13 +30,13 @@ class DayResultsQueryResult(NamedTuple):
 
 
 class DayResultsQueryHandler:
-    def __init__(self, game_repository, club_repository):
+    def __init__(self, game_repository, club_provider: TemporalClubProvider):
         self._game_repository = game_repository
-        self._club_repository = club_repository
+        self._club_provider = club_provider
 
     def __call__(self, query):
         game = self._game_repository.get_game(query.game_id).get_context(query.manager_club_id)
-        clubs = self._club_repository.get_club_index(query.game_id)
+        clubs = self._club_provider.get_clubs_for_game(query.game_id)
 
         last_results = game["last_results"]
         results = []

@@ -5,7 +5,8 @@ Created December 29, 2025
 """
 from typing import List
 from typing import NamedTuple
-from uuid import UUID
+
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 
 class ClubSelectionScreenQuery(NamedTuple):
@@ -14,7 +15,7 @@ class ClubSelectionScreenQuery(NamedTuple):
 
 class ClubInfo(NamedTuple):
     club_name: str
-    club_id: UUID
+    club_id: str
 
 
 class ClubSelectionScreenQueryResult(NamedTuple):
@@ -22,11 +23,11 @@ class ClubSelectionScreenQueryResult(NamedTuple):
 
 
 class ClubSelectionScreenQueryHandler:
-    def __init__(self, club_repository):
-        self._club_repository = club_repository
+    def __init__(self, club_provider: TemporalClubProvider):
+        self._club_provider = club_provider
 
     def __call__(self, query):
-        clubs = self._club_repository.get_all_clubs(query.game_id)
+        clubs = self._club_provider.get_clubs_for_game(query.game_id).values()
         club_infos = []
 
         for club in clubs:
