@@ -6,10 +6,10 @@ number_of_recent_matches = 5
 sets_to_win = 2
 
 
-class DdGameplayConstants(Enum):
+class GameplayConstants(Enum):
     EXHAUSTION_PER_SET = 4
     EXHAUSTION_PER_TRAINING = 5
-    EXPERIENCE_COEFFICIENT = 50
+    EXPERIENCE_COEFFICIENT = 10
     EXPERIENCE_LEVEL_FACTOR = 5
     LEVEL_EXPERIENCE_COEFFICIENT = 50
     MAX_PLAYERS_IN_CLUB = 5

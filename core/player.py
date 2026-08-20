@@ -14,7 +14,7 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 
-from configuration.config_game import DdGameplayConstants
+from configuration.config_game import GameplayConstants
 from configuration.config_game import DdPlayerSkills
 from core.serialization import DdField
 from core.serialization import Jsonable
@@ -230,7 +230,7 @@ class Player(Jsonable):
         self._experience += experience
         new_level = self.level
 
-        skill_delta = DdGameplayConstants.SKILL_GROWTH_PER_LEVEL.value
+        skill_delta = GameplayConstants.SKILL_GROWTH_PER_LEVEL.value
         while old_level < new_level:
             old_level += 1
             toss = randint(0, 1)
@@ -262,15 +262,6 @@ class Player(Jsonable):
         self._current_stamina -= lost_stamina
         self._current_stamina = max(self._current_stamina, 0)
 
-    @staticmethod
-    def CalculateNewExperience(sets_won: int, opponent_level: int) -> int:
-        base = DdGameplayConstants.EXPERIENCE_COEFFICIENT.value * sets_won
-        factor = DdGameplayConstants.EXPERIENCE_LEVEL_FACTOR.value
-        factor *= opponent_level
-        factor /= 100   # 100%
-        factor += 1
-        return int(round(base * factor))
-
 
 class PlayerFactory:
     _first_names: List[str]
@@ -283,7 +274,7 @@ class PlayerFactory:
         """
         Creates a player object of given age and level.
         """
-        skill_base = DdGameplayConstants.SKILL_BASE.value
+        skill_base = GameplayConstants.SKILL_BASE.value
 
         player = Player(
             age=age,
@@ -351,7 +342,7 @@ def _level_exp(n: int) -> int:
 
     Formula is based on the sum of arithmetic progression.
     """
-    ec = DdGameplayConstants.EXPERIENCE_COEFFICIENT.value
+    ec = GameplayConstants.LEVEL_EXPERIENCE_COEFFICIENT.value
     return int((n * (n + 1) / 2) * ec)
 
 

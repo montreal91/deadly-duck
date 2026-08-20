@@ -11,7 +11,7 @@ from typing import Optional
 from typing import Tuple
 from uuid import UUID
 
-from configuration.config_game import DdGameplayConstants
+from configuration.config_game import GameplayConstants
 from core.financial import DdFinancialAccount
 from core.player import Player
 from core.player import player_model_comparator
@@ -193,7 +193,7 @@ class Club:
     def expel_retired_players(self):
         """Removes players from the club which are too old to play."""
 
-        retirement_age = DdGameplayConstants.RETIREMENT_AGE.value
+        retirement_age = GameplayConstants.RETIREMENT_AGE.value
         def age_check(player_slot: ClubPlayerSlot) -> bool:
             return player_slot.player.age < retirement_age
 

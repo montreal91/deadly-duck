@@ -20,7 +20,7 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 
-from configuration.config_game import DdGameplayConstants
+from configuration.config_game import GameplayConstants
 from core.club import Club
 from core.club import ClubPlayerSlot
 from core.competition import CompetitionType
@@ -244,7 +244,7 @@ class Game:
 
         player = self._player_factory.create_player(
             level=0,
-            age=DdGameplayConstants.STARTING_AGE.value,
+            age=GameplayConstants.STARTING_AGE.value,
         )
         self._process_player_hire(club_pk=club_id, player=player)
 
@@ -306,7 +306,7 @@ class Game:
             return False, "This player already has a contract for the next season."
 
         next_age = player_slot.player.age + 1
-        if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
+        if next_age >= GameplayConstants.RETIREMENT_AGE.value:
             return False, f"{player_slot.player.initials} is too old to play next season."
 
         cost = self._contract_calculator(player_slot.player.level)
@@ -376,7 +376,7 @@ class Game:
         def check_club(c: Club) -> bool:
             for slot in c.players:
                 next_age = slot.player.age + 1
-                if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
+                if next_age >= GameplayConstants.RETIREMENT_AGE.value:
                     continue
                 if not slot.has_next_contract:
                     return False
@@ -473,8 +473,8 @@ class Game:
         for _ in range(randint(3, 10)):
             new_agents.append(self._player_factory.create_player(
                 age=randint(
-                    DdGameplayConstants.STARTING_AGE.value,
-                    DdGameplayConstants.RETIREMENT_AGE.value - 1
+                    GameplayConstants.STARTING_AGE.value,
+                    GameplayConstants.RETIREMENT_AGE.value - 1
                 ),
                 level=randint(1, 10),
             ))
@@ -542,7 +542,7 @@ class Game:
             if all(techs):
                 new_player = self._player_factory.create_player(
                     level=0,
-                    age=DdGameplayConstants.STARTING_AGE.value,
+                    age=GameplayConstants.STARTING_AGE.value,
                 )
                 club.add_player(new_player)
 
@@ -583,7 +583,7 @@ class Game:
                 continue
 
             club.add_player(self._player_factory.create_player(
-                age=DdGameplayConstants.STARTING_AGE.value,
+                age=GameplayConstants.STARTING_AGE.value,
                 level=randint(5, 10),
             ))
 
