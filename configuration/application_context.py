@@ -30,7 +30,7 @@ from core.ports.outbound.game_repository import GameRepository
 from core.ports.outbound.player_repository import PlayerRepository
 from core.queries.club_selection_screen_query import ClubSelectionScreenQueryHandler
 from core.queries.day_results_query import DayResultsQueryHandler
-from core.queries.main_screen_query import GameScreenGuiQueryHandler
+from core.queries.game_screen_query import GameScreenGuiQueryHandler
 from core.queries.player_details_screen_query import PlayerDetailsScreenQueryHandler
 from core.queries.practice_screen_query import PracticeScreenQueryHandler
 from core.queries.roster_management_screen_query import RosterManagementScreenQueryHandler
