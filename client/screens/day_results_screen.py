@@ -60,9 +60,14 @@ class DayResultsScreen(Screen):
         )
 
         for res in match_results:
-            line = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(80))
+            is_user_result = res.experience_gained is not None
+            line = BoxLayout(
+                orientation="vertical",
+                size_hint_y=None,
+                height=dp(105 if is_user_result else 80),
+            )
 
-            if res.home_club_id == cid or res.away_club_id == cid:
+            if is_user_result:
                 with line.canvas.before:
                     line._bg_color = Color(rgba=(.2, .2, .2, 1))
                     line._bg_rect = Rectangle(pos=line.pos, size=line.size)
@@ -80,6 +85,14 @@ class DayResultsScreen(Screen):
                 text=res.score,
                 font_size=30,
             ))
+            if is_user_result:
+                line.add_widget(make_label(
+                    text=_make_experience_text(
+                        res.user_player_name,
+                        res.experience_gained,
+                    ),
+                    font_size=24,
+                ))
             self._layout.center_col.add_widget(line)
 
         self._layout.center_col.add_widget(Widget())
@@ -96,6 +109,10 @@ def _sort_manager_club_results_first(results, manager_club_id):
             manager_club_id not in (result.home_club_id, result.away_club_id)
         ),
     )
+
+
+def _make_experience_text(player_name, experience_gained):
+    return f"{player_name} gained {experience_gained} pts. of experience."
 
 
 def _update_bg(self, *_):

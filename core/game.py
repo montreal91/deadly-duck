@@ -383,7 +383,7 @@ class Game:
             return True
 
         for club in self._clubs.values():
-            if not club.is_controlled:
+            if not self._is_manager_club(club.club_id):
                 continue
             if not check_club(club):
                 return False
@@ -434,7 +434,7 @@ class Game:
             return self._calculate_club_practice_cost(c) <= c.account.balance
 
         for club in self._clubs.values():
-            if not club.is_controlled:
+            if not self._is_manager_club(club.club_id):
                 continue
             if not check_club(club):
                 return False
@@ -536,7 +536,7 @@ class Game:
 
     def _hire_players_if_needed(self):
         for club in self._clubs.values():
-            if club.is_controlled:
+            if self._is_manager_club(club.club_id):
                 continue
             techs = [slot.player.actual_technique < 5 for slot in club.players]
             if all(techs):
@@ -549,7 +549,7 @@ class Game:
     def _is_club_valid(self, pk: str) -> bool:
         opponent = self._get_opponent(pk)
         club: Club = self._clubs[pk]
-        if opponent is None or not club.is_controlled:
+        if opponent is None or not self._is_manager_club(pk):
             return True
 
         best_player = max(
@@ -574,11 +574,12 @@ class Game:
                 slot.player.AgeUp()
                 slot.player.AfterSeasonRest()
                 slot.has_next_contract = False
-            club.add_fame(self._season_fame[row.club_id])
+            # TODO: Fix fame calculation
+            # club.add_fame(self._season_fame[row.club_id])
             self._season_fame[row.club_id] = 0
             club.expel_retired_players()
 
-            if club.is_controlled:
+            if self._is_manager_club(club.club_id):
                 continue
 
             club.add_player(self._player_factory.create_player(
@@ -600,7 +601,7 @@ class Game:
             return
 
         for club in self._clubs.values():
-            if club.is_controlled:
+            if self._is_manager_club(club.club_id):
                 club.account.ProcessTransaction(DdTransaction(
                     -self._calculate_club_practice_cost(club),
                     f"Practice on day {self._competition.day}"
@@ -628,6 +629,11 @@ class Game:
             f"You need at least ${cost}."
         )
         self._clubs[club_pk].add_player(player)
+        if self._is_manager_club(club_pk):
+            self._clubs[club_pk].select_coach(
+                coach_index=0,
+                player_id=player.player_id,
+            )
         self._clubs[club_pk].account.ProcessTransaction(DdTransaction(
             -cost,
             f"New player contract with {player.initials}."
@@ -658,6 +664,9 @@ class Game:
 
         return player_ids
 
+    def _is_manager_club(self, club_id: str) -> bool:
+        return self._manager_club_id == club_id
+
     def _simulate(self, years):
         while len(self._history) < years:
             self.update()
@@ -677,15 +686,15 @@ class Game:
             club.select_player(None)
 
     def _update_season_fame(self):
-        for pk in self._clubs:
-            self._season_fame[pk] += self._competition.get_club_fame(pk)
+        # TODO: Fix fame calculation
+        pass
 
     # This whole method is a temporary hack before I'll implement a proper AI
     def _shuffle_coach_powers(self):
         from random import shuffle
-        strong_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 3 and not club.is_controlled]
-        medium_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 2 and not club.is_controlled]
-        weaksy_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 1 and not club.is_controlled]
+        strong_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 3 and not self._is_manager_club(pk)]
+        medium_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 2 and not self._is_manager_club(pk)]
+        weaksy_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 1 and not self._is_manager_club(pk)]
 
         shuffle(strong_clubs)
         shuffle(medium_clubs)
