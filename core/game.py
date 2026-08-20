@@ -1,4 +1,3 @@
-
 """
 The actual game.
 
@@ -39,6 +38,7 @@ from core.playoffs import DdPlayoffParams
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import RegularChampionship
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
+from core.skill_upgrade_system import upgrade_skills
 
 _CLUB_ID_ERROR = "Incorrect club id."
 _UNCONTRACTED_PLAYERS_ERROR = (
@@ -256,7 +256,7 @@ class Game:
             step = self.update()
 
     def select_coach_for_player(
-        self, coach_index: int, player_id: str, club_index: str
+            self, coach_index: int, player_id: str, club_index: str
     ):
         """
         Selects a coach (bad, normal, or good) for the player in the club.
@@ -348,6 +348,12 @@ class Game:
 
         self._perform_practice()
         self._play_one_day()
+
+        upgrade_skills(
+            clubs=self._clubs,
+            manager_club_id=self._manager_club_id,
+        )
+
         self._unselect()
 
         if self.season_over:
@@ -692,9 +698,12 @@ class Game:
     # This whole method is a temporary hack before I'll implement a proper AI
     def _shuffle_coach_powers(self):
         from random import shuffle
-        strong_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 3 and not self._is_manager_club(pk)]
-        medium_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 2 and not self._is_manager_club(pk)]
-        weaksy_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 1 and not self._is_manager_club(pk)]
+        strong_clubs = [pk for pk, club in self._clubs.items() if
+                        club.coach_power == 3 and not self._is_manager_club(pk)]
+        medium_clubs = [pk for pk, club in self._clubs.items() if
+                        club.coach_power == 2 and not self._is_manager_club(pk)]
+        weaksy_clubs = [pk for pk, club in self._clubs.items() if
+                        club.coach_power == 1 and not self._is_manager_club(pk)]
 
         shuffle(strong_clubs)
         shuffle(medium_clubs)
@@ -705,7 +714,6 @@ class Game:
 
         while len(medium_clubs) > 6:
             weaksy_clubs.append(medium_clubs.pop())
-
 
         s, m, w = strong_clubs.pop(), medium_clubs.pop(), weaksy_clubs.pop()
         s, m, w = m, w, s  # cycle
