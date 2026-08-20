@@ -6,7 +6,7 @@ Plans for upcoming versions
 
 * [x] Stable IDs for players and clubs
 * [x] Persistence for players and clubs
-* [ ] Skill selection on level up
+* [x] Skill selection on level up
 * [ ] When selecting the club show their location and motto
 * [ ] Calendar
   * [ ] Current date instead of abstract day (big ass competition refactoring)
@@ -31,6 +31,8 @@ Plans for upcoming versions
 * [ ] Point-by-point match simulations with serve, receive, groundstrokes, footwork, strength, etc
 * [ ] Trophy rooms, for clubs and the players
 * [ ] UI that doesn't break under different resolutions
+* [ ] Basic UI color palette
+* [ ] Club Logos and colors
 
 ## 0.1 (released)
 

@@ -44,12 +44,12 @@ class PlayerDetailsScreenQueryHandler:
             self,
             query: PlayerDetailsScreenQuery,
     ) -> PlayerDetailsScreenQueryResult:
-        player_record = self._player_repository.get_player(
+        player_info = self._player_repository.get_player_with_roster_info(
             game_id=query.game_id,
             player_id=query.player_id,
         )
 
-        if player_record is None:
+        if player_info is None:
             return PlayerDetailsScreenQueryResult(
                 success=False,
                 message=f"Player with id={query.player_id} not found",
@@ -59,14 +59,14 @@ class PlayerDetailsScreenQueryHandler:
         return PlayerDetailsScreenQueryResult(
             success=True,
             message="Ok",
-            player=_make_player_details_info(player_record),
+            player=_make_player_details_info(player_info),
         )
 
 
-def _make_player_details_info(player_record) -> PlayerDetailsInfo:
-    player = player_record.player
+def _make_player_details_info(player_info) -> PlayerDetailsInfo:
+    player = player_info.player
     return PlayerDetailsInfo(
-        player_id=player_record.player_id,
+        player_id=player.player_id,
         name=player.full_name,
         age=player.age,
         level=player.level,
@@ -77,8 +77,8 @@ def _make_player_details_info(player_record) -> PlayerDetailsInfo:
         current_stamina=player.current_stamina,
         max_stamina=player.max_stamina,
         exhaustion=player.exhaustion,
-        club_name=player_record.club_name or "Free Agent",
-        contract_status=_contract_status(player_record.has_next_contract),
+        club_name=player_info.club_name or "Free Agent",
+        contract_status=_contract_status(player_info.has_next_contract),
     )
 
 

@@ -65,7 +65,6 @@ class ApplicationContext:
         self._player_repository = PlayerRepository(
             self._db_connection,
         )
-
         self._params = _get_params()
 
         self._create_game_command_handler = CreateNewGameCommandHandler(
