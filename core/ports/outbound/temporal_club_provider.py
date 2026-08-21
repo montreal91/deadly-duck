@@ -272,8 +272,6 @@ class TemporalClubProvider:
                 game_id,
                 club_id,
                 name,
-                country,
-                city,
                 balance,
                 coach_power,
                 selected_player_id
@@ -282,16 +280,12 @@ class TemporalClubProvider:
                 :game_id,
                 :club_id,
                 :name,
-                :country,
-                :city,
                 :balance,
                 :coach_power,
                 :selected_player_id
             )
             ON CONFLICT(game_id, club_id) DO UPDATE SET
                 name = excluded.name,
-                country = excluded.country,
-                city = excluded.city,
                 balance = excluded.balance,
                 coach_power = excluded.coach_power,
                 selected_player_id = excluded.selected_player_id
@@ -300,8 +294,6 @@ class TemporalClubProvider:
                 "game_id": club.game_id,
                 "club_id": club.club_id,
                 "name": club.name,
-                "country": None,
-                "city": None,
                 "balance": club.account.balance,
                 "coach_power": club.coach_power,
                 "selected_player_id": club._selected_player,

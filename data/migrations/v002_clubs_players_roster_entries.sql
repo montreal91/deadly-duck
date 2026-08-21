@@ -25,8 +25,6 @@ CREATE TABLE IF NOT EXISTS club (
     game_id TEXT NOT NULL,
     club_id TEXT NOT NULL,
     name TEXT NOT NULL,
-    country TEXT,
-    city TEXT,
     balance INTEGER NOT NULL,
     coach_power INTEGER NOT NULL,
     selected_player_id TEXT,

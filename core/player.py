@@ -376,6 +376,6 @@ def level_exp(n: int) -> int:
 
 def _load_names() -> Tuple[List[str], List[str]]:
     """Utility function that loads names from the file on the disk."""
-    with open("configuration/names.json") as datafile:
+    with open("data/names.json") as datafile:
         all_names = json.load(datafile)
     return all_names["names"], all_names["surnames"]
