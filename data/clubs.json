@@ -1,10 +1,6 @@
 [
   {
     "name": "Auckland Aces",
-    "location": {
-      "country": "New Zealand",
-      "city": "Auckland"
-    },
     "fame": [
       250,
       0,
@@ -56,7 +52,13 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "auckland_aces"
+    "club_id": "auckland_aces",
+    "info": {
+      "country": "New Zealand",
+      "city": "Auckland",
+      "motto": "Acing every point.",
+      "description": "The description of Auckland Aces."
+    }
   },
   {
     "name": "Brisbane Vipers",
@@ -69,10 +71,6 @@
     ],
     "balance": 1000000,
     "coach_power": 1,
-    "location": {
-      "country": "Australia",
-      "city": "Brisbane"
-    },
     "player_data": [
       {
         "coach_level": 0,
@@ -115,7 +113,13 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "brisbane_vipers"
+    "club_id": "brisbane_vipers",
+    "info": {
+      "country": "Australia",
+      "city": "Brisbane",
+      "motto": "Brisbane Vipers motto",
+      "description": "Brisbane Vipers description."
+    }
   },
   {
     "name": "Canberra Masters",
@@ -170,7 +174,13 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "canberra_masters"
+    "club_id": "canberra_masters",
+    "info": {
+      "country": "Australia",
+      "city": "Canberra",
+      "motto": "Discipline decides.",
+      "description": "One of the Original Six clubs."
+    }
   },
   {
     "name": "Dandenong Pianists",
@@ -245,7 +255,13 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "dandenong_pianists"
+    "club_id": "dandenong_pianists",
+    "info": {
+      "country": "Australia",
+      "city": "Dandenong",
+      "motto": "Play the tune.",
+      "description": "One of the Original Six clubs. The most successfull club in the history of the league."
+    }
   },
   {
     "name": "Melbourne Rockets",
@@ -300,7 +316,13 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "melbourne_rockets"
+    "club_id": "melbourne_rockets",
+    "info": {
+      "country": "Australia",
+      "city": "Melbourne",
+      "motto": "Let's rock!.",
+      "description": "One of the Original Six clubs. Aimed to the sky, they play with rock music in their hearts."
+    }
   },
   {
     "name": "Sydney Hearts",
@@ -355,7 +377,13 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "sydney_hearts"
+    "club_id": "sydney_hearts",
+    "info": {
+      "country": "Australia",
+      "city": "Sydney",
+      "motto": "Never lose your heart.",
+      "description": "Sydney Hearts description."
+    }
   },
   {
     "name": "Sydney Queens",
@@ -410,7 +438,13 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "sydney_queens"
+    "club_id": "sydney_queens",
+    "info": {
+      "country": "Australia",
+      "city": "Sydney",
+      "motto": "The Show Must Go On",
+      "description": "One of the Original Six clubs"
+    }
   },
   {
     "name": "Tasmanian Devils",
@@ -465,7 +499,13 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "tasmanian_devils"
+    "club_id": "tasmanian_devils",
+    "info": {
+      "country": "Australia",
+      "city": "Hobart",
+      "motto": "Devilish Power",
+      "description": "The description of Tasmanian Devils."
+    }
   },
   {
     "name": "Adelaide Falcons",
@@ -520,14 +560,16 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "adelaide_falcons"
+    "club_id": "adelaide_falcons",
+    "info": {
+      "country": "Australia",
+      "city": "Adelaide",
+      "motto": "Flying high",
+      "description": "The description of Adelaide Falcons."
+    }
   },
   {
     "name": "Saigon Suns",
-    "location": {
-      "country": "Vietnam",
-      "city": "Ho Chi Minh City"
-    },
     "fame": [
       0,
       0,
@@ -579,7 +621,13 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "saigon_suns"
+    "club_id": "saigon_suns",
+    "info": {
+      "country": "Vietnam",
+      "city": "Ho Chi Minh City",
+      "motto": "Shining bright.",
+      "description": "The description of Saigon Suns."
+    }
   },
   {
     "name": "Darwin Ducks",
@@ -674,14 +722,16 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "darwin_ducks"
+    "club_id": "darwin_ducks",
+    "info": {
+      "country": "Australia",
+      "city": "Darwin",
+      "motto": "Quack! Quack! Quack!",
+      "description": "One of the Original Six clubs. Some people don't take them seriously. But they definitely should."
+    }
   },
   {
     "name": "Jakarta Jaguars",
-    "location": {
-      "country": "Indonesia",
-      "city": "Jakarta"
-    },
     "fame": [
       0,
       0,
@@ -733,14 +783,16 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "jakarta_jaguars"
+    "club_id": "jakarta_jaguars",
+    "info": {
+      "country": "Indonesia",
+      "city": "Jakarta",
+      "motto": "Hear our roar!",
+      "description": "The description of Jakarta Jaguars."
+    }
   },
   {
     "name": "Perth Punks",
-    "location": {
-      "country": "Australia",
-      "city": "Perth"
-    },
     "fame": [
       0,
       1000,
@@ -792,14 +844,16 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "perth_punks"
+    "club_id": "perth_punks",
+    "info": {
+      "country": "Australia",
+      "city": "Perth",
+      "motto": "We are the rebels",
+      "description": "The description of Perth Punks."
+    }
   },
   {
     "name": "Singapore Flowers",
-    "location": {
-      "country": "Singapore",
-      "city": "Singapore"
-    },
     "fame": [
       0,
       0,
@@ -831,10 +885,16 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "singapore_flowers"
+    "club_id": "singapore_flowers",
+    "info": {
+      "country": "Singapore",
+      "city": "Singapore",
+      "motto": "Beauty is strength.",
+      "description": "The description of Singapore Flowers"
+    }
   },
   {
-    "name": "Melbourne Legends",
+    "name": "Melbourne Tech",
     "fame": [
       1000,
       500,
@@ -886,14 +946,16 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "melbourne_legends"
+    "club_id": "melbourne_tech",
+    "info": {
+      "country": "Australia",
+      "city": "Melbourne",
+      "motto": "Precision is progress.",
+      "description": "One of the Original Six clubs, Melbourne Tech grew from a corporate-backed training program into the league's coldest machine."
+    }
   },
   {
     "name": "Western Furies",
-    "location": {
-      "city": "Perth",
-      "country": "Australia"
-    },
     "fame": [
       0,
       0,
@@ -945,14 +1007,16 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "western_furies"
+    "club_id": "western_furies",
+    "info": {
+      "country": "Australia",
+      "city": "Perth",
+      "motto": "Relentless power",
+      "description": "The description of Western Furies."
+    }
   },
   {
     "name": "Selangor Royals",
-    "location": {
-      "country": "Malaysia",
-      "city": "Kuala Lumpur"
-    },
     "fame": [
       0,
       0,
@@ -962,16 +1026,17 @@
     ],
     "balance": 5000000,
     "coach_power": 3,
-    "player_data": [
-    ],
-    "club_id": "selangor_royals"
+    "player_data": [],
+    "club_id": "selangor_royals",
+    "info": {
+      "country": "Malaysia",
+      "city": "Kuala Lumpur",
+      "motto": "The motto of Selangor Royals",
+      "description": "The description of Selangor Royals."
+    }
   },
   {
     "name": "Bangkok Braves",
-    "location": {
-      "country": "Thailand",
-      "city": "Bangkok"
-    },
     "fame": [
       0,
       0,
@@ -981,8 +1046,13 @@
     ],
     "balance": 5000000,
     "coach_power": 3,
-    "player_data": [
-    ],
-    "club_id": "bangkok_braves"
+    "player_data": [],
+    "club_id": "bangkok_braves",
+    "info": {
+      "country": "Thailand",
+      "city": "Bangkok",
+      "motto": "The motto of Bangkok Braves",
+      "description": "The description of Bangkok Braves"
+    }
   }
 ]
