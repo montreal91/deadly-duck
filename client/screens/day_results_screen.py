@@ -53,11 +53,21 @@ class DayResultsScreen(Screen):
 
         self._layout.center_col.clear_widgets()
 
-        for res in q_res.match_results_list:
-            line = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(80))
-            cid = GameContext.get_instance().club_id
+        cid = GameContext.get_instance().club_id
+        match_results = _sort_manager_club_results_first(
+            q_res.match_results_list,
+            cid,
+        )
 
-            if res.home_club_id == cid or res.away_club_id == cid:
+        for res in match_results:
+            is_user_result = res.experience_gained is not None
+            line = BoxLayout(
+                orientation="vertical",
+                size_hint_y=None,
+                height=dp(105 if is_user_result else 80),
+            )
+
+            if is_user_result:
                 with line.canvas.before:
                     line._bg_color = Color(rgba=(.2, .2, .2, 1))
                     line._bg_rect = Rectangle(pos=line.pos, size=line.size)
@@ -75,6 +85,14 @@ class DayResultsScreen(Screen):
                 text=res.score,
                 font_size=30,
             ))
+            if is_user_result:
+                line.add_widget(make_label(
+                    text=_make_experience_text(
+                        res.user_player_name,
+                        res.experience_gained,
+                    ),
+                    font_size=24,
+                ))
             self._layout.center_col.add_widget(line)
 
         self._layout.center_col.add_widget(Widget())
@@ -82,6 +100,19 @@ class DayResultsScreen(Screen):
 
 def _on_to_game(_):
     App.get_running_app().return_to_game()
+
+
+def _sort_manager_club_results_first(results, manager_club_id):
+    return sorted(
+        results,
+        key=lambda result: int(
+            manager_club_id not in (result.home_club_id, result.away_club_id)
+        ),
+    )
+
+
+def _make_experience_text(player_name, experience_gained):
+    return f"{player_name} gained {experience_gained} pts. of experience."
 
 
 def _update_bg(self, *_):

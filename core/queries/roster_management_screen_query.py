@@ -7,7 +7,7 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 
-from configuration.config_game import DdGameplayConstants
+from configuration.config_game import GameplayConstants
 
 
 class RosterManagementScreenQuery(NamedTuple):
@@ -68,7 +68,7 @@ def _player_slot_to_roster_info(player_slot, player_pos):
     contract_cost = None
     contract_status = "Signed"
     next_age = player.age + 1
-    is_last_season = next_age >= DdGameplayConstants.RETIREMENT_AGE.value
+    is_last_season = next_age >= GameplayConstants.RETIREMENT_AGE.value
 
     if not player_slot.has_next_contract and not is_last_season:
         contract_cost = player_slot.contract_cost

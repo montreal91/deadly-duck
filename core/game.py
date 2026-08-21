@@ -1,4 +1,3 @@
-
 """
 The actual game.
 
@@ -20,7 +19,7 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 
-from configuration.config_game import DdGameplayConstants
+from configuration.config_game import GameplayConstants
 from core.club import Club
 from core.club import ClubPlayerSlot
 from core.competition import CompetitionType
@@ -39,6 +38,7 @@ from core.playoffs import DdPlayoffParams
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import RegularChampionship
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
+from core.skill_upgrade_system import upgrade_skills
 
 _CLUB_ID_ERROR = "Incorrect club id."
 _UNCONTRACTED_PLAYERS_ERROR = (
@@ -244,7 +244,7 @@ class Game:
 
         player = self._player_factory.create_player(
             level=0,
-            age=DdGameplayConstants.STARTING_AGE.value,
+            age=GameplayConstants.STARTING_AGE.value,
         )
         self._process_player_hire(club_pk=club_id, player=player)
 
@@ -256,7 +256,7 @@ class Game:
             step = self.update()
 
     def select_coach_for_player(
-        self, coach_index: int, player_id: str, club_index: str
+            self, coach_index: int, player_id: str, club_index: str
     ):
         """
         Selects a coach (bad, normal, or good) for the player in the club.
@@ -306,7 +306,7 @@ class Game:
             return False, "This player already has a contract for the next season."
 
         next_age = player_slot.player.age + 1
-        if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
+        if next_age >= GameplayConstants.RETIREMENT_AGE.value:
             return False, f"{player_slot.player.initials} is too old to play next season."
 
         cost = self._contract_calculator(player_slot.player.level)
@@ -348,6 +348,12 @@ class Game:
 
         self._perform_practice()
         self._play_one_day()
+
+        upgrade_skills(
+            clubs=self._clubs,
+            manager_club_id=self._manager_club_id,
+        )
+
         self._unselect()
 
         if self.season_over:
@@ -376,14 +382,14 @@ class Game:
         def check_club(c: Club) -> bool:
             for slot in c.players:
                 next_age = slot.player.age + 1
-                if next_age >= DdGameplayConstants.RETIREMENT_AGE.value:
+                if next_age >= GameplayConstants.RETIREMENT_AGE.value:
                     continue
                 if not slot.has_next_contract:
                     return False
             return True
 
         for club in self._clubs.values():
-            if not club.is_controlled:
+            if not self._is_manager_club(club.club_id):
                 continue
             if not check_club(club):
                 return False
@@ -434,7 +440,7 @@ class Game:
             return self._calculate_club_practice_cost(c) <= c.account.balance
 
         for club in self._clubs.values():
-            if not club.is_controlled:
+            if not self._is_manager_club(club.club_id):
                 continue
             if not check_club(club):
                 return False
@@ -473,8 +479,8 @@ class Game:
         for _ in range(randint(3, 10)):
             new_agents.append(self._player_factory.create_player(
                 age=randint(
-                    DdGameplayConstants.STARTING_AGE.value,
-                    DdGameplayConstants.RETIREMENT_AGE.value - 1
+                    GameplayConstants.STARTING_AGE.value,
+                    GameplayConstants.RETIREMENT_AGE.value - 1
                 ),
                 level=randint(1, 10),
             ))
@@ -536,20 +542,20 @@ class Game:
 
     def _hire_players_if_needed(self):
         for club in self._clubs.values():
-            if club.is_controlled:
+            if self._is_manager_club(club.club_id):
                 continue
             techs = [slot.player.actual_technique < 5 for slot in club.players]
             if all(techs):
                 new_player = self._player_factory.create_player(
                     level=0,
-                    age=DdGameplayConstants.STARTING_AGE.value,
+                    age=GameplayConstants.STARTING_AGE.value,
                 )
                 club.add_player(new_player)
 
     def _is_club_valid(self, pk: str) -> bool:
         opponent = self._get_opponent(pk)
         club: Club = self._clubs[pk]
-        if opponent is None or not club.is_controlled:
+        if opponent is None or not self._is_manager_club(pk):
             return True
 
         best_player = max(
@@ -574,15 +580,16 @@ class Game:
                 slot.player.AgeUp()
                 slot.player.AfterSeasonRest()
                 slot.has_next_contract = False
-            club.add_fame(self._season_fame[row.club_id])
+            # TODO: Fix fame calculation
+            # club.add_fame(self._season_fame[row.club_id])
             self._season_fame[row.club_id] = 0
             club.expel_retired_players()
 
-            if club.is_controlled:
+            if self._is_manager_club(club.club_id):
                 continue
 
             club.add_player(self._player_factory.create_player(
-                age=DdGameplayConstants.STARTING_AGE.value,
+                age=GameplayConstants.STARTING_AGE.value,
                 level=randint(5, 10),
             ))
 
@@ -600,7 +607,7 @@ class Game:
             return
 
         for club in self._clubs.values():
-            if club.is_controlled:
+            if self._is_manager_club(club.club_id):
                 club.account.ProcessTransaction(DdTransaction(
                     -self._calculate_club_practice_cost(club),
                     f"Practice on day {self._competition.day}"
@@ -628,6 +635,11 @@ class Game:
             f"You need at least ${cost}."
         )
         self._clubs[club_pk].add_player(player)
+        if self._is_manager_club(club_pk):
+            self._clubs[club_pk].select_coach(
+                coach_index=0,
+                player_id=player.player_id,
+            )
         self._clubs[club_pk].account.ProcessTransaction(DdTransaction(
             -cost,
             f"New player contract with {player.initials}."
@@ -658,6 +670,9 @@ class Game:
 
         return player_ids
 
+    def _is_manager_club(self, club_id: str) -> bool:
+        return self._manager_club_id == club_id
+
     def _simulate(self, years):
         while len(self._history) < years:
             self.update()
@@ -677,15 +692,18 @@ class Game:
             club.select_player(None)
 
     def _update_season_fame(self):
-        for pk in self._clubs:
-            self._season_fame[pk] += self._competition.get_club_fame(pk)
+        # TODO: Fix fame calculation
+        pass
 
     # This whole method is a temporary hack before I'll implement a proper AI
     def _shuffle_coach_powers(self):
         from random import shuffle
-        strong_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 3 and not club.is_controlled]
-        medium_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 2 and not club.is_controlled]
-        weaksy_clubs = [pk for pk, club in self._clubs.items() if club.coach_power == 1 and not club.is_controlled]
+        strong_clubs = [pk for pk, club in self._clubs.items() if
+                        club.coach_power == 3 and not self._is_manager_club(pk)]
+        medium_clubs = [pk for pk, club in self._clubs.items() if
+                        club.coach_power == 2 and not self._is_manager_club(pk)]
+        weaksy_clubs = [pk for pk, club in self._clubs.items() if
+                        club.coach_power == 1 and not self._is_manager_club(pk)]
 
         shuffle(strong_clubs)
         shuffle(medium_clubs)
@@ -696,7 +714,6 @@ class Game:
 
         while len(medium_clubs) > 6:
             weaksy_clubs.append(medium_clubs.pop())
-
 
         s, m, w = strong_clubs.pop(), medium_clubs.pop(), weaksy_clubs.pop()
         s, m, w = m, w, s  # cycle

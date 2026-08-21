@@ -6,18 +6,19 @@ number_of_recent_matches = 5
 sets_to_win = 2
 
 
-class DdGameplayConstants(Enum):
+class GameplayConstants(Enum):
     EXHAUSTION_PER_SET = 4
     EXHAUSTION_PER_TRAINING = 5
-    EXPERIENCE_COEFFICIENT = 50
+    EXPERIENCE_COEFFICIENT = 10
     EXPERIENCE_LEVEL_FACTOR = 5
     LEVEL_EXPERIENCE_COEFFICIENT = 50
     MAX_PLAYERS_IN_CLUB = 5
     RETIREMENT_AGE = 21
     SKILL_BASE = 50
-    SKILL_GROWTH_PER_LEVEL = 5
+    SKILL_GROWTH_PER_POINT = 5
     STAMINA_RECOVERY_PER_DAY = 25
     STARTING_AGE = 16
+    SKILL_POINTS_PER_LEVEL = 1
 
 
 class DdLeagueConfig:

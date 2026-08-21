@@ -15,6 +15,7 @@ from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 
+from configuration.config_game import GameplayConstants
 from core.player import Player
 from stat_tools import LoadedToss
 
@@ -96,9 +97,7 @@ class DdMatchResult:
 
         if self.home_player_snapshot is None:
             return 0
-        return Player.CalculateNewExperience(
-            self.away_sets, self.home_player_snapshot["level"]
-        )
+        return _calculate_new_experience(self.away_games)
 
     @property
     def away_games(self) -> int:
@@ -143,9 +142,7 @@ class DdMatchResult:
 
         if self.away_player_snapshot is None:
             return 0
-        return Player.CalculateNewExperience(
-            self.home_sets, self.away_player_snapshot["level"]
-        )
+        return _calculate_new_experience(self.home_games)
 
     @property
     def home_games(self) -> int:
@@ -231,8 +228,8 @@ class MatchEngine:
                 self._reputation_function(set_result.away_games) * sets_played
             )
 
-        home_player.AddExperience(self._res.home_exp)
-        away_player.AddExperience(self._res.away_exp)
+        home_player.add_experience(self._res.home_exp)
+        away_player.add_experience(self._res.away_exp)
 
         home_player.RemoveStaminaLostInMatch(self._stamina_counter["home"])
         away_player.RemoveStaminaLostInMatch(self._stamina_counter["away"])
@@ -417,3 +414,7 @@ class DdLinearProbabilityCalculator:
 
     def __init__(self, koefficient: float):
         self._koefficient = koefficient
+
+
+def _calculate_new_experience(games_won: int) -> int:
+    return games_won * GameplayConstants.EXPERIENCE_COEFFICIENT.value

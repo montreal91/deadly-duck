@@ -7,14 +7,14 @@ Created Apr 09, 2019
 
 import json
 import uuid
+from enum import Enum
 from random import choice
-from random import randint
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
 
-from configuration.config_game import DdGameplayConstants
+from configuration.config_game import GameplayConstants
 from configuration.config_game import DdPlayerSkills
 from core.serialization import DdField
 from core.serialization import Jsonable
@@ -23,6 +23,7 @@ _ENDURANCE_FACTOR = DdPlayerSkills.ENDURANCE_FACTOR
 _PRECISION = 1
 
 
+# TODO: Get rid of Jsonable stuff
 class PlayerStats(Jsonable):
     """A passive data structure to store player stats."""
 
@@ -45,6 +46,11 @@ class PlayerStats(Jsonable):
         self.matches_won = 0
 
 
+class SkillSet(Enum):
+    TECHNIQUE = "technique"
+    ENDURANCE = "endurance"
+
+
 class Player(Jsonable):
     """A class that describes a tennis player."""
 
@@ -57,6 +63,7 @@ class Player(Jsonable):
         DdField("_endurance", "endurance"),
         DdField("_exhaustion", "exhaustion"),
         DdField("_experience", "experience"),
+        DdField("_skill_points", "skill_points"),
         DdField("_current_stamina", "current_stamina"),
         DdField("_age", "age"),
         DdField("_reputation", "reputation"),
@@ -70,6 +77,7 @@ class Player(Jsonable):
     _endurance: int
     _exhaustion: int
     _experience: int
+    _skill_points: int
 
     _current_stamina: int
     _age: int
@@ -96,9 +104,14 @@ class Player(Jsonable):
 
         self._exhaustion = 0
         self._experience = 0
+        self._skill_points = 0
         self._current_stamina = self.max_stamina
         self._reputation = 0
         self._stats = PlayerStats()
+
+    def __from_json__(self, data: Dict[str, Any]):
+        data.setdefault("skill_points", 0)
+        super().__from_json__(data)
 
     @property
     def age(self):
@@ -121,7 +134,7 @@ class Player(Jsonable):
         return self._current_stamina
 
     @property
-    def endurance(self) -> float:
+    def endurance(self) -> int:
         return self._endurance
 
     @property
@@ -133,6 +146,10 @@ class Player(Jsonable):
         """Player's current experience."""
 
         return self._experience
+
+    @property
+    def skill_points(self) -> int:
+        return self._skill_points
 
     @property
     def first_name(self):
@@ -167,6 +184,7 @@ class Player(Jsonable):
             max_stamina=self.max_stamina,
             actual_technique=self.actual_technique,
             level=self.level,
+            skill_points=self._skill_points,
             age=self._age,
             exhaustion=self._exhaustion,
             reputation=self._reputation,
@@ -188,7 +206,7 @@ class Player(Jsonable):
     def level(self) -> int:
         """Current level of the player."""
         level = 0
-        while not self._experience < _level_exp(level + 1):
+        while not self._experience < level_exp(level + 1):
             level += 1
         return level
 
@@ -199,7 +217,7 @@ class Player(Jsonable):
     # 'exp' stands for experience
     @property
     def next_level_exp(self) -> int:
-        return _level_exp(self.level + 1)
+        return level_exp(self.level + 1)
 
     @property
     def reputation(self) -> int:
@@ -212,7 +230,7 @@ class Player(Jsonable):
         return self._stats
 
     @property
-    def technique(self):
+    def technique(self) -> int:
         return self._technique
 
     def AddExhaustion(self, value: int):
@@ -220,7 +238,22 @@ class Player(Jsonable):
 
         self._exhaustion += value
 
-    def AddExperience(self, experience: int):
+    def improve_skill(self, skill_points: int, skill: SkillSet):
+        if skill_points > self._skill_points or skill_points < 0:
+            return # No skill improvement beyond limits or negative improvement
+
+        skill_growth_coefficient = GameplayConstants.SKILL_GROWTH_PER_POINT.value
+
+        if skill == SkillSet.TECHNIQUE:
+            self._technique += skill_points * skill_growth_coefficient
+        elif skill == SkillSet.ENDURANCE:
+            self._endurance += skill_points * skill_growth_coefficient
+        else:
+            raise ValueError("Unknown skill")
+
+        self._skill_points -= skill_points
+
+    def add_experience(self, experience: int):
         """
         Adds new experience.
 
@@ -230,14 +263,9 @@ class Player(Jsonable):
         self._experience += experience
         new_level = self.level
 
-        skill_delta = DdGameplayConstants.SKILL_GROWTH_PER_LEVEL.value
         while old_level < new_level:
             old_level += 1
-            toss = randint(0, 1)
-            if toss:
-                self._technique += skill_delta
-            else:
-                self._endurance += skill_delta
+            self._skill_points += GameplayConstants.SKILL_POINTS_PER_LEVEL.value
 
     def AddReputation(self, rep: int):
         """Adds new reputation."""
@@ -262,15 +290,6 @@ class Player(Jsonable):
         self._current_stamina -= lost_stamina
         self._current_stamina = max(self._current_stamina, 0)
 
-    @staticmethod
-    def CalculateNewExperience(sets_won: int, opponent_level: int) -> int:
-        base = DdGameplayConstants.EXPERIENCE_COEFFICIENT.value * sets_won
-        factor = DdGameplayConstants.EXPERIENCE_LEVEL_FACTOR.value
-        factor *= opponent_level
-        factor /= 100   # 100%
-        factor += 1
-        return int(round(base * factor))
-
 
 class PlayerFactory:
     _first_names: List[str]
@@ -283,7 +302,7 @@ class PlayerFactory:
         """
         Creates a player object of given age and level.
         """
-        skill_base = DdGameplayConstants.SKILL_BASE.value
+        skill_base = GameplayConstants.SKILL_BASE.value
 
         player = Player(
             age=age,
@@ -294,7 +313,7 @@ class PlayerFactory:
             endurance=skill_base,
         )
 
-        player.AddExperience(_level_exp(level))
+        player.add_experience(level_exp(level))
         player.AfterSeasonRest()
 
         return player
@@ -346,12 +365,12 @@ def player_model_comparator(player_model):
     return player_model.actual_technique * 1.2 + player_model.endurance
 
 
-def _level_exp(n: int) -> int:
+def level_exp(n: int) -> int:
     """Total experience required to gain a level.
 
     Formula is based on the sum of arithmetic progression.
     """
-    ec = DdGameplayConstants.EXPERIENCE_COEFFICIENT.value
+    ec = GameplayConstants.LEVEL_EXPERIENCE_COEFFICIENT.value
     return int((n * (n + 1) / 2) * ec)
 
 

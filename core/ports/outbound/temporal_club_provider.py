@@ -5,7 +5,7 @@ Created August 19, 2026
 """
 import json
 from sqlite3 import Row
-from typing import Dict
+from typing import Dict, Optional
 from typing import Any
 from typing import Iterable
 
@@ -13,6 +13,7 @@ from core.club import Club
 from core.club import ClubPlayerSlot
 from core.financial import DdTransaction
 from core.player import Player
+from core.ports.outbound.player_mapper import make_player_from_row
 from core.serialization import DdJsonDecoder
 
 
@@ -171,19 +172,7 @@ class TemporalClubProvider:
 
         players = {}
         for row in rows:
-            player = Player(
-                first_name=row["first_name"],
-                second_name=row["second_name"],
-                last_name=row["last_name"],
-                technique=row["technique"],
-                endurance=row["endurance"],
-                age=row["age"],
-            )
-            player._player_id = row["player_id"]
-            player._exhaustion = row["exhaustion"]
-            player._experience = row["experience"]
-            player._current_stamina = row["current_stamina"]
-            player._reputation = row["reputation"]
+            player = make_player_from_row(row)
             players[player.player_id] = player
 
         return players
@@ -210,7 +199,10 @@ class TemporalClubProvider:
         for slot in club.players:
             self._upsert_roster_entry(club, slot)
 
-    def _upsert_player(self, game_id: str, player: Player):
+    def _upsert_player(self, game_id: str, player: Optional[Player]):
+        if player is None:
+            return
+
         self._conn.execute(
             """
             INSERT INTO player (
@@ -224,6 +216,7 @@ class TemporalClubProvider:
                 endurance,
                 exhaustion,
                 experience,
+                skill_points,
                 current_stamina,
                 reputation
             )
@@ -238,6 +231,7 @@ class TemporalClubProvider:
                 :endurance,
                 :exhaustion,
                 :experience,
+                :skill_points,
                 :current_stamina,
                 :reputation
             )
@@ -250,6 +244,7 @@ class TemporalClubProvider:
                 endurance = excluded.endurance,
                 exhaustion = excluded.exhaustion,
                 experience = excluded.experience,
+                skill_points = excluded.skill_points,
                 current_stamina = excluded.current_stamina,
                 reputation = excluded.reputation
             """,
@@ -264,6 +259,7 @@ class TemporalClubProvider:
                 "endurance": player.endurance,
                 "exhaustion": player.exhaustion,
                 "experience": player.experience,
+                "skill_points": player.skill_points,
                 "current_stamina": player.current_stamina,
                 "reputation": player.reputation,
             },
