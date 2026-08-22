@@ -8,14 +8,11 @@ from copy import copy
 from enum import Enum
 from itertools import chain
 from typing import Any
-from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Optional
 from uuid import uuid4
 
-from core.club import Club
-from core.match_engine import MatchEngine
 from core.match_result import MatchResult
 from core.scheduled_match import ScheduledMatch
 
@@ -30,15 +27,20 @@ class CompetitionType(Enum):
 class AbstractCompetition:
     """Abstract competition class."""
 
-    _clubs: Dict[str, Club]
+    _club_ids: List[str]
     _competition_id: str
     _schedule: List[Optional[ScheduleDay]]
     _day: int
     _params: Any
     _results: List[List[MatchResult]]
 
-    def __init__(self, clubs: Dict[str, Club], params: Any, competition_id=None):
-        self._clubs = clubs
+    def __init__(
+            self,
+            club_ids: List[str],
+            params: Any,
+            competition_id=None,
+    ):
+        self._club_ids = list(club_ids)
         self._competition_id = competition_id or str(uuid4())
         self._day = 0
         self._params = params
@@ -120,9 +122,6 @@ class AbstractCompetition:
 
     def update(self) -> List[MatchResult]:
         """Updates the state of the competition."""
-
-    def _make_match_processor(self) -> MatchEngine:
-        return MatchEngine(self._params.match_params)
 
     def _make_schedule(self):
         pass

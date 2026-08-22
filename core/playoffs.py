@@ -6,14 +6,12 @@ Created Apr 26, 2019
 """
 
 from random import shuffle
-from typing import Dict
 from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 from uuid import uuid4
 
-from core.club import Club
 from core.competition import AbstractCompetition
 from core.competition import ScheduleDay
 from core.match_engine import MatchParams
@@ -151,11 +149,10 @@ class Playoff(AbstractCompetition):
 
     def __init__(
         self,
-        clubs: Dict[str, Club],
         params: DdPlayoffParams,
         standings: List[DdStandingsRowStruct],
     ):
-        super().__init__(clubs, params)
+        super().__init__([row.club_id for row in standings], params)
         self._standings = sorted(
             standings,
             key=lambda x: (x.sets_won, x.games_won),
@@ -214,29 +211,6 @@ class Playoff(AbstractCompetition):
                 wins += 1
 
         return Apow(wins, 125)
-
-    # def update(self):
-    #     if self.is_over:
-    #         return []
-    #
-    #     if self.current_matches is None:
-    #         self.apply_results([])
-    #         return []
-    #
-    #     results = []
-    #     for match in self.current_matches:
-    #         processor = self._make_match_processor()
-    #         res = processor.process_match(
-    #             self._clubs[match.home_pk].selected_player,
-    #             self._clubs[match.away_pk].selected_player,
-    #         )
-    #         res.match_id = match.match_id
-    #         res.home_pk = match.home_pk
-    #         res.away_pk = match.away_pk
-    #         results.append(res)
-    #
-    #     self.apply_results(results)
-    #     return results
 
     def apply_results(self, results: List[MatchResult]):
         if self.is_over:

@@ -22,7 +22,7 @@ def test_scheduled_match_has_stable_id():
 
 def test_regular_championship_applies_current_results_by_match_id():
     competition = RegularChampionship(
-        clubs={"home": object(), "away": object()},
+        club_ids=["home", "away"],
         params=_championship_params(),
     )
     competition._schedule = [[ScheduledMatch("home", "away")]]
@@ -39,7 +39,7 @@ def test_regular_championship_applies_current_results_by_match_id():
 
 def test_regular_championship_rejects_results_for_wrong_match_id():
     competition = RegularChampionship(
-        clubs={"home": object(), "away": object()},
+        club_ids=["home", "away"],
         params=_championship_params(),
     )
     competition._schedule = [[ScheduledMatch("home", "away")]]
@@ -55,7 +55,6 @@ def test_regular_championship_rejects_results_for_wrong_match_id():
 
 def test_playoff_has_ids_for_competition_series_and_matches():
     playoff = Playoff(
-        clubs={str(i): object() for i in range(8)},
         params=_playoff_params(),
         standings=[
             DdStandingsRowStruct(str(i))
@@ -72,7 +71,6 @@ def test_playoff_has_ids_for_competition_series_and_matches():
 
 def test_playoff_applies_results_to_series_by_series_id():
     playoff = Playoff(
-        clubs={str(i): object() for i in range(8)},
         params=_playoff_params(),
         standings=[
             DdStandingsRowStruct(str(i))

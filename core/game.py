@@ -90,6 +90,7 @@ class Game:
     _attendance_calculator: Callable
     _competition: AbstractCompetition
     _contract_calculator: Callable[[int], int]
+    _clubs: Dict[str, Club]
     _free_agents: List[Player]
     _history: List[Dict[CompetitionType, Any]]
     _params: GameParams
@@ -126,9 +127,10 @@ class Game:
 
         tcp = TemporalClubProvider.get_instance()
         clubs = tcp.init_clubs_for_game(self._game_id)
+        self._clubs = clubs
 
         self._competition = RegularChampionship(
-            clubs,
+            list(clubs),
             self._params.championship_params
         )
 
@@ -145,7 +147,7 @@ class Game:
 
     @property
     def clubs(self):
-        return self._competition._clubs
+        return self._clubs
 
     @property
     def game_id(self) -> str:
@@ -174,20 +176,6 @@ class Game:
     @property
     def updated_ts(self):
         return self._updated_ts
-
-    # TODO: Get rid of this hack
-    @property
-    def _clubs(self):
-        return self._competition._clubs
-
-    def rebind_clubs_to_provider(self):
-        provider = TemporalClubProvider.get_instance()
-        clubs = provider.get_clubs_for_game(self._game_id)
-
-        if not clubs:
-            clubs = self._competition._clubs
-
-        self._competition._clubs = clubs
 
     def fire_player(self, player_id: str, club_id: str):
         """Fires the selected player from user's club."""
@@ -598,7 +586,7 @@ class Game:
 
         self._shuffle_coach_powers()
         self._competition = RegularChampionship(
-            self._clubs,
+            list(self._clubs),
             self._params.championship_params
         )
         self._history.append({})
@@ -692,7 +680,6 @@ class Game:
 
     def _start_playoff(self):
         self._competition = Playoff(
-            self._clubs,
             self._params.playoff_params,
             self._competition.standings,
         )

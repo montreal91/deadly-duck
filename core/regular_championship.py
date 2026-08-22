@@ -43,8 +43,8 @@ class RegularChampionship(AbstractCompetition):
     _results: List[List[MatchResult]]
     _standings: Dict[int, List[DdStandingsRowStruct]]
 
-    def __init__(self, clubs, params):
-        super().__init__(clubs, params)
+    def __init__(self, club_ids, params):
+        super().__init__(club_ids, params)
         self._make_schedule()
 
         self._standings = {}
@@ -62,9 +62,8 @@ class RegularChampionship(AbstractCompetition):
         if self._day in self._standings:
             return self._standings[self._day]
 
-        # results = [DdStandingsRowStruct(i) for i in self._clubs]
         results = {}
-        for club_id in self._clubs:
+        for club_id in self._club_ids:
             results[club_id] = DdStandingsRowStruct(club_id=club_id)
 
         for day in self._results:
@@ -95,26 +94,6 @@ class RegularChampionship(AbstractCompetition):
                 return 500
 
         return 0
-
-    # def update(self) -> List[MatchResult]:
-    #     if self.current_matches is None:
-    #         self.apply_results([])
-    #         return []
-    #
-    #     results = []
-    #     for match in self.current_matches:
-    #         processor = self._make_match_processor()
-    #         result = processor.process_match(
-    #             self._clubs[match.home_pk].selected_player,
-    #             self._clubs[match.away_pk].selected_player,
-    #         )
-    #         result.match_id = match.match_id
-    #         result.home_pk = match.home_pk
-    #         result.away_pk = match.away_pk
-    #         results.append(result)
-    #
-    #     self.apply_results(results)
-    #     return results
 
     def apply_results(self, results: List[MatchResult]):
         self._validate_current_results(results)
@@ -158,7 +137,7 @@ class RegularChampionship(AbstractCompetition):
         return res
 
     def _make_schedule(self):
-        pk_list = [cid for cid in self._clubs]
+        pk_list = list(self._club_ids)
         shuffle(pk_list)
         days = self._make_full_schedule(pk_list)
         shuffle(days)
