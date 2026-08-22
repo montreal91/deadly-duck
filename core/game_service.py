@@ -11,7 +11,7 @@ from typing import Optional
 
 
 class MainScreenInfo(NamedTuple):
-    day: int
+    day: str
     balance: int
     club_name: str
 

@@ -9,6 +9,8 @@ Created Apr 09, 2019
 """
 import logging
 import time
+from datetime import date
+from datetime import timedelta
 from random import randint
 from typing import Any
 from typing import Callable
@@ -46,6 +48,9 @@ _UNCONTRACTED_PLAYERS_ERROR = (
     "Your club has uncontracted players.\n"
     "You should whether contract them or fire."
 )
+_FIRST_SEASON_START_DATE = date(2082, 2, 21)
+_SEASON_START_MONTH = 2
+_SEASON_START_DAY = 21
 
 
 class GameParams(NamedTuple):
@@ -91,6 +96,7 @@ class Game:
     _competition: AbstractCompetition
     _contract_calculator: Callable[[int], int]
     _clubs: Dict[str, Club]
+    _current_date: date
     _free_agents: List[Player]
     _history: List[Dict[CompetitionType, Any]]
     _params: GameParams
@@ -108,6 +114,7 @@ class Game:
     ):
         self._game_id = game_id
         self._manager_club_id = None
+        self._current_date = _FIRST_SEASON_START_DATE
         self._free_agents = []
         self._history = [{}]
         self._params = params
@@ -139,7 +146,11 @@ class Game:
 
     @property
     def day(self):
-        return self._competition.day
+        return self._current_date
+
+    @property
+    def current_date(self):
+        return self._current_date
 
     @property
     def competition(self):
@@ -201,7 +212,7 @@ class Game:
         return dict(
             balance=self._clubs[pk].account.balance,
             club_name=self._clubs[pk].name,
-            day=self._competition.day,
+            day=self._formatted_current_date,
             clubs=[club.name for club in self._clubs.values()],
             free_agents=self._get_free_agents(),
             history=self._history,
@@ -356,6 +367,7 @@ class Game:
             self._save_competition_results()
             self._start_playoff()
 
+        self._advance_current_date()
         self._updated_ts = time.time_ns() // 1_000_000
 
         return True, "Ok"
@@ -590,6 +602,7 @@ class Game:
             self._params.championship_params
         )
         self._history.append({})
+        self._reset_current_date_to_next_season_start()
 
     def _perform_practice(self):
         if not self._can_practice:
@@ -599,7 +612,7 @@ class Game:
             if self._is_manager_club(club.club_id):
                 club.account.ProcessTransaction(DdTransaction(
                     -self._calculate_club_practice_cost(club),
-                    f"Practice on day {self._competition.day}"
+                    f"Practice on {self._formatted_current_date}"
                 ))
             club.perform_practice()
 
@@ -670,6 +683,20 @@ class Game:
 
     def _is_manager_club(self, club_id: str) -> bool:
         return self._manager_club_id == club_id
+
+    @property
+    def _formatted_current_date(self) -> str:
+        return self._current_date.strftime("%Y-%b-%d")
+
+    def _advance_current_date(self):
+        self._current_date += timedelta(days=1)
+
+    def _reset_current_date_to_next_season_start(self):
+        self._current_date = date(
+            self._current_date.year + 1,
+            _SEASON_START_MONTH,
+            _SEASON_START_DAY,
+        ) - timedelta(days=1)
 
     def _simulate(self, years):
         while len(self._history) < years:

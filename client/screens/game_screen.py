@@ -143,7 +143,7 @@ class GameScreen(Screen):
         gui_info = self._query_handler(self._game_id, self._club_id)
 
         self._layout.title.text = info.club_name
-        self._date_label.text = f"Day: {gui_info.day}"
+        self._date_label.text = f"Date: {gui_info.day}"
         self._season_label.text = f"Your Season: {gui_info.season}"
         self._current_stage_label.text = f"Current Stage: {gui_info.current_competition}"
         self._balance_label.text = f"Balance: {gui_info.balance:_}".replace("_", " ")
