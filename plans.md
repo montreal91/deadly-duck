@@ -8,9 +8,9 @@ Plans for upcoming versions
 * [x] Persistence for players and clubs
 * [x] Skill selection on level up
 * [x] When selecting the club show their location and motto
-* [ ] Calendar
-  * [ ] Current date instead of abstract day (big ass competition refactoring)
-  * [ ] Season starts in February
+* [x] Calendar
+  * [x] Current date instead of abstract day (big ass competition refactoring)
+  * [x] Season starts in February
   * [ ] Upcoming matches widget
   * [ ] Widget for the five last matches of the opponent
 * [ ] Contract as first-class relationship
@@ -22,19 +22,31 @@ Plans for upcoming versions
 
 * [ ] Negotiation MVP (Player evaluates offer using salary + club fame + loyalty + role)
 * [ ] Transfers
-* [ ] Persistence for matches and history
 * [ ] Farm clubs
+* [ ] Persistence for matches and history
 * [ ] Color codes for win/loss on the results screen
+* [ ] Regular Championship → Playoffs transition system
 
 ## Later Versions
 
-* [ ] Biotech labs and implants development, neuroplasticity
 * [ ] Point-by-point match simulations with serve, receive, groundstrokes, footwork, strength, etc
+* [ ] Biotech labs and implants development, neuroplasticity
 * [ ] Trophy rooms, for clubs and the players
 * [ ] UI that doesn't break under different resolutions
 * [ ] Basic UI color palette
 * [ ] Club Logos and colors
-* [ ] Regular Championship → Playoffs transition system
+* [ ] Achievements
+* [ ] Juice: the stat of player's inner resource. Very hard or impossible to recover. 
+  Once player is not sure if she has enough juice for the next season, she decides to finish  her career.
+  * Every player wants to have a farewell match in their home club.
+* [ ] Player temperaments (Melancholic, Choleric, Phlegmatic, Sanguine)
+  * They do nothing for now, but give a little bit of personality to the players.
+* [ ] Bloggers (analytics, lovers, haters, players); expectations before matches and how did it play out.
+* [ ] Psychological pressure of matches. Might be individual for the players.
+
+### Achievements
+* Leader Leads - Win Playoffs as a top seed
+* The Triumph of the Underdog - Win Playoffs as 8th seed
 
 ## 0.1 (released)
 
