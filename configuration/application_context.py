@@ -11,6 +11,7 @@ from pathlib import Path
 from sqlite3 import connect
 from sqlite3 import Row
 
+from core.match_engine import MatchParams
 from core.ports.inbound.commands.fire_player import FirePlayerCommandHandler
 from core.ports.inbound.commands.hire_new_player import HireNewPlayerCommandHandler
 from core.ports.inbound.commands.improve_player_skill_command import (
@@ -24,7 +25,6 @@ from core.game import GameParams
 from core.game_service import GameService
 from core.match import ExhaustionCalculator
 from core.match import DdLinearProbabilityCalculator
-from core.match import DdMatchParams
 from core.player import PlayerReputationCalculator
 from core.playoffs import DdPlayoffParams
 from core.ports.inbound.commands.create_new_game import CreateNewGameCommandHandler
@@ -225,7 +225,7 @@ def _get_params() -> GameParams:
     path = "configuration/short.ini"
     config = configparser.ConfigParser()
     config.read(path)
-    match_params = DdMatchParams(
+    match_params = MatchParams(
         games_to_win=config["match"].getint("games_to_win", 0),
         sets_to_win=config["match"].getint("sets_to_win", 0),
         exhaustion_function=ExhaustionCalculator(

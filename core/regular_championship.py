@@ -12,26 +12,35 @@ from typing import NamedTuple
 
 from core.competition import AbstractCompetition
 from core.competition import ScheduleDay
-from core.match import DdMatchParams
-from core.match import DdMatchResult
-from core.match import DdScheduledMatchStruct
-from core.match import DdStandingsRowStruct
+from core.match_engine import MatchParams
+from core.match_result import MatchResult
+from core.scheduled_match import ScheduledMatch
 
 
 class ChampionshipParams(NamedTuple):
     """A passive class to store regular championship parameters."""
 
-    match_params: DdMatchParams
+    match_params: MatchParams
     recovery_day: int
     rounds: int
     match_importance: int
+
+class DdStandingsRowStruct:
+    """Passive class for a row in standings."""
+
+    def __init__(self, club_id):
+        self.club_id = club_id
+        self.matches_won = 0
+        self.sets_won = 0
+        self.games_won = 0
+
 
 
 class RegularChampionship(AbstractCompetition):
     """A class to encapsulate logic of a regular championship."""
 
     _params: ChampionshipParams
-    _results: List[List[DdMatchResult]]
+    _results: List[List[MatchResult]]
     _standings: Dict[int, List[DdStandingsRowStruct]]
 
     def __init__(self, clubs, params):
@@ -87,7 +96,7 @@ class RegularChampionship(AbstractCompetition):
 
         return 0
 
-    def update(self) -> List[DdMatchResult]:
+    def update(self) -> List[MatchResult]:
         if self.current_matches is None:
             self._day += 1
             return []
@@ -109,15 +118,15 @@ class RegularChampionship(AbstractCompetition):
 
     def _make_full_schedule(self, pk_list: List[str]):
         # Alias to shorten length of code lines
-        _Match = DdScheduledMatchStruct
+        _Match = ScheduledMatch
 
-        def mirror_day(matches: List[DdScheduledMatchStruct]):
+        def mirror_day(matches: List[ScheduledMatch]):
             return [_Match(m.away_pk, m.home_pk) for m in matches]
 
         def copy_day(matches):
             return [_Match(m.home_pk, m.away_pk) for m in matches]
 
-        def compose_days(matches: List[DdScheduledMatchStruct], num: int):
+        def compose_days(matches: List[ScheduledMatch], num: int):
             res = []
             for _ in range(num // 2):
                 res.append(copy_day(matches))
@@ -163,7 +172,7 @@ def _make_basic_schedule(pk_list: List[str]):
         num = len(lst) - 1
         mid = len(lst) // 2
         return [
-            DdScheduledMatchStruct(lst[i], lst[num-i]) for i in range(mid)
+            ScheduledMatch(lst[i], lst[num - i]) for i in range(mid)
         ]
 
     def shift(lst: List[str], num: int) -> List[str]:

@@ -34,6 +34,7 @@ Plans for upcoming versions
 * [ ] UI that doesn't break under different resolutions
 * [ ] Basic UI color palette
 * [ ] Club Logos and colors
+* [ ] Regular Championship → Playoffs transition system
 
 ## 0.1 (released)
 

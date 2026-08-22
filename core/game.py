@@ -27,17 +27,17 @@ from core.competition import AbstractCompetition
 from core.financial import DdPracticeCalculator
 from core.financial import DdStaticContractCalculator
 from core.financial import DdTransaction
-from core.match import DdMatchResult
-from core.match import DdScheduledMatchStruct
-from core.match import DdStandingsRowStruct
+from core.match_result import MatchResult
 from core.player import ExhaustedLinearRecovery
 from core.player import Player
 from core.player import PlayerFactory
 from core.playoffs import Playoff
 from core.playoffs import DdPlayoffParams
 from core.regular_championship import ChampionshipParams
+from core.regular_championship import DdStandingsRowStruct
 from core.regular_championship import RegularChampionship
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
+from core.scheduled_match import ScheduledMatch
 from core.skill_upgrade_system import upgrade_skills
 
 _CLUB_ID_ERROR = "Incorrect club id."
@@ -94,7 +94,7 @@ class Game:
     _params: GameParams
     _player_factory: PlayerFactory
     _season_fame: Dict[str, int]
-    _results: List[DdMatchResult]
+    _results: List[MatchResult]
     _practice_calculator: DdPracticeCalculator
 
     def __init__(
@@ -408,7 +408,7 @@ class Game:
         return False
 
     @property
-    def _last_results(self) -> List[DdMatchResult]:
+    def _last_results(self) -> List[MatchResult]:
         if not self._results:
             return []
 
@@ -497,7 +497,7 @@ class Game:
         return res
 
     def _get_opponent(self, pk: str) -> Optional[OpponentDto]:
-        def schedule_filter(pair: DdScheduledMatchStruct):
+        def schedule_filter(pair: ScheduledMatch):
             if pair.home_pk == pk:
                 return True
             return pair.away_pk == pk

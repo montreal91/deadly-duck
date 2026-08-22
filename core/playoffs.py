@@ -15,11 +15,10 @@ from typing import Tuple
 from core.club import Club
 from core.competition import AbstractCompetition
 from core.competition import ScheduleDay
-from core.match import DdMatchParams
-from core.match import DdMatchResult
-from core.match import DdScheduledMatchStruct
-from core.match import DdStandingsRowStruct
-
+from core.match_engine import MatchParams
+from core.match_result import MatchResult
+from core.regular_championship import DdStandingsRowStruct
+from core.scheduled_match import ScheduledMatch
 
 ClubPair = Tuple[str, str]
 BracketPair = Tuple[int, int]
@@ -32,7 +31,7 @@ class DdPlayoffParams(NamedTuple):
     series_matches_pattern: Tuple[bool, ...]
     length: int
     gap_days: int
-    match_params: DdMatchParams
+    match_params: MatchParams
     match_importance: int
 
 
@@ -41,7 +40,7 @@ class DdPlayoffSeries:
 
     _bottom_club_pk: str
     _params: DdPlayoffParams
-    _results: List[DdMatchResult]
+    _results: List[MatchResult]
     _top_club_pk: str
 
     def __init__(self, params: DdPlayoffParams):
@@ -98,16 +97,16 @@ class DdPlayoffSeries:
             return self._top_club_pk
         return self._bottom_club_pk
 
-    def AddResult(self, result: DdMatchResult):
+    def add_result(self, result: MatchResult):
         """
         Adds result to the series if correct.
 
         If result is incorrect, raises assertion error.
         """
-        self._CheckResult(result)
+        self._check_result(result)
         self._results.append(result)
 
-    def _CheckResult(self, result: DdMatchResult):
+    def _check_result(self, result: MatchResult):
         club_pks = self._top_club_pk, self._bottom_club_pk
         assert result.home_pk in club_pks, (
             f"Club #{result.home_pk} does not involved in this series."
@@ -120,7 +119,7 @@ class DdPlayoffSeries:
         )
 
 
-class DdPlayoffScheduledMatchStruct(DdScheduledMatchStruct):
+class PlayoffScheduledMatch(ScheduledMatch):
     """Passive class for a scheduled playoff match."""
 
     series: Optional[DdPlayoffSeries]
@@ -244,7 +243,7 @@ class Playoff(AbstractCompetition):
             res.home_pk = match.home_pk
             res.away_pk = match.away_pk
             day_results.append(res)
-            match.series.AddResult(res)
+            match.series.add_result(res)
         self._day += 1
         self._results.append(day_results)
         self._UpdateSchedule()
@@ -317,7 +316,7 @@ class Playoff(AbstractCompetition):
                 pair = series.pair
                 if not i:
                     pair = (pair[1], pair[0])
-                scheduled_match = DdPlayoffScheduledMatchStruct(*pair)
+                scheduled_match = PlayoffScheduledMatch(*pair)
                 scheduled_match.SetSeries(series)
                 day.append(scheduled_match)
             day.reverse()

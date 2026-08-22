@@ -14,12 +14,11 @@ from typing import List
 from typing import Optional
 
 from core.club import Club
-from core.match import MatchEngine
-from core.match import DdMatchResult
-from core.match import DdScheduledMatchStruct
+from core.match_engine import MatchEngine
+from core.match_result import MatchResult
+from core.scheduled_match import ScheduledMatch
 
-
-ScheduleDay = List[DdScheduledMatchStruct]
+ScheduleDay = List[ScheduledMatch]
 
 
 class CompetitionType(Enum):
@@ -34,7 +33,7 @@ class AbstractCompetition:
     _schedule: List[Optional[ScheduleDay]]
     _day: int
     _params: Any
-    _results: List[List[DdMatchResult]]
+    _results: List[List[MatchResult]]
 
     def __init__(self, clubs: Dict[str, Club], params: Any):
         self._clubs = clubs
@@ -68,7 +67,7 @@ class AbstractCompetition:
         return -1
 
     @property
-    def results_(self) -> Generator[List[DdMatchResult], None, None]:
+    def results_(self) -> Generator[List[MatchResult], None, None]:
         """
         List of match results.
 
@@ -88,7 +87,7 @@ class AbstractCompetition:
         """Title of the competition."""
         return ""
 
-    def get_club_schedule(self, club_pk: str) -> List[DdScheduledMatchStruct]:
+    def get_club_schedule(self, club_pk: str) -> List[ScheduledMatch]:
         """List of matches scheduled for a club."""
 
         schedule = []
@@ -105,7 +104,7 @@ class AbstractCompetition:
     def get_club_fame(self, club_pk: str) -> int:
         """Fame earned by club in the competition."""
 
-    def update(self) -> List[DdMatchResult]:
+    def update(self) -> List[MatchResult]:
         """Updates the state of the competition."""
 
     def _make_match_processor(self) -> MatchEngine:
