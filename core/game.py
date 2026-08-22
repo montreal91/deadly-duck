@@ -28,6 +28,7 @@ from core.financial import DdPracticeCalculator
 from core.financial import DdStaticContractCalculator
 from core.financial import DdTransaction
 from core.match_result import MatchResult
+from core.match_processing_system import process_matches
 from core.player import ExhaustedLinearRecovery
 from core.player import Player
 from core.player import PlayerFactory
@@ -618,7 +619,16 @@ class Game:
         current_matches = self._competition.current_matches
         playing_player_ids = self._get_playing_player_ids(current_matches)
 
-        self._results = self._competition.update()
+        if current_matches is None:
+            self._results = []
+        else:
+            self._results = process_matches(
+                current_matches,
+                self._clubs,
+                self._competition.match_params,
+            )
+
+        self._competition.apply_results(self._results)
         self._calculate_match_income()
 
         self._recover(excluded_player_ids=playing_player_ids)

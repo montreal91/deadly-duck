@@ -17,6 +17,7 @@ class MatchResult:
     _sets: List[SetResult]
 
     def __init__(self, sets_to_win: int = 2):
+        self.match_id = None
         self.home_pk = None
         self.away_pk = None
         self.home_player_snapshot = None

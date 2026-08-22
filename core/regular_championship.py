@@ -96,25 +96,35 @@ class RegularChampionship(AbstractCompetition):
 
         return 0
 
-    def update(self) -> List[MatchResult]:
-        if self.current_matches is None:
-            self._day += 1
-            return []
-        day_results = []
-        for match in self.current_matches:
-            processor = self._make_match_processor()
-            res = processor.process_match(
-                self._clubs[match.home_pk].selected_player,
-                self._clubs[match.away_pk].selected_player,
-            )
+    # def update(self) -> List[MatchResult]:
+    #     if self.current_matches is None:
+    #         self.apply_results([])
+    #         return []
+    #
+    #     results = []
+    #     for match in self.current_matches:
+    #         processor = self._make_match_processor()
+    #         result = processor.process_match(
+    #             self._clubs[match.home_pk].selected_player,
+    #             self._clubs[match.away_pk].selected_player,
+    #         )
+    #         result.match_id = match.match_id
+    #         result.home_pk = match.home_pk
+    #         result.away_pk = match.away_pk
+    #         results.append(result)
+    #
+    #     self.apply_results(results)
+    #     return results
+
+    def apply_results(self, results: List[MatchResult]):
+        self._validate_current_results(results)
+
+        for match in self.current_matches or []:
             match.is_played = True
 
-            res.home_pk = match.home_pk
-            res.away_pk = match.away_pk
-            day_results.append(res)
         self._day += 1
-        self._results.append(day_results)
-        return day_results
+        if results:
+            self._results.append(results)
 
     def _make_full_schedule(self, pk_list: List[str]):
         # Alias to shorten length of code lines

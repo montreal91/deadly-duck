@@ -11,6 +11,7 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
+from uuid import uuid4
 
 from core.club import Club
 from core.competition import AbstractCompetition
@@ -41,14 +42,20 @@ class DdPlayoffSeries:
     _bottom_club_pk: str
     _params: DdPlayoffParams
     _results: List[MatchResult]
+    _series_id: str
     _top_club_pk: str
 
-    def __init__(self, params: DdPlayoffParams):
+    def __init__(self, params: DdPlayoffParams, series_id=None):
         self._params = params
         self._results = []
+        self._series_id = series_id or str(uuid4())
 
         self._top_club_pk = "__top_club_not_set__"
         self._bottom_club_pk = "__bottom_club_not_set__"
+
+    @property
+    def series_id(self):
+        return self._series_id
 
     @property
     def pair(self) -> ClubPair:
@@ -119,20 +126,6 @@ class DdPlayoffSeries:
         )
 
 
-class PlayoffScheduledMatch(ScheduledMatch):
-    """Passive class for a scheduled playoff match."""
-
-    series: Optional[DdPlayoffSeries]
-    def __init__(self, home_pk: str, away_pk: str):
-        super().__init__(home_pk, away_pk)
-        self.series = None
-
-    def SetSeries(self, series: DdPlayoffSeries):
-        """Sets a link to playoff series to which this match belongs."""
-
-        self.series = series
-
-
 class Playoff(AbstractCompetition):
     """A class to encapsulate playoff (cup) logic."""
 
@@ -172,6 +165,7 @@ class Playoff(AbstractCompetition):
         self._series = []
         self._past_series = []
         self._participants = []
+        self._series_by_id = {}
         self._MakeNewRound()
 
     @property
@@ -221,33 +215,55 @@ class Playoff(AbstractCompetition):
 
         return Apow(wins, 125)
 
-    def update(self):
+    # def update(self):
+    #     if self.is_over:
+    #         return []
+    #
+    #     if self.current_matches is None:
+    #         self.apply_results([])
+    #         return []
+    #
+    #     results = []
+    #     for match in self.current_matches:
+    #         processor = self._make_match_processor()
+    #         res = processor.process_match(
+    #             self._clubs[match.home_pk].selected_player,
+    #             self._clubs[match.away_pk].selected_player,
+    #         )
+    #         res.match_id = match.match_id
+    #         res.home_pk = match.home_pk
+    #         res.away_pk = match.away_pk
+    #         results.append(res)
+    #
+    #     self.apply_results(results)
+    #     return results
+
+    def apply_results(self, results: List[MatchResult]):
         if self.is_over:
-            return []
+            assert not results, "Cannot apply results to finished competition."
+            return
 
-        if self.current_matches is None:
-            self._day += 1
-            if self._day == len(self._schedule) and not self.is_over:
-                self._MakeNewRound()
-            return []
+        self._validate_current_results(results)
 
-        day_results = []
-        for match in self.current_matches:
-            processor = self._make_match_processor()
-            res = processor.process_match(
-                self._clubs[match.home_pk].selected_player,
-                self._clubs[match.away_pk].selected_player,
-            )
+        current_matches = self.current_matches or []
+        matches_by_id = {
+            match.match_id: match
+            for match in current_matches
+        }
+
+        for result in results:
+            match = matches_by_id[result.match_id]
             match.is_played = True
+            series = self._series_by_id[match.playoff_series_id]
+            series.add_result(result)
 
-            res.home_pk = match.home_pk
-            res.away_pk = match.away_pk
-            day_results.append(res)
-            match.series.add_result(res)
         self._day += 1
-        self._results.append(day_results)
+        if results:
+            self._results.append(results)
         self._UpdateSchedule()
-        return day_results
+
+        if self._day == len(self._schedule) and not self.is_over:
+            self._MakeNewRound()
 
     @property
     def _remaining_days(self):
@@ -275,6 +291,7 @@ class Playoff(AbstractCompetition):
                     self._standings[predraw[bottom]].club_id,
                 )
                 self._series.append(series)
+                self._series_by_id[series.series_id] = series
                 self._participants.extend(series.pair)
         elif self._params.length == len(self._SHORT) * 2:
             predraw = _MakePreDraw(4)
@@ -285,6 +302,7 @@ class Playoff(AbstractCompetition):
                     self._standings[predraw[bottom]].club_id,
                 )
                 self._series.append(series)
+                self._series_by_id[series.series_id] = series
                 self._participants.extend(series.pair)
 
     def _MakeNewRound(self):
@@ -305,6 +323,7 @@ class Playoff(AbstractCompetition):
                 new_series = DdPlayoffSeries(self._params)
                 new_series.pair = (pair[0][0], pair[1][0])
                 new_round.append(new_series)
+                self._series_by_id[new_series.series_id] = new_series
             self._series = new_round
         self._make_schedule()
 
@@ -316,8 +335,11 @@ class Playoff(AbstractCompetition):
                 pair = series.pair
                 if not i:
                     pair = (pair[1], pair[0])
-                scheduled_match = PlayoffScheduledMatch(*pair)
-                scheduled_match.SetSeries(series)
+                scheduled_match = ScheduledMatch(
+                    pair[0],
+                    pair[1],
+                    playoff_series_id=series.series_id,
+                )
                 day.append(scheduled_match)
             day.reverse()
             self._schedule.append(day)
@@ -326,7 +348,8 @@ class Playoff(AbstractCompetition):
     def _UpdateSchedule(self):
         for day in self._remaining_days:
             for match in day:
-                if match.series.winner is not None:
+                series = self._series_by_id[match.playoff_series_id]
+                if series.winner is not None:
                     match.is_played = True
 
 
