@@ -80,7 +80,7 @@ class AbstractCompetition:
         return self._params.match_params
 
     @property
-    def results_(self) -> Generator[List[MatchResult], None, None]:
+    def results_for_tests(self) -> Generator[MatchResult, None, None]:
         """
         List of match results.
 

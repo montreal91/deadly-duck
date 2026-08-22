@@ -34,7 +34,9 @@ def test_regular_championship_applies_current_results_by_match_id():
     assert competition.day == 1
     assert competition.competition_id is not None
     assert match.is_played
-    assert [r.match_id for r in competition.results_] == [result.match_id]
+    assert [r.match_id for r in competition.results_for_tests] == [result.match_id]
+    assert competition.standings[0].matches_played == 1
+    assert competition.standings[1].matches_played == 1
 
 
 def test_regular_championship_rejects_results_for_wrong_match_id():

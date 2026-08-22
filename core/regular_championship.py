@@ -30,7 +30,7 @@ class DdStandingsRowStruct:
 
     def __init__(self, club_id):
         self.club_id = club_id
-        self.matches_won = 0
+        self.matches_played = 0
         self.sets_won = 0
         self.games_won = 0
 
@@ -73,6 +73,9 @@ class RegularChampionship(AbstractCompetition):
 
                 results[match.away_pk].sets_won += match.away_sets
                 results[match.away_pk].games_won += match.away_games
+
+                results[match.home_pk].matches_played += 1
+                results[match.away_pk].matches_played += 1
 
         results_list = [results[cid] for cid in results]
 
