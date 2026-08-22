@@ -10,7 +10,7 @@ from typing import Generator
 from typing import List
 from typing import NamedTuple
 
-from core.competition import DdAbstractCompetition
+from core.competition import AbstractCompetition
 from core.competition import ScheduleDay
 from core.match import DdMatchParams
 from core.match import DdMatchResult
@@ -27,7 +27,7 @@ class ChampionshipParams(NamedTuple):
     match_importance: int
 
 
-class RegularChampionship(DdAbstractCompetition):
+class RegularChampionship(AbstractCompetition):
     """A class to encapsulate logic of a regular championship."""
 
     _params: ChampionshipParams

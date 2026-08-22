@@ -23,7 +23,7 @@ from configuration.config_game import GameplayConstants
 from core.club import Club
 from core.club import ClubPlayerSlot
 from core.competition import CompetitionType
-from core.competition import DdAbstractCompetition
+from core.competition import AbstractCompetition
 from core.financial import DdPracticeCalculator
 from core.financial import DdStaticContractCalculator
 from core.financial import DdTransaction
@@ -33,7 +33,7 @@ from core.match import DdStandingsRowStruct
 from core.player import ExhaustedLinearRecovery
 from core.player import Player
 from core.player import PlayerFactory
-from core.playoffs import DdPlayoff
+from core.playoffs import Playoff
 from core.playoffs import DdPlayoffParams
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import RegularChampionship
@@ -87,7 +87,7 @@ class Game:
 
     _game_id: str
     _attendance_calculator: Callable
-    _competition: DdAbstractCompetition
+    _competition: AbstractCompetition
     _contract_calculator: Callable[[int], int]
     _free_agents: List[Player]
     _history: List[Dict[CompetitionType, Any]]
@@ -164,7 +164,7 @@ class Game:
     def season_over(self) -> bool:
         """Checks if season is over."""
 
-        return isinstance(self._competition, DdPlayoff) and self._competition.is_over
+        return isinstance(self._competition, Playoff) and self._competition.is_over
 
     @property
     def created_ts(self):
@@ -425,7 +425,7 @@ class Game:
     def _competition_type(self) -> CompetitionType:
         if isinstance(self._competition, RegularChampionship):
             return CompetitionType.CHAMPIONSHIP
-        if isinstance(self._competition, DdPlayoff):
+        if isinstance(self._competition, Playoff):
             return CompetitionType.PLAY_OFFS
         raise Exception("Unknown competition type.")
 
@@ -681,7 +681,7 @@ class Game:
         self._history[-1][self._competition_type] = self._competition.standings
 
     def _start_playoff(self):
-        self._competition = DdPlayoff(
+        self._competition = Playoff(
             self._clubs,
             self._params.playoff_params,
             self._competition.standings,

@@ -7,7 +7,7 @@ Plans for upcoming versions
 * [x] Stable IDs for players and clubs
 * [x] Persistence for players and clubs
 * [x] Skill selection on level up
-* [ ] When selecting the club show their location and motto
+* [x] When selecting the club show their location and motto
 * [ ] Calendar
   * [ ] Current date instead of abstract day (big ass competition refactoring)
   * [ ] Season starts in February
@@ -24,6 +24,7 @@ Plans for upcoming versions
 * [ ] Transfers
 * [ ] Persistence for matches and history
 * [ ] Farm clubs
+* [ ] Color codes for win/loss on the results screen
 
 ## Later Versions
 

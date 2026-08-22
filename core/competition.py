@@ -27,7 +27,7 @@ class CompetitionType(Enum):
     PLAY_OFFS = "play_offs"
 
 
-class DdAbstractCompetition:
+class AbstractCompetition:
     """Abstract competition class."""
 
     _clubs: Dict[str, Club]

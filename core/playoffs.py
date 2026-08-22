@@ -13,7 +13,7 @@ from typing import Optional
 from typing import Tuple
 
 from core.club import Club
-from core.competition import DdAbstractCompetition
+from core.competition import AbstractCompetition
 from core.competition import ScheduleDay
 from core.match import DdMatchParams
 from core.match import DdMatchResult
@@ -22,6 +22,7 @@ from core.match import DdStandingsRowStruct
 
 
 ClubPair = Tuple[str, str]
+BracketPair = Tuple[int, int]
 Score = Tuple[int, int]
 
 
@@ -133,10 +134,10 @@ class DdPlayoffScheduledMatchStruct(DdScheduledMatchStruct):
         self.series = series
 
 
-class DdPlayoff(DdAbstractCompetition):
+class Playoff(AbstractCompetition):
     """A class to encapsulate playoff (cup) logic."""
 
-    _LONG: Tuple[ClubPair, ...] = (
+    _LONG: Tuple[BracketPair, ...] = (
         (0, 8),
         (4, 9),
         (2, 10),
@@ -146,7 +147,7 @@ class DdPlayoff(DdAbstractCompetition):
         (3, 14),
         (7, 15),
     )
-    _SHORT: Tuple[ClubPair, ...] = (
+    _SHORT: Tuple[BracketPair, ...] = (
         (0, 4),
         (2, 5),
         (1, 6),
