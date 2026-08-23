@@ -1,3 +1,8 @@
+"""
+Created Aug 20, 2026
+
+@author montreal91
+"""
 from types import SimpleNamespace
 
 from core.queries.level_up_screen_query import LevelUpScreenQuery

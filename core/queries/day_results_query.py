@@ -8,7 +8,7 @@ from typing import Optional
 from typing import NamedTuple
 
 from core.club import Club
-from core.match import DdMatchResult
+from core.match_result import MatchResult
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 
@@ -60,7 +60,7 @@ def _get_player_name(player_json):
 
 
 def _make_single_match_result(
-        result: DdMatchResult,
+        result: MatchResult,
         clubs: Dict[str, Club],
         manager_club_id: str
 ) -> SingleMatchResult:

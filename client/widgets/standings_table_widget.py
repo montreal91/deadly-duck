@@ -15,6 +15,7 @@ from client.widgets.factories import make_label
 
 _POS_WIDTH = dp(25)
 _CLUB_WIDTH = dp(100)
+_MATCHES_WIDTH = dp(55)
 _SETS_WIDTH = dp(30)
 _GAMES_WIDTH = dp(40)
 
@@ -63,6 +64,7 @@ def _make_table_header():
 
     row.add_widget(_make_cell("[b]Pos.[/b]", align="left", width=_POS_WIDTH, is_header=True))
     row.add_widget(_make_cell("[b]Club[/b]", align="center", width=_CLUB_WIDTH, is_header=True))
+    row.add_widget(_make_cell("[b]Matches[/b]", align="center", width=_MATCHES_WIDTH, is_header=True))
     row.add_widget(_make_cell("[b]Sets[/b]", align="center", width=_SETS_WIDTH, is_header=True))
     row.add_widget(_make_cell("[b]Games[/b]", align="center", width=_GAMES_WIDTH, is_header=True))
 
@@ -96,6 +98,9 @@ def _make_row(standings_row):
 
     club = _make_cell(str(standings_row.club_name), width=_CLUB_WIDTH, align="left")
     row.add_widget(club)
+
+    matches = _make_cell(str(standings_row.matches), width=_MATCHES_WIDTH, align="center")
+    row.add_widget(matches)
 
     sets = _make_cell(str(standings_row.sets), width=_SETS_WIDTH, align="center")
     row.add_widget(sets)

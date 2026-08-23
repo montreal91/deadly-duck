@@ -6,22 +6,21 @@ Created Apr 26, 2019
 """
 
 from random import shuffle
-from typing import Dict
 from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
+from uuid import uuid4
 
-from core.club import Club
-from core.competition import DdAbstractCompetition
+from core.competition import AbstractCompetition
 from core.competition import ScheduleDay
-from core.match import DdMatchParams
-from core.match import DdMatchResult
-from core.match import DdScheduledMatchStruct
-from core.match import DdStandingsRowStruct
-
+from core.match_engine import MatchParams
+from core.match_result import MatchResult
+from core.regular_championship import DdStandingsRowStruct
+from core.scheduled_match import ScheduledMatch
 
 ClubPair = Tuple[str, str]
+BracketPair = Tuple[int, int]
 Score = Tuple[int, int]
 
 
@@ -31,7 +30,7 @@ class DdPlayoffParams(NamedTuple):
     series_matches_pattern: Tuple[bool, ...]
     length: int
     gap_days: int
-    match_params: DdMatchParams
+    match_params: MatchParams
     match_importance: int
 
 
@@ -40,15 +39,21 @@ class DdPlayoffSeries:
 
     _bottom_club_pk: str
     _params: DdPlayoffParams
-    _results: List[DdMatchResult]
+    _results: List[MatchResult]
+    _series_id: str
     _top_club_pk: str
 
-    def __init__(self, params: DdPlayoffParams):
+    def __init__(self, params: DdPlayoffParams, series_id=None):
         self._params = params
         self._results = []
+        self._series_id = series_id or str(uuid4())
 
         self._top_club_pk = "__top_club_not_set__"
         self._bottom_club_pk = "__bottom_club_not_set__"
+
+    @property
+    def series_id(self):
+        return self._series_id
 
     @property
     def pair(self) -> ClubPair:
@@ -97,16 +102,16 @@ class DdPlayoffSeries:
             return self._top_club_pk
         return self._bottom_club_pk
 
-    def AddResult(self, result: DdMatchResult):
+    def add_result(self, result: MatchResult):
         """
         Adds result to the series if correct.
 
         If result is incorrect, raises assertion error.
         """
-        self._CheckResult(result)
+        self._check_result(result)
         self._results.append(result)
 
-    def _CheckResult(self, result: DdMatchResult):
+    def _check_result(self, result: MatchResult):
         club_pks = self._top_club_pk, self._bottom_club_pk
         assert result.home_pk in club_pks, (
             f"Club #{result.home_pk} does not involved in this series."
@@ -119,24 +124,10 @@ class DdPlayoffSeries:
         )
 
 
-class DdPlayoffScheduledMatchStruct(DdScheduledMatchStruct):
-    """Passive class for a scheduled playoff match."""
-
-    series: Optional[DdPlayoffSeries]
-    def __init__(self, home_pk: str, away_pk: str):
-        super().__init__(home_pk, away_pk)
-        self.series = None
-
-    def SetSeries(self, series: DdPlayoffSeries):
-        """Sets a link to playoff series to which this match belongs."""
-
-        self.series = series
-
-
-class DdPlayoff(DdAbstractCompetition):
+class Playoff(AbstractCompetition):
     """A class to encapsulate playoff (cup) logic."""
 
-    _LONG: Tuple[ClubPair, ...] = (
+    _LONG: Tuple[BracketPair, ...] = (
         (0, 8),
         (4, 9),
         (2, 10),
@@ -146,7 +137,7 @@ class DdPlayoff(DdAbstractCompetition):
         (3, 14),
         (7, 15),
     )
-    _SHORT: Tuple[ClubPair, ...] = (
+    _SHORT: Tuple[BracketPair, ...] = (
         (0, 4),
         (2, 5),
         (1, 6),
@@ -158,11 +149,10 @@ class DdPlayoff(DdAbstractCompetition):
 
     def __init__(
         self,
-        clubs: Dict[str, Club],
         params: DdPlayoffParams,
         standings: List[DdStandingsRowStruct],
     ):
-        super().__init__(clubs, params)
+        super().__init__([row.club_id for row in standings], params)
         self._standings = sorted(
             standings,
             key=lambda x: (x.sets_won, x.games_won),
@@ -172,6 +162,7 @@ class DdPlayoff(DdAbstractCompetition):
         self._series = []
         self._past_series = []
         self._participants = []
+        self._series_by_id = {}
         self._MakeNewRound()
 
     @property
@@ -221,33 +212,32 @@ class DdPlayoff(DdAbstractCompetition):
 
         return Apow(wins, 125)
 
-    def update(self):
+    def apply_results(self, results: List[MatchResult]):
         if self.is_over:
-            return []
+            assert not results, "Cannot apply results to finished competition."
+            return
 
-        if self.current_matches is None:
-            self._day += 1
-            if self._day == len(self._schedule) and not self.is_over:
-                self._MakeNewRound()
-            return []
+        self._validate_current_results(results)
 
-        day_results = []
-        for match in self.current_matches:
-            processor = self._make_match_processor()
-            res = processor.process_match(
-                self._clubs[match.home_pk].selected_player,
-                self._clubs[match.away_pk].selected_player,
-            )
+        current_matches = self.current_matches or []
+        matches_by_id = {
+            match.match_id: match
+            for match in current_matches
+        }
+
+        for result in results:
+            match = matches_by_id[result.match_id]
             match.is_played = True
+            series = self._series_by_id[match.playoff_series_id]
+            series.add_result(result)
 
-            res.home_pk = match.home_pk
-            res.away_pk = match.away_pk
-            day_results.append(res)
-            match.series.AddResult(res)
         self._day += 1
-        self._results.append(day_results)
+        if results:
+            self._results.append(results)
         self._UpdateSchedule()
-        return day_results
+
+        if self._day == len(self._schedule) and not self.is_over:
+            self._MakeNewRound()
 
     @property
     def _remaining_days(self):
@@ -275,6 +265,7 @@ class DdPlayoff(DdAbstractCompetition):
                     self._standings[predraw[bottom]].club_id,
                 )
                 self._series.append(series)
+                self._series_by_id[series.series_id] = series
                 self._participants.extend(series.pair)
         elif self._params.length == len(self._SHORT) * 2:
             predraw = _MakePreDraw(4)
@@ -285,6 +276,7 @@ class DdPlayoff(DdAbstractCompetition):
                     self._standings[predraw[bottom]].club_id,
                 )
                 self._series.append(series)
+                self._series_by_id[series.series_id] = series
                 self._participants.extend(series.pair)
 
     def _MakeNewRound(self):
@@ -305,6 +297,7 @@ class DdPlayoff(DdAbstractCompetition):
                 new_series = DdPlayoffSeries(self._params)
                 new_series.pair = (pair[0][0], pair[1][0])
                 new_round.append(new_series)
+                self._series_by_id[new_series.series_id] = new_series
             self._series = new_round
         self._make_schedule()
 
@@ -316,8 +309,11 @@ class DdPlayoff(DdAbstractCompetition):
                 pair = series.pair
                 if not i:
                     pair = (pair[1], pair[0])
-                scheduled_match = DdPlayoffScheduledMatchStruct(*pair)
-                scheduled_match.SetSeries(series)
+                scheduled_match = ScheduledMatch(
+                    pair[0],
+                    pair[1],
+                    playoff_series_id=series.series_id,
+                )
                 day.append(scheduled_match)
             day.reverse()
             self._schedule.append(day)
@@ -326,7 +322,8 @@ class DdPlayoff(DdAbstractCompetition):
     def _UpdateSchedule(self):
         for day in self._remaining_days:
             for match in day:
-                if match.series.winner is not None:
+                series = self._series_by_id[match.playoff_series_id]
+                if series.winner is not None:
                     match.is_played = True
 
 

@@ -10,32 +10,41 @@ from typing import Generator
 from typing import List
 from typing import NamedTuple
 
-from core.competition import DdAbstractCompetition
+from core.competition import AbstractCompetition
 from core.competition import ScheduleDay
-from core.match import DdMatchParams
-from core.match import DdMatchResult
-from core.match import DdScheduledMatchStruct
-from core.match import DdStandingsRowStruct
+from core.match_engine import MatchParams
+from core.match_result import MatchResult
+from core.scheduled_match import ScheduledMatch
 
 
 class ChampionshipParams(NamedTuple):
     """A passive class to store regular championship parameters."""
 
-    match_params: DdMatchParams
+    match_params: MatchParams
     recovery_day: int
     rounds: int
     match_importance: int
 
+class DdStandingsRowStruct:
+    """Passive class for a row in standings."""
 
-class RegularChampionship(DdAbstractCompetition):
+    def __init__(self, club_id):
+        self.club_id = club_id
+        self.matches_played = 0
+        self.sets_won = 0
+        self.games_won = 0
+
+
+
+class RegularChampionship(AbstractCompetition):
     """A class to encapsulate logic of a regular championship."""
 
     _params: ChampionshipParams
-    _results: List[List[DdMatchResult]]
+    _results: List[List[MatchResult]]
     _standings: Dict[int, List[DdStandingsRowStruct]]
 
-    def __init__(self, clubs, params):
-        super().__init__(clubs, params)
+    def __init__(self, club_ids, params):
+        super().__init__(club_ids, params)
         self._make_schedule()
 
         self._standings = {}
@@ -53,9 +62,8 @@ class RegularChampionship(DdAbstractCompetition):
         if self._day in self._standings:
             return self._standings[self._day]
 
-        # results = [DdStandingsRowStruct(i) for i in self._clubs]
         results = {}
-        for club_id in self._clubs:
+        for club_id in self._club_ids:
             results[club_id] = DdStandingsRowStruct(club_id=club_id)
 
         for day in self._results:
@@ -65,6 +73,9 @@ class RegularChampionship(DdAbstractCompetition):
 
                 results[match.away_pk].sets_won += match.away_sets
                 results[match.away_pk].games_won += match.away_games
+
+                results[match.home_pk].matches_played += 1
+                results[match.away_pk].matches_played += 1
 
         results_list = [results[cid] for cid in results]
 
@@ -87,37 +98,27 @@ class RegularChampionship(DdAbstractCompetition):
 
         return 0
 
-    def update(self) -> List[DdMatchResult]:
-        if self.current_matches is None:
-            self._day += 1
-            return []
-        day_results = []
-        for match in self.current_matches:
-            processor = self._make_match_processor()
-            res = processor.process_match(
-                self._clubs[match.home_pk].selected_player,
-                self._clubs[match.away_pk].selected_player,
-            )
+    def apply_results(self, results: List[MatchResult]):
+        self._validate_current_results(results)
+
+        for match in self.current_matches or []:
             match.is_played = True
 
-            res.home_pk = match.home_pk
-            res.away_pk = match.away_pk
-            day_results.append(res)
         self._day += 1
-        self._results.append(day_results)
-        return day_results
+        if results:
+            self._results.append(results)
 
     def _make_full_schedule(self, pk_list: List[str]):
         # Alias to shorten length of code lines
-        _Match = DdScheduledMatchStruct
+        _Match = ScheduledMatch
 
-        def mirror_day(matches: List[DdScheduledMatchStruct]):
+        def mirror_day(matches: List[ScheduledMatch]):
             return [_Match(m.away_pk, m.home_pk) for m in matches]
 
         def copy_day(matches):
             return [_Match(m.home_pk, m.away_pk) for m in matches]
 
-        def compose_days(matches: List[DdScheduledMatchStruct], num: int):
+        def compose_days(matches: List[ScheduledMatch], num: int):
             res = []
             for _ in range(num // 2):
                 res.append(copy_day(matches))
@@ -139,7 +140,7 @@ class RegularChampionship(DdAbstractCompetition):
         return res
 
     def _make_schedule(self):
-        pk_list = [cid for cid in self._clubs]
+        pk_list = list(self._club_ids)
         shuffle(pk_list)
         days = self._make_full_schedule(pk_list)
         shuffle(days)
@@ -163,7 +164,7 @@ def _make_basic_schedule(pk_list: List[str]):
         num = len(lst) - 1
         mid = len(lst) // 2
         return [
-            DdScheduledMatchStruct(lst[i], lst[num-i]) for i in range(mid)
+            ScheduledMatch(lst[i], lst[num - i]) for i in range(mid)
         ]
 
     def shift(lst: List[str], num: int) -> List[str]:

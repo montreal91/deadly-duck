@@ -24,6 +24,7 @@ class StandingRow(NamedTuple):
     pos: int
     club_id: str
     club_name: str
+    matches: int
     sets: int
     games: int
 
@@ -101,9 +102,10 @@ class GameScreenGuiQueryHandler:
                 res_standings.append(StandingRow(
                     pos=pos + 1,
                     club_id=standing.club_id,
+                    club_name=clubs[standing.club_id].name,
+                    matches=standing.matches_played,
                     sets=standing.sets_won,
                     games=standing.games_won,
-                    club_name=clubs[standing.club_id].name,
                 ))
 
             standings = ChampionshipStandings(rows=res_standings)

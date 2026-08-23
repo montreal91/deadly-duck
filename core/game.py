@@ -9,6 +9,8 @@ Created Apr 09, 2019
 """
 import logging
 import time
+from datetime import date
+from datetime import timedelta
 from random import randint
 from typing import Any
 from typing import Callable
@@ -23,21 +25,22 @@ from configuration.config_game import GameplayConstants
 from core.club import Club
 from core.club import ClubPlayerSlot
 from core.competition import CompetitionType
-from core.competition import DdAbstractCompetition
+from core.competition import AbstractCompetition
 from core.financial import DdPracticeCalculator
 from core.financial import DdStaticContractCalculator
 from core.financial import DdTransaction
-from core.match import DdMatchResult
-from core.match import DdScheduledMatchStruct
-from core.match import DdStandingsRowStruct
+from core.match_result import MatchResult
+from core.match_processing_system import process_matches
 from core.player import ExhaustedLinearRecovery
 from core.player import Player
 from core.player import PlayerFactory
-from core.playoffs import DdPlayoff
+from core.playoffs import Playoff
 from core.playoffs import DdPlayoffParams
 from core.regular_championship import ChampionshipParams
+from core.regular_championship import DdStandingsRowStruct
 from core.regular_championship import RegularChampionship
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
+from core.scheduled_match import ScheduledMatch
 from core.skill_upgrade_system import upgrade_skills
 
 _CLUB_ID_ERROR = "Incorrect club id."
@@ -45,6 +48,9 @@ _UNCONTRACTED_PLAYERS_ERROR = (
     "Your club has uncontracted players.\n"
     "You should whether contract them or fire."
 )
+_FIRST_SEASON_START_DATE = date(2082, 2, 21)
+_SEASON_START_MONTH = 2
+_SEASON_START_DAY = 21
 
 
 class GameParams(NamedTuple):
@@ -87,14 +93,16 @@ class Game:
 
     _game_id: str
     _attendance_calculator: Callable
-    _competition: DdAbstractCompetition
+    _competition: AbstractCompetition
     _contract_calculator: Callable[[int], int]
+    _clubs: Dict[str, Club]
+    _current_date: date
     _free_agents: List[Player]
     _history: List[Dict[CompetitionType, Any]]
     _params: GameParams
     _player_factory: PlayerFactory
     _season_fame: Dict[str, int]
-    _results: List[DdMatchResult]
+    _results: List[MatchResult]
     _practice_calculator: DdPracticeCalculator
 
     def __init__(
@@ -106,6 +114,7 @@ class Game:
     ):
         self._game_id = game_id
         self._manager_club_id = None
+        self._current_date = _FIRST_SEASON_START_DATE
         self._free_agents = []
         self._history = [{}]
         self._params = params
@@ -125,9 +134,10 @@ class Game:
 
         tcp = TemporalClubProvider.get_instance()
         clubs = tcp.init_clubs_for_game(self._game_id)
+        self._clubs = clubs
 
         self._competition = RegularChampionship(
-            clubs,
+            list(clubs),
             self._params.championship_params
         )
 
@@ -136,7 +146,11 @@ class Game:
 
     @property
     def day(self):
-        return self._competition.day
+        return self._current_date
+
+    @property
+    def current_date(self):
+        return self._current_date
 
     @property
     def competition(self):
@@ -144,7 +158,7 @@ class Game:
 
     @property
     def clubs(self):
-        return self._competition._clubs
+        return self._clubs
 
     @property
     def game_id(self) -> str:
@@ -164,7 +178,7 @@ class Game:
     def season_over(self) -> bool:
         """Checks if season is over."""
 
-        return isinstance(self._competition, DdPlayoff) and self._competition.is_over
+        return isinstance(self._competition, Playoff) and self._competition.is_over
 
     @property
     def created_ts(self):
@@ -173,20 +187,6 @@ class Game:
     @property
     def updated_ts(self):
         return self._updated_ts
-
-    # TODO: Get rid of this hack
-    @property
-    def _clubs(self):
-        return self._competition._clubs
-
-    def rebind_clubs_to_provider(self):
-        provider = TemporalClubProvider.get_instance()
-        clubs = provider.get_clubs_for_game(self._game_id)
-
-        if not clubs:
-            clubs = self._competition._clubs
-
-        self._competition._clubs = clubs
 
     def fire_player(self, player_id: str, club_id: str):
         """Fires the selected player from user's club."""
@@ -212,7 +212,7 @@ class Game:
         return dict(
             balance=self._clubs[pk].account.balance,
             club_name=self._clubs[pk].name,
-            day=self._competition.day,
+            day=self._formatted_current_date,
             clubs=[club.name for club in self._clubs.values()],
             free_agents=self._get_free_agents(),
             history=self._history,
@@ -367,6 +367,7 @@ class Game:
             self._save_competition_results()
             self._start_playoff()
 
+        self._advance_current_date()
         self._updated_ts = time.time_ns() // 1_000_000
 
         return True, "Ok"
@@ -408,7 +409,7 @@ class Game:
         return False
 
     @property
-    def _last_results(self) -> List[DdMatchResult]:
+    def _last_results(self) -> List[MatchResult]:
         if not self._results:
             return []
 
@@ -425,7 +426,7 @@ class Game:
     def _competition_type(self) -> CompetitionType:
         if isinstance(self._competition, RegularChampionship):
             return CompetitionType.CHAMPIONSHIP
-        if isinstance(self._competition, DdPlayoff):
+        if isinstance(self._competition, Playoff):
             return CompetitionType.PLAY_OFFS
         raise Exception("Unknown competition type.")
 
@@ -497,7 +498,7 @@ class Game:
         return res
 
     def _get_opponent(self, pk: str) -> Optional[OpponentDto]:
-        def schedule_filter(pair: DdScheduledMatchStruct):
+        def schedule_filter(pair: ScheduledMatch):
             if pair.home_pk == pk:
                 return True
             return pair.away_pk == pk
@@ -597,10 +598,11 @@ class Game:
 
         self._shuffle_coach_powers()
         self._competition = RegularChampionship(
-            self._clubs,
+            list(self._clubs),
             self._params.championship_params
         )
         self._history.append({})
+        self._reset_current_date_to_next_season_start()
 
     def _perform_practice(self):
         if not self._can_practice:
@@ -610,7 +612,7 @@ class Game:
             if self._is_manager_club(club.club_id):
                 club.account.ProcessTransaction(DdTransaction(
                     -self._calculate_club_practice_cost(club),
-                    f"Practice on day {self._competition.day}"
+                    f"Practice on {self._formatted_current_date}"
                 ))
             club.perform_practice()
 
@@ -618,7 +620,16 @@ class Game:
         current_matches = self._competition.current_matches
         playing_player_ids = self._get_playing_player_ids(current_matches)
 
-        self._results = self._competition.update()
+        if current_matches is None:
+            self._results = []
+        else:
+            self._results = process_matches(
+                current_matches,
+                self._clubs,
+                self._competition.match_params,
+            )
+
+        self._competition.apply_results(self._results)
         self._calculate_match_income()
 
         self._recover(excluded_player_ids=playing_player_ids)
@@ -673,6 +684,20 @@ class Game:
     def _is_manager_club(self, club_id: str) -> bool:
         return self._manager_club_id == club_id
 
+    @property
+    def _formatted_current_date(self) -> str:
+        return self._current_date.strftime("%Y-%b-%d")
+
+    def _advance_current_date(self):
+        self._current_date += timedelta(days=1)
+
+    def _reset_current_date_to_next_season_start(self):
+        self._current_date = date(
+            self._current_date.year + 1,
+            _SEASON_START_MONTH,
+            _SEASON_START_DAY,
+        ) - timedelta(days=1)
+
     def _simulate(self, years):
         while len(self._history) < years:
             self.update()
@@ -681,8 +706,7 @@ class Game:
         self._history[-1][self._competition_type] = self._competition.standings
 
     def _start_playoff(self):
-        self._competition = DdPlayoff(
-            self._clubs,
+        self._competition = Playoff(
             self._params.playoff_params,
             self._competition.standings,
         )
