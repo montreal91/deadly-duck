@@ -1,3 +1,8 @@
+"""
+Created Aug 20, 2026
+
+@author montreal91
+"""
 from core.club import Club
 from core.player import Player
 from core.player import level_exp

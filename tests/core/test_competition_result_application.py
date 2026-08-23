@@ -1,3 +1,8 @@
+"""
+Created Aug 22, 2026
+
+@author montreal91
+"""
 from core.match_engine import MatchParams
 from core.match import ExhaustionCalculator
 from core.match import DdLinearProbabilityCalculator
