@@ -7,12 +7,13 @@ from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivy.uix.widget import Widget
 
-_DEFAULT_COL_WIDTH = 100
-_PLAYER_ID_COL_WIDTH = 35
-_PLAYER_NAME_COL_WIDTH = 180
-_ACTION_COL_WIDTH = 230
+_PLAYER_ID_COL_WIDTH = 0.05
+_PLAYER_NAME_COL_WIDTH = 0.22
+_SMALL_COL_WIDTH = 0.07
+_STAT_COL_WIDTH = 0.10
+_CONTRACT_COL_WIDTH = 0.14
+_ACTION_COL_WIDTH = 0.25
 
 
 class RosterManagementTable:
@@ -92,11 +93,11 @@ def _make_player_row(
 
     row.add_widget(_make_cell(str(player.pos), width=_PLAYER_ID_COL_WIDTH))
     row.add_widget(_make_cell(player.name, width=_PLAYER_NAME_COL_WIDTH))
-    row.add_widget(_make_cell(str(player.level)))
-    row.add_widget(_make_cell(str(player.age)))
-    row.add_widget(_make_cell(str(player.technique)))
-    row.add_widget(_make_cell(str(player.endurance)))
-    row.add_widget(_make_cell(player.contract_status))
+    row.add_widget(_make_cell(str(player.level), width=_SMALL_COL_WIDTH))
+    row.add_widget(_make_cell(str(player.age), width=_SMALL_COL_WIDTH))
+    row.add_widget(_make_cell(str(player.technique), width=_STAT_COL_WIDTH))
+    row.add_widget(_make_cell(str(player.endurance), width=_STAT_COL_WIDTH))
+    row.add_widget(_make_cell(player.contract_status, width=_CONTRACT_COL_WIDTH))
     row.add_widget(_make_action_cell(
         player,
         on_sign_player,
@@ -107,14 +108,13 @@ def _make_player_row(
     return row
 
 
-def _make_cell(value, width=_DEFAULT_COL_WIDTH, is_header=False):
+def _make_cell(value, width, is_header=False):
     cell = Label(
         text=value,
         markup=is_header,
         halign="left",
         valign="middle",
-        size_hint_x=None,
-        width=dp(width),
+        size_hint_x=width,
         shorten=True,
         shorten_from="right",
     )
@@ -127,16 +127,23 @@ def _get_col_width(title):
         return _PLAYER_ID_COL_WIDTH
     if title == "Name":
         return _PLAYER_NAME_COL_WIDTH
+    if title in ("Level", "Age"):
+        return _SMALL_COL_WIDTH
+    if title in ("Technique", "Endurance"):
+        return _STAT_COL_WIDTH
+    if title == "Contract":
+        return _CONTRACT_COL_WIDTH
     if title == "Action":
         return _ACTION_COL_WIDTH
-    return _DEFAULT_COL_WIDTH
+    raise Exception("Unknown roster management table column.")
 
 
 def _make_fire_button(player_id, on_fire_player):
     button = Button(
         text="Fire",
-        size_hint=(None, None),
-        size=(dp(70), dp(35)),
+        font_size=16,
+        size_hint=(1, None),
+        height=dp(35),
     )
     button.player_id = player_id
     button.on_fire_player = on_fire_player
@@ -147,8 +154,9 @@ def _make_fire_button(player_id, on_fire_player):
 def _make_sign_button(player_id, on_sign_player):
     button = Button(
         text="Sign",
-        size_hint=(None, None),
-        size=(dp(70), dp(35)),
+        font_size=16,
+        size_hint=(1, None),
+        height=dp(35),
     )
     button.player_id = player_id
     button.on_sign_player = on_sign_player
@@ -159,8 +167,9 @@ def _make_sign_button(player_id, on_sign_player):
 def _make_details_button(player_id, on_show_player_details):
     button = Button(
         text="Details",
-        size_hint=(None, None),
-        size=(dp(80), dp(35)),
+        font_size=16,
+        size_hint=(1, None),
+        height=dp(35),
     )
     button.player_id = player_id
     button.on_show_player_details = on_show_player_details
@@ -177,11 +186,9 @@ def _make_action_cell(
     cell = BoxLayout(
         orientation="horizontal",
         spacing=dp(4),
-        size_hint_x=None,
-        width=dp(_ACTION_COL_WIDTH),
+        size_hint_x=_ACTION_COL_WIDTH,
     )
 
-    cell.add_widget(Widget())
     cell.add_widget(_make_details_button(
         player.player_id,
         on_show_player_details,
@@ -191,7 +198,6 @@ def _make_action_cell(
         cell.add_widget(_make_sign_button(player.player_id, on_sign_player))
 
     cell.add_widget(_make_fire_button(player.player_id, on_fire_player))
-    cell.add_widget(Widget())
 
     return cell
 

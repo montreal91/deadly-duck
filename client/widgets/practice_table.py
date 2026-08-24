@@ -7,12 +7,17 @@ from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivy.uix.widget import Widget
 
-_DEFAULT_COL_WIDTH = 100
-_PLAYER_ID_COL_WIDTH = 35
-_PLAYER_NAME_COL_WIDTH = 180
-_ACTION_COL_WIDTH = 150
+_PLAYER_ID_COL_WIDTH = 0.05
+_PLAYER_NAME_COL_WIDTH = 0.18
+_AGE_COL_WIDTH = 0.06
+_LEVEL_COL_WIDTH = 0.06
+_EXPERIENCE_COL_WIDTH = 0.12
+_TECHNIQUE_COL_WIDTH = 0.09
+_ENDURANCE_COL_WIDTH = 0.09
+_COACH_COL_WIDTH = 0.07
+_COST_COL_WIDTH = 0.10
+_ACTION_COL_WIDTH = 0.18
 
 
 class PracticeTable:
@@ -82,28 +87,28 @@ def _make_player_row(player, on_select_coach):
 
     row.add_widget(_make_cell(str(player.pos), width=_PLAYER_ID_COL_WIDTH))
     row.add_widget(_make_cell(player.name, width=_PLAYER_NAME_COL_WIDTH))
-    row.add_widget(_make_cell(str(player.age)))
-    row.add_widget(_make_cell(str(player.level)))
+    row.add_widget(_make_cell(str(player.age), width=_AGE_COL_WIDTH))
+    row.add_widget(_make_cell(str(player.level), width=_LEVEL_COL_WIDTH))
     row.add_widget(_make_cell(
-        f"{player.experience}/{player.next_level_experience}"
+        f"{player.experience}/{player.next_level_experience}",
+        width=_EXPERIENCE_COL_WIDTH,
     ))
-    row.add_widget(_make_cell(str(player.technique)))
-    row.add_widget(_make_cell(str(player.endurance)))
-    row.add_widget(_make_cell(str(player.coach_level)))
-    row.add_widget(_make_cell(str(player.practice_cost)))
+    row.add_widget(_make_cell(str(player.technique), width=_TECHNIQUE_COL_WIDTH))
+    row.add_widget(_make_cell(str(player.endurance), width=_ENDURANCE_COL_WIDTH))
+    row.add_widget(_make_cell(str(player.coach_level), width=_COACH_COL_WIDTH))
+    row.add_widget(_make_cell(str(player.practice_cost), width=_COST_COL_WIDTH))
     row.add_widget(_make_action_cell(player.player_id, on_select_coach))
 
     return row
 
 
-def _make_cell(value, width=_DEFAULT_COL_WIDTH, is_header=False):
+def _make_cell(value, width, is_header=False):
     cell = Label(
         text=value,
         markup=is_header,
         halign="left",
         valign="middle",
-        size_hint_x=None,
-        width=dp(width),
+        size_hint_x=width,
         shorten=True,
         shorten_from="right",
     )
@@ -116,19 +121,31 @@ def _get_col_width(title):
         return _PLAYER_ID_COL_WIDTH
     if title == "Name":
         return _PLAYER_NAME_COL_WIDTH
+    if title == "Age":
+        return _AGE_COL_WIDTH
+    if title == "Level":
+        return _LEVEL_COL_WIDTH
+    if title == "Experience":
+        return _EXPERIENCE_COL_WIDTH
+    if title == "Technique":
+        return _TECHNIQUE_COL_WIDTH
+    if title == "Endurance":
+        return _ENDURANCE_COL_WIDTH
+    if title == "Coach":
+        return _COACH_COL_WIDTH
+    if title == "Cost":
+        return _COST_COL_WIDTH
     if title == "Action":
         return _ACTION_COL_WIDTH
-    return _DEFAULT_COL_WIDTH
+    raise Exception("Unknown practice table column.")
 
 
 def _make_action_cell(player_id, on_select_coach):
     cell = BoxLayout(
         orientation="horizontal",
         spacing=dp(3),
-        size_hint_x=None,
-        width=dp(_ACTION_COL_WIDTH),
+        size_hint_x=_ACTION_COL_WIDTH,
     )
-    cell.add_widget(Widget())
 
     for coach_index in range(4):
         cell.add_widget(_make_coach_button(
@@ -137,15 +154,14 @@ def _make_action_cell(player_id, on_select_coach):
             on_select_coach=on_select_coach,
         ))
 
-    cell.add_widget(Widget())
     return cell
 
 
 def _make_coach_button(player_id, coach_index, on_select_coach):
     button = Button(
         text=str(coach_index),
-        size_hint=(None, None),
-        size=(dp(28), dp(35)),
+        size_hint=(1, None),
+        height=dp(35),
     )
     button.player_id = player_id
     button.coach_index = coach_index

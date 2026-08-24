@@ -41,11 +41,14 @@ def _make_day_row(day):
     row = BoxLayout(orientation="vertical", size_hint=(1, None), spacing=2)
     row.bind(minimum_height=row.setter("height"))
 
-    row.add_widget(_make_wrapped_label(
+    day_label = _make_wrapped_label(
         text=_make_day_text(day),
         font_size=_DAY_FONT_SIZE,
         height=_DAY_LABEL_HEIGHT,
-    ))
+        markup=True,
+    )
+
+    row.add_widget(day_label)
 
     if day.match:
         row.add_widget(_make_wrapped_label(
@@ -60,7 +63,7 @@ def _make_day_row(day):
 
 
 def _make_day_text(day) -> str:
-    opp = day.match.opponent_club_name if day.match else ""
+    opp = day.match.opponent_club_name if day.match else "[i]Day Off[/i]"
     return f"{day.day}: {opp}"
 
 def _make_home_away_text(match):
@@ -68,8 +71,9 @@ def _make_home_away_text(match):
     return f"({home_away})"
 
 
-def _make_wrapped_label(text, font_size, height):
+def _make_wrapped_label(text, font_size, height, markup=False):
     label = make_label(text=text, font_size=font_size)
+    label.markup = markup
     label.size_hint_x = 1
     label.height = dp(height)
     label.halign = "left"
