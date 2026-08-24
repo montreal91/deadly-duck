@@ -11,28 +11,29 @@ Plans for upcoming versions
 * [x] Calendar
   * [x] Current date instead of abstract day (big ass competition refactoring)
   * [x] Season starts in February
-  * [ ] Upcoming matches widget
-* [ ] Basic resolution sanity pass
-  * [ ] Test 1280x720, 1366x768, 1920x1080
-  * [ ] Fix only blocking overlap/cutoff issues
+  * [x] Upcoming matches widget
+* [x] Basic resolution sanity pass
+  * [x] Test 1366x768, 1920x1080 (Fix only blocking overlap/cutoff issues)
 
 ## 0.3 (In future)
 
+* [ ] Regular Championship → Playoffs transition system
+* [ ] 12 clubs in playoffs
+  * Top 4 seeds get a Bye in the first round
 * [ ] Farm clubs
 * [ ] Persistence for matches and competitions
-* [ ] Widget for the five last matches of the opponent
 * [ ] Player temperaments (Melancholic, Choleric, Phlegmatic, Sanguine)
   * They do nothing for now, but give a little bit of personality to the players.
 * [ ] Juice as long-term player resource
 * [ ] Offseason rehab/practice
-* [ ] Color codes for win/loss on the results screen
-* [ ] Basic UI color palette
-* [ ] Regular Championship → Playoffs transition system
 * [ ] The history of The Kaitlyn Cup (the history of the previous seasons)
-* [ ] Skip playoffs if not participating
 
 ## Later Versions
 
+* [ ] Skip playoffs if not participating
+* [ ] Color codes for win/loss on the results screen
+* [ ] Basic UI color palette
+* [ ] Widget for the five last matches of the opponent
 * [ ] Contract as first-class relationship
 * [ ] Negotiation MVP (Player evaluates offer using salary + club fame + loyalty + role)
 * [ ] Transfers
@@ -51,6 +52,7 @@ Plans for upcoming versions
 * [ ] Player's expectations of upcoming matches (some want to play, some don't)
 * [ ] Pre-match and post-match dialogues with players
 * [ ] Player portraits generation
+* [ ] Better support of high-res screens
 
 ### Achievements
 * Leader Leads - Win Playoffs as a top seed

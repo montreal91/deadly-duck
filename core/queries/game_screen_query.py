@@ -15,6 +15,7 @@ from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 _NO_PLAYOFF_CLUB_ID = ""
 _NO_PLAYOFF_VALUE = "N/A"
+_NO_PLAYOFF_SCORE = ""
 
 
 class UpcomingMatch(NamedTuple):
@@ -44,9 +45,11 @@ class PlayoffSeriesRow(NamedTuple):
     round_number: int
     top_club_id: str
     top_club_name: str
+    top_seed: Union[int, str]
     top_score: Union[int, str]
     bottom_club_id: str
     bottom_club_name: str
+    bottom_seed: Union[int, str]
     bottom_score: Union[int, str]
     contains_manager_club: bool
 
@@ -204,9 +207,11 @@ def _make_playoff_standings(
             round_number=round_number,
             top_club_id=top_club_id,
             top_club_name=clubs[top_club_id].name,
+            top_seed=standing["seeds"][0],
             top_score=standing["score"][0],
             bottom_club_id=bottom_club_id,
             bottom_club_name=clubs[bottom_club_id].name,
+            bottom_seed=standing["seeds"][1],
             bottom_score=standing["score"][1],
             contains_manager_club=manager_club_id in standing["clubs"],
         ))
@@ -244,10 +249,12 @@ def _make_empty_playoff_series(round_number):
         round_number=round_number,
         top_club_id=_NO_PLAYOFF_CLUB_ID,
         top_club_name=_NO_PLAYOFF_VALUE,
-        top_score=_NO_PLAYOFF_VALUE,
+        top_seed=_NO_PLAYOFF_SCORE,
+        top_score=_NO_PLAYOFF_SCORE,
         bottom_club_id=_NO_PLAYOFF_CLUB_ID,
         bottom_club_name=_NO_PLAYOFF_VALUE,
-        bottom_score=_NO_PLAYOFF_VALUE,
+        bottom_seed=_NO_PLAYOFF_SCORE,
+        bottom_score=_NO_PLAYOFF_SCORE,
         contains_manager_club=False,
     )
 

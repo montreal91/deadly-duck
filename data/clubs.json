@@ -853,7 +853,7 @@
     }
   },
   {
-    "name": "Singapore Flowers",
+    "name": "Hong Kong Netrunners",
     "fame": [
       0,
       0,
@@ -885,12 +885,12 @@
         "ClubPlayerSlot": true
       }
     ],
-    "club_id": "singapore_flowers",
+    "club_id": "hong_kong_netrunners",
     "info": {
       "country": "Singapore",
       "city": "Singapore",
-      "motto": "Beauty is strength.",
-      "description": "The description of Singapore Flowers"
+      "motto": "Netrunners motto.",
+      "description": "The description of Hong Kong Netrunners"
     }
   },
   {
@@ -1036,7 +1036,7 @@
     }
   },
   {
-    "name": "Bangkok Braves",
+    "name": "Wellington Wardens",
     "fame": [
       0,
       0,
@@ -1047,12 +1047,12 @@
     "balance": 5000000,
     "coach_power": 3,
     "player_data": [],
-    "club_id": "bangkok_braves",
+    "club_id": "wellington_wardens",
     "info": {
-      "country": "Thailand",
-      "city": "Bangkok",
-      "motto": "The motto of Bangkok Braves",
-      "description": "The description of Bangkok Braves"
+      "country": "New Zealand",
+      "city": "Wellington",
+      "motto": "The motto of Wellington Wardens",
+      "description": "The description of Wellington Wardens"
     }
   }
 ]

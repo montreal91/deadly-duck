@@ -190,6 +190,10 @@ class Playoff(AbstractCompetition):
             res = dict(
                 clubs=series.pair,
                 score=series.score,
+                seeds=(
+                    self._get_club_seed(series.pair[0]),
+                    self._get_club_seed(series.pair[1]),
+                ),
             )
             result.append(res)
         return result
@@ -250,6 +254,9 @@ class Playoff(AbstractCompetition):
             if row.club_id == club_pk:
                 return i
         return -1
+
+    def _get_club_seed(self, club_pk: str) -> int:
+        return self._get_club_pos(club_pk) + 1
 
     def _InsertGap(self):
         gaps = [None for _ in range(self._params.gap_days)]

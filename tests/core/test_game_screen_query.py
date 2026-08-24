@@ -10,6 +10,7 @@ from core.club import Club
 from core.competition import CompetitionType
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.queries.game_screen_query import GameScreenGuiQueryHandler
+from core.queries.game_screen_query import PlayoffStandings
 from core.scheduled_match import ScheduledMatch
 
 
@@ -40,6 +41,47 @@ def test_game_screen_query_converts_remaining_matches_to_upcoming_days():
     assert result.upcoming_days[2].match.home_away == "Away"
 
 
+def test_game_screen_query_uses_empty_scores_for_future_playoff_series():
+    game = _Game(
+        current_matches=[],
+        remaining_matches=[],
+        competition_type=CompetitionType.PLAY_OFFS,
+        standings=[
+            {
+                "clubs": ("manager", "opponent"),
+                "score": (0, 0),
+                "seeds": (1, 4),
+            },
+            {
+                "clubs": ("other-1", "other-2"),
+                "score": (0, 0),
+                "seeds": (2, 3),
+            },
+        ],
+    )
+    handler = GameScreenGuiQueryHandler(
+        game_repository=_GameRepository(game),
+        club_provider=_ClubProvider({
+            "manager": _Club("Manager Club"),
+            "opponent": _Club("Opponent Club"),
+            "other-1": _Club("Other Club 1"),
+            "other-2": _Club("Other Club 2"),
+        }),
+    )
+
+    result = handler("game", "manager")
+
+    assert isinstance(result.standings, PlayoffStandings)
+    assert result.standings.rows[0].top_seed == 1
+    assert result.standings.rows[0].bottom_seed == 4
+    assert result.standings.rows[1].top_seed == 2
+    assert result.standings.rows[1].bottom_seed == 3
+    assert result.standings.rows[2].top_seed == ""
+    assert result.standings.rows[2].bottom_seed == ""
+    assert result.standings.rows[2].top_score == ""
+    assert result.standings.rows[2].bottom_score == ""
+
+
 class _GameRepository:
     def __init__(self, game):
         self._game = game
@@ -58,9 +100,17 @@ class _ClubProvider(TemporalClubProvider):
 
 
 class _Game:
-    def __init__(self, current_matches, remaining_matches):
+    def __init__(
+            self,
+            current_matches,
+            remaining_matches,
+            competition_type=CompetitionType.CHAMPIONSHIP,
+            standings=None,
+    ):
         self.competition = SimpleNamespace(current_matches=current_matches)
         self._remaining_matches = remaining_matches
+        self._competition_type = competition_type
+        self._standings = standings or []
 
     def get_context(self, _manager_club_id):
         return {
@@ -69,10 +119,10 @@ class _Game:
             "balance": 0,
             "club_name": "Manager Club",
             "competition": "Regular Season",
-            "competition_type": CompetitionType.CHAMPIONSHIP,
+            "competition_type": self._competition_type,
             "has_matches": True,
             "remaining_matches": self._remaining_matches,
-            "standings": [],
+            "standings": self._standings,
         }
 
 

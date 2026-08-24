@@ -13,33 +13,31 @@ from kivy.uix.widget import Widget
 from client.game_context import GameContext
 from client.widgets.factories import make_label
 
-_POS_WIDTH = dp(25)
-_CLUB_WIDTH = dp(100)
-_MATCHES_WIDTH = dp(55)
-_SETS_WIDTH = dp(30)
-_GAMES_WIDTH = dp(40)
+_POS_WIDTH = 0.12
+_CLUB_WIDTH = 0.42
+_MATCHES_WIDTH = 0.20
+_SETS_WIDTH = 0.12
+_GAMES_WIDTH = 0.14
+_ROW_HEIGHT = dp(26)
+_HEADER_HEIGHT = dp(28)
+_HEADER_GAP = dp(4)
 
 
 class StandingsTableWidget:
     def __init__(self):
         self._root = BoxLayout(
             orientation="vertical",
-            size_hint_y=None,
-            padding=(dp(8), dp(8)),
-            spacing=dp(4),
-            height=dp(750),
+            size_hint=(1, 1),
+            padding=(dp(6), dp(4)),
+            spacing=dp(2),
         )
-        self._root.bind(size=self._root.setter("size"))
 
-        self._title = make_label(text="Standings Table", font_size=35)
+        self._title = make_label(text="Standings Table", font_size=28)
         self._root.add_widget(self._title)
-
-        self._spacer = make_label(" ")
-        self._root.add_widget(self._spacer)
 
         self._table_header = _make_table_header()
         self._root.add_widget(self._table_header)
-        self._header_gap = Widget(size_hint_y=None, height=dp(8))
+        self._header_gap = Widget(size_hint_y=None, height=_HEADER_GAP)
 
     @property
     def widget(self):
@@ -49,7 +47,6 @@ class StandingsTableWidget:
         self._root.clear_widgets()
 
         self._root.add_widget(self._title)
-        self._root.add_widget(self._spacer)
         self._root.add_widget(self._table_header)
         self._root.add_widget(self._header_gap)
 
@@ -60,7 +57,7 @@ class StandingsTableWidget:
 
 
 def _make_table_header():
-    row = BoxLayout(orientation="horizontal")
+    row = BoxLayout(orientation="horizontal", size_hint_y=None, height=_HEADER_HEIGHT)
 
     row.add_widget(_make_cell("[b]Pos.[/b]", align="left", width=_POS_WIDTH, is_header=True))
     row.add_widget(_make_cell("[b]Club[/b]", align="center", width=_CLUB_WIDTH, is_header=True))
@@ -77,15 +74,14 @@ def _make_cell(value, width, align, is_header=False):
         markup=is_header,
         halign=align,
         valign="middle",
-        size_hint_x=None,
-        width=dp(width),
+        size_hint_x=width,
     )
     lbl.bind(size=lambda w, *_: setattr(w, "text_size", w.size))
     return lbl
 
 
 def _make_row(standings_row):
-    row = BoxLayout(orientation="horizontal", size_hint_y=None, height=dp(36))
+    row = BoxLayout(orientation="horizontal", size_hint_y=None, height=_ROW_HEIGHT)
 
     if standings_row.club_id == GameContext.get_instance().club_id:
         with row.canvas.before:
