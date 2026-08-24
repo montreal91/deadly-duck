@@ -209,16 +209,31 @@ def _make_series(series, pos=None, size=None):
 
     block.bind(pos=_update_series_canvas, size=_update_series_canvas)
 
-    block.add_widget(_make_team_row(series.top_club_name, series.top_score))
-    block.add_widget(_make_team_row(series.bottom_club_name, series.bottom_score))
+    block.add_widget(_make_team_row(
+        seed=series.top_seed,
+        club_name=series.top_club_name,
+        score=series.top_score,
+    ))
+    block.add_widget(_make_team_row(
+        seed=series.bottom_seed,
+        club_name=series.bottom_club_name,
+        score=series.bottom_score,
+    ))
     return block
 
 
-def _make_team_row(club_name, score):
+def _make_team_row(seed, club_name, score):
     row = BoxLayout(orientation="horizontal", size_hint=(1, 1))
-    row.add_widget(_make_team_name_cell(club_name))
+    row.add_widget(_make_team_name_cell(_make_team_name(seed, club_name)))
     row.add_widget(_make_score_cell(str(score)))
     return row
+
+
+def _make_team_name(seed, club_name):
+    if seed == "":
+        return club_name
+
+    return f"[{seed}] {club_name}"
 
 
 def _make_team_name_cell(value):
@@ -269,7 +284,7 @@ def _series_centers(
     bottom_offset = max(body_height - first_round_total_height - top_offset, 0)
     group_size = 2 ** (round_number - 1)
 
-    return [
+    centers = [
         (
             bottom_offset
             + (index * group_size + (group_size - 1) / 2) * first_round_step
@@ -277,6 +292,8 @@ def _series_centers(
         )
         for index in range(series_count)
     ]
+    centers.reverse()
+    return centers
 
 
 def _calculate_series_height(grouped_rows, body_height):

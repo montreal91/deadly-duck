@@ -95,6 +95,25 @@ def test_playoff_has_ids_for_competition_series_and_matches():
     assert not hasattr(match, "series")
 
 
+def test_playoff_standings_include_regular_season_seeds():
+    standings = [
+        DdStandingsRowStruct(str(i))
+        for i in range(8)
+    ]
+    playoff = Playoff(
+        params=_playoff_params(),
+        standings=standings,
+    )
+    seed_by_club_id = {
+        row.club_id: seed
+        for seed, row in enumerate(standings, start=1)
+    }
+
+    for standing in playoff.standings:
+        for club_id, seed in zip(standing["clubs"], standing["seeds"]):
+            assert seed == seed_by_club_id[club_id]
+
+
 def test_playoff_applies_results_to_series_by_series_id():
     playoff = Playoff(
         params=_playoff_params(),

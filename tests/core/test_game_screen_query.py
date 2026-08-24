@@ -50,10 +50,12 @@ def test_game_screen_query_uses_empty_scores_for_future_playoff_series():
             {
                 "clubs": ("manager", "opponent"),
                 "score": (0, 0),
+                "seeds": (1, 4),
             },
             {
                 "clubs": ("other-1", "other-2"),
                 "score": (0, 0),
+                "seeds": (2, 3),
             },
         ],
     )
@@ -70,6 +72,12 @@ def test_game_screen_query_uses_empty_scores_for_future_playoff_series():
     result = handler("game", "manager")
 
     assert isinstance(result.standings, PlayoffStandings)
+    assert result.standings.rows[0].top_seed == 1
+    assert result.standings.rows[0].bottom_seed == 4
+    assert result.standings.rows[1].top_seed == 2
+    assert result.standings.rows[1].bottom_seed == 3
+    assert result.standings.rows[2].top_seed == ""
+    assert result.standings.rows[2].bottom_seed == ""
     assert result.standings.rows[2].top_score == ""
     assert result.standings.rows[2].bottom_score == ""
 
