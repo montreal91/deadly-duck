@@ -8,7 +8,6 @@ from datetime import timedelta
 from typing import List
 from typing import NamedTuple
 from typing import Optional
-from typing import Protocol
 from typing import Union
 
 from core.competition import CompetitionType

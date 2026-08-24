@@ -28,7 +28,8 @@ Plans for upcoming versions
 * [ ] Color codes for win/loss on the results screen
 * [ ] Basic UI color palette
 * [ ] Regular Championship → Playoffs transition system
-* [ ] The history of The Kaitlyn Cup
+* [ ] The history of The Kaitlyn Cup (the history of the previous seasons)
+* [ ] Skip playoffs if not participating
 
 ## Later Versions
 
