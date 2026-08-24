@@ -57,10 +57,12 @@ class GameScreen(Screen):
         )
         self._layout.left_col.padding = [dp(12), 0, dp(12), dp(8)]
         self._layout.left_col.spacing = dp(6)
+        self._layout.right_col.padding = [dp(12), 0, dp(12), dp(8)]
+        self._layout.right_col.spacing = dp(4)
 
         self._upcoming_match_widget = UpcomingMatchWidget()
         self._layout.right_col.add_widget(self._upcoming_match_widget.root)
-        self._layout.right_col.add_widget(make_label(text=" ", font_size=10))
+        self._layout.right_col.add_widget(Widget(size_hint_y=None, height=dp(8)))
         self._upcoming_days_widget = UpcomingDaysWidget()
         self._layout.right_col.add_widget(self._upcoming_days_widget.root)
 
