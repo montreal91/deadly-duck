@@ -11,10 +11,9 @@ Plans for upcoming versions
 * [x] Calendar
   * [x] Current date instead of abstract day (big ass competition refactoring)
   * [x] Season starts in February
-  * [ ] Upcoming matches widget
+  * [x] Upcoming matches widget
 * [ ] Basic resolution sanity pass
-  * [ ] Test 1280x720, 1366x768, 1920x1080
-  * [ ] Fix only blocking overlap/cutoff issues
+  * [ ] Test 1366x768, 1920x1080 (Fix only blocking overlap/cutoff issues)
 
 ## 0.3 (In future)
 
