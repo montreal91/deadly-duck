@@ -11,7 +11,6 @@ from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 
-from client.constants import button_size
 from client.game_context import GameContext
 from client.widgets.factories import make_label
 from client.widgets.layout import make_three_column_layout
@@ -21,11 +20,17 @@ from core.ports.inbound.commands.improve_player_skill_command import (
 )
 from core.queries.level_up_screen_query import LevelUpScreenQuery
 
-_STAT_LABEL_WIDTH = 150
-_STAT_SPACER_WIDTH = 8
-_STAT_VALUE_WIDTH = 100
-_STAT_CONTROL_WIDTH = 44
-_STAT_CONTROL_SPACING = 6
+_ACTION_WIDTH = 350
+_ACTION_HEIGHT = 42
+_ACTION_FONT_SIZE = 22
+_PLAYER_BUTTON_HEIGHT = 42
+_PLAYER_BUTTON_FONT_SIZE = 20
+_STAT_LABEL_WIDTH_HINT = 0.42
+_STAT_VALUE_WIDTH_HINT = 0.30
+_STAT_CONTROL_WIDTH_HINT = 0.14
+_STAT_CONTROL_SPACING = 4
+_COLUMN_HORIZONTAL_PADDING = 24
+_MIN_COLUMN_CONTENT_WIDTH = 120
 _SKILL_TECHNIQUE = "technique"
 _SKILL_ENDURANCE = "endurance"
 
@@ -53,30 +58,29 @@ class LevelUpScreen(Screen):
             center_width_hint=0.5,
             right_width_hint=0.3,
         )
+        self._layout.left_col.padding = [dp(12), 0, dp(12), dp(8)]
+        self._layout.left_col.spacing = dp(6)
+        self._layout.center_col.padding = [dp(12), 0, dp(12), dp(8)]
+        self._layout.center_col.spacing = dp(6)
 
-        back_button = Button(
-            text="Back",
-            font_size=30,
-            size_hint=(None, None),
-            size=button_size,
-        )
+        back_button = _make_column_button("Back", self._layout.left_col)
         back_button.bind(on_press=_on_back)
         self._layout.left_col.add_widget(back_button)
         self._layout.left_col.add_widget(Widget())
 
         self._player_list_col = BoxLayout(
             orientation="vertical",
-            spacing=10,
-            size_hint=(0.45, 1),
+            spacing=dp(6),
+            size_hint=(0.40, 1),
         )
         self._player_stats_col = BoxLayout(
             orientation="vertical",
-            spacing=10,
-            size_hint=(0.55, 1),
+            spacing=dp(6),
+            size_hint=(0.60, 1),
         )
         content = BoxLayout(
             orientation="horizontal",
-            spacing=dp(20),
+            spacing=dp(10),
             size_hint=(1, 1),
         )
         content.add_widget(self._player_list_col)
@@ -114,7 +118,7 @@ class LevelUpScreen(Screen):
         if not self._players:
             self._player_list_col.add_widget(make_label(
                 text="No players to level up.",
-                font_size=26,
+                font_size=22,
             ))
             self._player_list_col.add_widget(Widget())
             return
@@ -122,9 +126,9 @@ class LevelUpScreen(Screen):
         for player in self._players:
             button = Button(
                 text=player.full_name,
-                font_size=24,
+                font_size=_PLAYER_BUTTON_FONT_SIZE,
                 size_hint=(1, None),
-                height=dp(46),
+                height=dp(_PLAYER_BUTTON_HEIGHT),
                 background_color=_button_color(
                     player == self._selected_player,
                 ),
@@ -184,9 +188,9 @@ class LevelUpScreen(Screen):
 
         submit_button = Button(
             text="Submit",
-            font_size=24,
-            size_hint=(None, None),
-            size=button_size,
+            font_size=_ACTION_FONT_SIZE,
+            size_hint=(1, None),
+            height=dp(_ACTION_HEIGHT),
             disabled=allocated_points == 0,
         )
         submit_button.bind(on_press=self._on_submit)
@@ -195,7 +199,7 @@ class LevelUpScreen(Screen):
         if self._message:
             self._player_stats_col.add_widget(make_label(
                 text=self._message,
-                font_size=22,
+                font_size=18,
             ))
 
         self._player_stats_col.add_widget(Widget())
@@ -290,8 +294,17 @@ def _button_color(is_selected):
 
 
 def _make_name_label(name):
-    label = make_label(text=f"[b]{name}[/b]", font_size=30)
+    label = Label(
+        text=f"[b]{name}[/b]",
+        font_size=24,
+        markup=True,
+        size_hint=(1, None),
+        height=dp(34),
+        halign="left",
+        valign="middle",
+    )
     label.markup = True
+    label.bind(size=lambda inst, val: setattr(inst, "text_size", val))
     return label
 
 
@@ -303,13 +316,12 @@ def _make_stat_row(title, value):
     )
     row.add_widget(_make_stat_cell(
         value=title,
-        width=_STAT_LABEL_WIDTH,
+        width_hint=_STAT_LABEL_WIDTH_HINT,
         is_title=True,
     ))
-    row.add_widget(Widget(size_hint_x=None, width=dp(_STAT_SPACER_WIDTH)))
     row.add_widget(_make_stat_cell(
         value=str(value),
-        width=_STAT_VALUE_WIDTH,
+        width_hint=_STAT_VALUE_WIDTH_HINT,
     ))
     return row
 
@@ -331,20 +343,19 @@ def _make_skill_row(
     )
     row.add_widget(_make_stat_cell(
         value=title,
-        width=_STAT_LABEL_WIDTH,
+        width_hint=_STAT_LABEL_WIDTH_HINT,
         is_title=True,
     ))
-    row.add_widget(Widget(size_hint_x=None, width=dp(_STAT_SPACER_WIDTH)))
     row.add_widget(_make_stat_cell(
         value=f"{value} (+{skill_delta})",
-        width=_STAT_VALUE_WIDTH,
+        width_hint=_STAT_VALUE_WIDTH_HINT,
     ))
 
     minus_button = Button(
         text="-",
         font_size=24,
-        size_hint=(None, None),
-        size=(dp(_STAT_CONTROL_WIDTH), dp(34)),
+        size_hint=(_STAT_CONTROL_WIDTH_HINT, None),
+        height=dp(34),
         disabled=not can_remove,
     )
     minus_button.bind(on_press=on_remove)
@@ -353,8 +364,8 @@ def _make_skill_row(
     plus_button = Button(
         text="+",
         font_size=24,
-        size_hint=(None, None),
-        size=(dp(_STAT_CONTROL_WIDTH), dp(34)),
+        size_hint=(_STAT_CONTROL_WIDTH_HINT, None),
+        height=dp(34),
         disabled=not can_add,
     )
     plus_button.bind(on_press=on_add)
@@ -363,19 +374,44 @@ def _make_skill_row(
     return row
 
 
-def _make_stat_cell(value, width, is_title=False):
+def _make_stat_cell(value, width_hint, is_title=False):
     label = Label(
         text=f"[b]{value}[/b]" if is_title else value,
-        font_size=24,
+        font_size=20,
         markup=is_title,
-        size_hint=(None, None),
-        size=(dp(width), dp(34)),
+        size_hint=(width_hint, None),
+        height=dp(34),
         halign="left",
         valign="middle",
     )
-    label.text_size = label.size
     label.bind(size=lambda inst, val: setattr(inst, "text_size", val))
     return label
+
+
+def _make_column_button(text, column):
+    button = Button(
+        text=text,
+        font_size=_ACTION_FONT_SIZE,
+        size_hint=(None, None),
+        height=dp(_ACTION_HEIGHT),
+    )
+    _bind_width_to_column(button, column, _ACTION_WIDTH)
+    return button
+
+
+def _bind_width_to_column(widget, column, max_width):
+    def sync_width(_, width):
+        widget.width = min(_column_content_width(width), dp(max_width))
+
+    column.bind(width=sync_width)
+    sync_width(column, column.width)
+
+
+def _column_content_width(column_width):
+    return max(
+        column_width - dp(_COLUMN_HORIZONTAL_PADDING),
+        dp(_MIN_COLUMN_CONTENT_WIDTH),
+    )
 
 
 def _empty_skill_points():
