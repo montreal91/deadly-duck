@@ -60,6 +60,25 @@ def test_regular_championship_rejects_results_for_wrong_match_id():
         raise AssertionError("Expected result validation to fail.")
 
 
+def test_club_schedule_days_preserve_empty_days_between_matches():
+    competition = RegularChampionship(
+        club_ids=["home", "away", "other-1", "other-2"],
+        params=_championship_params(),
+    )
+    first_match = ScheduledMatch("home", "away")
+    second_match = ScheduledMatch("away", "home")
+    competition._schedule = [
+        [first_match],
+        None,
+        [second_match],
+        None,
+    ]
+
+    schedule = competition.get_club_schedule_days("home")
+
+    assert schedule == [first_match, None, second_match]
+
+
 def test_playoff_has_ids_for_competition_series_and_matches():
     playoff = Playoff(
         params=_playoff_params(),

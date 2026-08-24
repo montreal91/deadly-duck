@@ -10,6 +10,7 @@ import pytest
 from configuration.config_game import GameplayConstants
 from core.player import level_exp
 from core.player import Player
+from core.player import PlayerFactory
 from core.player import SkillSet
 
 
@@ -17,6 +18,12 @@ def test_player_starts_with_no_skill_points():
     player = Player()
 
     assert player.skill_points == 0
+
+
+def test_player_factory_loads_names_as_utf8():
+    factory = PlayerFactory()
+
+    assert "Éowyn" in factory._first_names
 
 
 def test_add_experience_below_next_level_does_not_add_skill_points():

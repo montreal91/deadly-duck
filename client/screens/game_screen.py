@@ -15,6 +15,7 @@ from client.widgets.factories import make_label
 from client.widgets.layout import make_three_column_layout
 from client.widgets.playoffs_bracket_widget import PlayoffsBracketWidget
 from client.widgets.standings_table_widget import StandingsTableWidget
+from client.widgets.upcoming_days_widget import UpcomingDaysWidget
 from client.widgets.upcoming_match_widget import UpcomingMatchWidget
 from core.competition import CompetitionType
 from core.ports.inbound.commands.next_day import NextDayCommand
@@ -47,6 +48,9 @@ class GameScreen(Screen):
 
         self._upcoming_match_widget = UpcomingMatchWidget()
         self._layout.right_col.add_widget(self._upcoming_match_widget.root)
+        self._layout.right_col.add_widget(make_label(text=" ", font_size=10))
+        self._upcoming_days_widget = UpcomingDaysWidget()
+        self._layout.right_col.add_widget(self._upcoming_days_widget.root)
 
         self._layout.left_col.add_widget(make_label())
 
@@ -153,6 +157,7 @@ class GameScreen(Screen):
         self._info = gui_info
 
         self._upcoming_match_widget.update(gui_info.upcoming_match)
+        self._upcoming_days_widget.update(gui_info.upcoming_days)
         self._update_center_widget(gui_info)
 
     def _on_next(self, _):

@@ -58,7 +58,7 @@ class _StaticClubInfo(NamedTuple):
 
 
 def _load_club_info_by_id():
-    with open("data/clubs.json", "r") as data_file:
+    with open("data/clubs.json", "r", encoding="utf-8") as data_file:
         raw_clubs = json.load(data_file)
 
     result = {}

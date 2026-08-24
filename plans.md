@@ -12,37 +12,45 @@ Plans for upcoming versions
   * [x] Current date instead of abstract day (big ass competition refactoring)
   * [x] Season starts in February
   * [ ] Upcoming matches widget
-  * [ ] Widget for the five last matches of the opponent
-* [ ] Contract as first-class relationship
 * [ ] Basic resolution sanity pass
   * [ ] Test 1280x720, 1366x768, 1920x1080
   * [ ] Fix only blocking overlap/cutoff issues
 
 ## 0.3 (In future)
 
-* [ ] Negotiation MVP (Player evaluates offer using salary + club fame + loyalty + role)
-* [ ] Transfers
 * [ ] Farm clubs
-* [ ] Persistence for matches and history
+* [ ] Persistence for matches and competitions
+* [ ] Widget for the five last matches of the opponent
+* [ ] Player temperaments (Melancholic, Choleric, Phlegmatic, Sanguine)
+  * They do nothing for now, but give a little bit of personality to the players.
+* [ ] Juice as long-term player resource
+* [ ] Offseason rehab/practice
 * [ ] Color codes for win/loss on the results screen
+* [ ] Basic UI color palette
 * [ ] Regular Championship → Playoffs transition system
+* [ ] The history of The Kaitlyn Cup (the history of the previous seasons)
+* [ ] Skip playoffs if not participating
 
 ## Later Versions
 
+* [ ] Contract as first-class relationship
+* [ ] Negotiation MVP (Player evaluates offer using salary + club fame + loyalty + role)
+* [ ] Transfers
+* [ ] Salary cap and limited budgets
 * [ ] Point-by-point match simulations with serve, receive, groundstrokes, footwork, strength, etc
 * [ ] Biotech labs and implants development, neuroplasticity
 * [ ] Trophy rooms, for clubs and the players
 * [ ] UI that doesn't break under different resolutions
-* [ ] Basic UI color palette
 * [ ] Club Logos and colors
 * [ ] Achievements
 * [ ] Juice: the stat of player's inner resource. Very hard or impossible to recover. 
   Once player is not sure if she has enough juice for the next season, she decides to finish  her career.
   * Every player wants to have a farewell match in their home club.
-* [ ] Player temperaments (Melancholic, Choleric, Phlegmatic, Sanguine)
-  * They do nothing for now, but give a little bit of personality to the players.
 * [ ] Bloggers (analytics, lovers, haters, players); expectations before matches and how did it play out.
 * [ ] Psychological pressure of matches. Might be individual for the players.
+* [ ] Player's expectations of upcoming matches (some want to play, some don't)
+* [ ] Pre-match and post-match dialogues with players
+* [ ] Player portraits generation
 
 ### Achievements
 * Leader Leads - Win Playoffs as a top seed

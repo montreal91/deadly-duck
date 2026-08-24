@@ -219,7 +219,7 @@ class Game:
             last_results=self._last_results,
             opponent=self._get_opponent(pk),
             practice_cost=self._calculate_club_practice_cost(club=self._clubs[pk]),
-            remaining_matches=self._competition.get_club_schedule(pk),
+            remaining_matches=self._competition.get_club_schedule_days(pk),
             standings=self._standings,
             title=self._competition.title,
             user_players=self._get_user_players(pk),

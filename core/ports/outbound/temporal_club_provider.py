@@ -44,7 +44,7 @@ class TemporalClubProvider:
         decoder.register(Player)
         decoder.register(ClubPlayerSlot)
 
-        with open("data/clubs.json", "r") as data_file:
+        with open("data/clubs.json", "r", encoding="utf-8") as data_file:
             club_data = json.load(data_file, object_hook=decoder)
 
         for club in club_data:
