@@ -13,23 +13,21 @@ from kivy.uix.widget import Widget
 from client.game_context import GameContext
 from client.widgets.factories import make_label
 
-_POS_WIDTH = dp(25)
-_CLUB_WIDTH = dp(100)
-_MATCHES_WIDTH = dp(55)
-_SETS_WIDTH = dp(30)
-_GAMES_WIDTH = dp(40)
+_POS_WIDTH = 0.12
+_CLUB_WIDTH = 0.42
+_MATCHES_WIDTH = 0.20
+_SETS_WIDTH = 0.12
+_GAMES_WIDTH = 0.14
 
 
 class StandingsTableWidget:
     def __init__(self):
         self._root = BoxLayout(
             orientation="vertical",
-            size_hint_y=None,
+            size_hint=(1, 1),
             padding=(dp(8), dp(8)),
             spacing=dp(4),
-            height=dp(750),
         )
-        self._root.bind(size=self._root.setter("size"))
 
         self._title = make_label(text="Standings Table", font_size=35)
         self._root.add_widget(self._title)
@@ -60,7 +58,7 @@ class StandingsTableWidget:
 
 
 def _make_table_header():
-    row = BoxLayout(orientation="horizontal")
+    row = BoxLayout(orientation="horizontal", size_hint_y=None, height=dp(36))
 
     row.add_widget(_make_cell("[b]Pos.[/b]", align="left", width=_POS_WIDTH, is_header=True))
     row.add_widget(_make_cell("[b]Club[/b]", align="center", width=_CLUB_WIDTH, is_header=True))
@@ -77,8 +75,7 @@ def _make_cell(value, width, align, is_header=False):
         markup=is_header,
         halign=align,
         valign="middle",
-        size_hint_x=None,
-        width=dp(width),
+        size_hint_x=width,
     )
     lbl.bind(size=lambda w, *_: setattr(w, "text_size", w.size))
     return lbl

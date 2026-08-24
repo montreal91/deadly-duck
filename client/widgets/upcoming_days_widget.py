@@ -34,13 +34,16 @@ class UpcomingDaysWidget:
 
 
 def _make_day_row(day):
-    row = BoxLayout(orientation="vertical", size_hint=(None, None), spacing=2)
-    row.bind(minimum_size=row.setter("size"))
+    row = BoxLayout(orientation="vertical", size_hint=(1, None), spacing=2)
+    row.bind(minimum_height=row.setter("height"))
 
-    row.add_widget(make_label(text=_make_day_text(day), font_size=30))
+    row.add_widget(_make_wrapped_label(text=_make_day_text(day), font_size=30))
 
     if day.match:
-        row.add_widget(make_label(text=_make_home_away_text(day.match), font_size=25))
+        row.add_widget(_make_wrapped_label(
+            text=_make_home_away_text(day.match),
+            font_size=25,
+        ))
 
     row.add_widget(make_label(text=" ", font_size=10))
 
@@ -54,3 +57,12 @@ def _make_day_text(day) -> str:
 def _make_home_away_text(match):
     home_away = match.home_away
     return f"({home_away})"
+
+
+def _make_wrapped_label(text, font_size):
+    label = make_label(text=text, font_size=font_size)
+    label.size_hint_x = 1
+    label.halign = "left"
+    label.valign = "middle"
+    label.bind(size=lambda inst, val: setattr(inst, "text_size", val))
+    return label

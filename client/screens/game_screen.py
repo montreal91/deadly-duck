@@ -4,12 +4,12 @@ Created December 21, 2025
 @author montreal91
 """
 from kivy.app import App
+from kivy.metrics import dp
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 
-from client.constants import button_size
 from client.game_context import GameContext
 from client.widgets.factories import make_label
 from client.widgets.layout import make_three_column_layout
@@ -19,6 +19,16 @@ from client.widgets.upcoming_days_widget import UpcomingDaysWidget
 from client.widgets.upcoming_match_widget import UpcomingMatchWidget
 from core.competition import CompetitionType
 from core.ports.inbound.commands.next_day import NextDayCommand
+
+_ACTION_WIDTH = 350
+_ACTION_HEIGHT = 42
+_INFO_HEIGHT = 28
+_ERROR_HEIGHT = 36
+_ACTION_FONT_SIZE = 22
+_INFO_FONT_SIZE = 22
+_ERROR_FONT_SIZE = 18
+_MIN_COLUMN_CONTENT_WIDTH = 120
+_LEFT_COLUMN_HORIZONTAL_PADDING = 24
 
 
 class GameScreen(Screen):
@@ -45,6 +55,8 @@ class GameScreen(Screen):
             center_width_hint=0.5,
             right_width_hint=0.3,
         )
+        self._layout.left_col.padding = [dp(12), 0, dp(12), dp(8)]
+        self._layout.left_col.spacing = dp(6)
 
         self._upcoming_match_widget = UpcomingMatchWidget()
         self._layout.right_col.add_widget(self._upcoming_match_widget.root)
@@ -52,81 +64,55 @@ class GameScreen(Screen):
         self._upcoming_days_widget = UpcomingDaysWidget()
         self._layout.right_col.add_widget(self._upcoming_days_widget.root)
 
-        self._layout.left_col.add_widget(make_label())
-
-        self._date_label = Label(text="PlaceHolder", font_size=30, size_hint=(None, None))
-        self._date_label.bind(texture_size=self._date_label.setter("size"))
+        self._date_label = _make_left_label("PlaceHolder", self._layout.left_col)
         self._layout.left_col.add_widget(self._date_label)
 
-        self._season_label = Label(text="PlaceHolder", font_size=30, size_hint=(None, None))
-        self._season_label.bind(texture_size=self._season_label.setter("size"))
+        self._season_label = _make_left_label("PlaceHolder", self._layout.left_col)
         self._layout.left_col.add_widget(self._season_label)
 
-        self._current_stage_label = Label(text="PlaceHolder", font_size=30, size_hint=(None, None))
-        self._current_stage_label.bind(texture_size=self._current_stage_label.setter("size"))
+        self._current_stage_label = _make_left_label("PlaceHolder", self._layout.left_col)
         self._layout.left_col.add_widget(self._current_stage_label)
 
-        self._balance_label = Label(text="PlaceHolder", font_size=30, size_hint=(None, None))
-        self._balance_label.bind(texture_size=self._balance_label.setter("size"))
+        self._balance_label = _make_left_label("PlaceHolder", self._layout.left_col)
         self._layout.left_col.add_widget(self._balance_label)
 
-        self._error_label = make_label(text=" ", font_size=20)
+        self._error_label = _make_left_label(
+            " ",
+            self._layout.left_col,
+            font_size=_ERROR_FONT_SIZE,
+        )
         self._error_label.color = (0.8, 0.2, 0.2, 1)
         self._layout.left_col.add_widget(self._error_label)
 
-        self._next_button = Button(text="Next", font_size=30, size_hint=(None, None), size=button_size)
+        self._next_button = _make_left_button("Next", self._layout.left_col)
         self._next_button.bind(on_press=self._on_next)
         self._layout.left_col.add_widget(self._next_button)
 
-        self._select_player_button = Button(
-            text="Select Player",
-            font_size=30,
-            size_hint=(None, None),
-            size=button_size
-        )
+        self._select_player_button = _make_left_button("Select Player", self._layout.left_col)
         self._select_player_button.bind(on_press=self._on_select_player)
         self._layout.left_col.add_widget(self._select_player_button)
 
-        self._level_up_button = Button(
-            text="Level Up",
-            font_size=30,
-            size_hint=(None, None),
-            size=button_size,
-            disabled=True,
-        )
+        self._level_up_button = _make_left_button("Level Up", self._layout.left_col)
+        self._level_up_button.disabled = True
         self._level_up_button.bind(on_press=self._on_level_up)
         self._layout.left_col.add_widget(self._level_up_button)
 
-        self._practice_button = Button(
-            text="Practice",
-            font_size=30,
-            size_hint=(None, None),
-            size=button_size
-        )
+        self._practice_button = _make_left_button("Practice", self._layout.left_col)
         self._practice_button.bind(on_press=self._on_practice)
         self._layout.left_col.add_widget(self._practice_button)
 
-        self._roster_management_button = Button(
-            text="Roster Management",
-            font_size=30,
-            size_hint=(None, None),
-            size=button_size
+        self._roster_management_button = _make_left_button(
+            "Roster Management",
+            self._layout.left_col,
         )
         self._roster_management_button.bind(on_press=self._on_roster_management)
         self._layout.left_col.add_widget(self._roster_management_button)
 
-        self._res_button = Button(
-            text="Results",
-            font_size=30,
-            size_hint=(None, None),
-            size=button_size
-        )
+        self._res_button = _make_left_button("Results", self._layout.left_col)
         self._res_button.bind(on_press=_on_results)
         self._layout.left_col.add_widget(self._res_button)
 
-        self._layout.left_col.add_widget(make_label(" "))
-
-        self._back_button = Button(text="Back", font_size=30, size_hint=(None, None), size=button_size)
+        self._back_button = _make_left_button("Back", self._layout.left_col)
         self._back_button.bind(on_press=self._back_to_main_screen)
         self._layout.left_col.add_widget(self._back_button)
 
@@ -212,3 +198,44 @@ class GameScreen(Screen):
 
 def _on_results(_):
     App.get_running_app().switch_to_day_results()
+
+
+def _make_left_button(text, column):
+    button = Button(
+        text=text,
+        font_size=_ACTION_FONT_SIZE,
+        size_hint=(None, None),
+        height=dp(_ACTION_HEIGHT),
+    )
+    _bind_width_to_column(button, column, _ACTION_WIDTH)
+    return button
+
+
+def _make_left_label(text, column, font_size=_INFO_FONT_SIZE):
+    label = Label(
+        text=text,
+        font_size=font_size,
+        size_hint=(None, None),
+        height=dp(_ERROR_HEIGHT if font_size == _ERROR_FONT_SIZE else _INFO_HEIGHT),
+        halign="left",
+        valign="middle",
+    )
+    _bind_width_to_column(label, column, _ACTION_WIDTH, wrap_text=True)
+    return label
+
+
+def _bind_width_to_column(widget, column, max_width, wrap_text=False):
+    def sync_width(_, width):
+        widget.width = min(_column_content_width(width), dp(max_width))
+        if wrap_text:
+            widget.text_size = (widget.width, None)
+
+    column.bind(width=sync_width)
+    sync_width(column, column.width)
+
+
+def _column_content_width(column_width):
+    return max(
+        column_width - dp(_LEFT_COLUMN_HORIZONTAL_PADDING),
+        dp(_MIN_COLUMN_CONTENT_WIDTH),
+    )
