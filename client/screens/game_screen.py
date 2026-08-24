@@ -193,8 +193,6 @@ class GameScreen(Screen):
         else:
             raise Exception("Unknown competition type.")
 
-        self._layout.center_col.add_widget(Widget())
-
 
 def _on_results(_):
     App.get_running_app().switch_to_day_results()

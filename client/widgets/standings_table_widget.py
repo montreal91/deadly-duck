@@ -18,6 +18,9 @@ _CLUB_WIDTH = 0.42
 _MATCHES_WIDTH = 0.20
 _SETS_WIDTH = 0.12
 _GAMES_WIDTH = 0.14
+_ROW_HEIGHT = dp(26)
+_HEADER_HEIGHT = dp(28)
+_HEADER_GAP = dp(4)
 
 
 class StandingsTableWidget:
@@ -25,19 +28,16 @@ class StandingsTableWidget:
         self._root = BoxLayout(
             orientation="vertical",
             size_hint=(1, 1),
-            padding=(dp(8), dp(8)),
-            spacing=dp(4),
+            padding=(dp(6), dp(4)),
+            spacing=dp(2),
         )
 
-        self._title = make_label(text="Standings Table", font_size=35)
+        self._title = make_label(text="Standings Table", font_size=28)
         self._root.add_widget(self._title)
-
-        self._spacer = make_label(" ")
-        self._root.add_widget(self._spacer)
 
         self._table_header = _make_table_header()
         self._root.add_widget(self._table_header)
-        self._header_gap = Widget(size_hint_y=None, height=dp(8))
+        self._header_gap = Widget(size_hint_y=None, height=_HEADER_GAP)
 
     @property
     def widget(self):
@@ -47,7 +47,6 @@ class StandingsTableWidget:
         self._root.clear_widgets()
 
         self._root.add_widget(self._title)
-        self._root.add_widget(self._spacer)
         self._root.add_widget(self._table_header)
         self._root.add_widget(self._header_gap)
 
@@ -58,7 +57,7 @@ class StandingsTableWidget:
 
 
 def _make_table_header():
-    row = BoxLayout(orientation="horizontal", size_hint_y=None, height=dp(36))
+    row = BoxLayout(orientation="horizontal", size_hint_y=None, height=_HEADER_HEIGHT)
 
     row.add_widget(_make_cell("[b]Pos.[/b]", align="left", width=_POS_WIDTH, is_header=True))
     row.add_widget(_make_cell("[b]Club[/b]", align="center", width=_CLUB_WIDTH, is_header=True))
@@ -82,7 +81,7 @@ def _make_cell(value, width, align, is_header=False):
 
 
 def _make_row(standings_row):
-    row = BoxLayout(orientation="horizontal", size_hint_y=None, height=dp(36))
+    row = BoxLayout(orientation="horizontal", size_hint_y=None, height=_ROW_HEIGHT)
 
     if standings_row.club_id == GameContext.get_instance().club_id:
         with row.canvas.before:
