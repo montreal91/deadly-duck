@@ -5,20 +5,24 @@ Created December 22, 2025
 """
 from kivy.app import App
 from kivy.metrics import dp
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
+from kivy.uix.scrollview import ScrollView
 from kivy.uix.screenmanager import Screen
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
-from client.constants import button_size
 from client.game_context import GameContext
 from client.widgets.layout import make_three_column_layout
 from configuration.application_context import get_application_context
 from core.ports.inbound.commands.select_club import SelectClubCommand
 from core.queries.club_selection_screen_query import ClubSelectionScreenQuery
 
-_INFO_LABEL_WIDTH = 360
+_ACTION_WIDTH = 350
+_ACTION_HEIGHT = 50
+_INFO_LABEL_MAX_WIDTH = 520
+_CLUB_BUTTON_MAX_WIDTH = 350
 
 
 class ClubSelectionScreen(Screen):
@@ -38,13 +42,27 @@ class ClubSelectionScreen(Screen):
         )
 
         self._club_buttons = []
+        self._club_list = BoxLayout(
+            orientation="vertical",
+            spacing=10,
+            size_hint=(1, None),
+        )
+        self._club_list.bind(minimum_height=self._club_list.setter("height"))
+
+        club_scroll = ScrollView(
+            do_scroll_x=False,
+            size_hint=(1, 1),
+        )
+        club_scroll.add_widget(self._club_list)
+        self._layout.center_col.add_widget(club_scroll)
 
         self._start_button = Button(
             text="Start New Story",
             font_size=30,
             size_hint=(None, None),
-            size=button_size
+            height=dp(_ACTION_HEIGHT),
         )
+        self._bind_width_to_column(self._start_button, self._layout.left_col, _ACTION_WIDTH)
         self._start_button.disabled = True
         self._start_button.bind(on_press=self._start_new_story)
         self._layout.left_col.add_widget(self._start_button)
@@ -53,8 +71,9 @@ class ClubSelectionScreen(Screen):
             text="Back to Main Menu",
             font_size=30,
             size_hint=(None, None),
-            size=button_size
+            height=dp(_ACTION_HEIGHT),
         )
+        self._bind_width_to_column(back_button, self._layout.left_col, _ACTION_WIDTH)
         back_button.bind(on_press=_back_to_main_screen)
         self._layout.left_col.add_widget(back_button)
         self._layout.left_col.add_widget(Widget())
@@ -62,7 +81,7 @@ class ClubSelectionScreen(Screen):
         self.add_widget(self._layout.root)
 
     def update(self):
-        self._layout.center_col.clear_widgets()
+        self._club_list.clear_widgets()
         self._club_buttons = []
         self._club_infos = {}
         self._current_id = None
@@ -75,14 +94,18 @@ class ClubSelectionScreen(Screen):
                 text=club.club_name,
                 group="clubs",
                 size_hint=(None, None),
-                size=button_size
+                height=dp(_ACTION_HEIGHT),
+            )
+            self._bind_width_to_column(
+                button,
+                self._layout.center_col,
+                _CLUB_BUTTON_MAX_WIDTH,
             )
             button.bind(on_press=self._on_select)
             button.club_id = club.club_id
-            self._layout.center_col.add_widget(button)
+            self._club_list.add_widget(button)
             self._club_buttons.append(button)
 
-        self._layout.center_col.add_widget(Widget())
         self._start_button.disabled = True
         self._render_club_info(None)
 
@@ -110,14 +133,19 @@ class ClubSelectionScreen(Screen):
         if club is None:
             self._layout.right_col.add_widget(_make_info_title(
                 "Select a club",
+                self._layout.right_col,
             ))
             self._layout.right_col.add_widget(Widget())
             return
 
-        self._layout.right_col.add_widget(_make_info_title(club.club_name))
+        self._layout.right_col.add_widget(_make_info_title(
+            club.club_name,
+            self._layout.right_col,
+        ))
         self._layout.right_col.add_widget(_make_wrapped_label(
             text=f"{club.city}, {club.country}",
             font_size=22,
+            width_source=self._layout.right_col,
         ))
 
         if club.motto:
@@ -125,39 +153,65 @@ class ClubSelectionScreen(Screen):
                 text=f"[i]{club.motto}[/i]",
                 font_size=24,
                 markup=True,
+                width_source=self._layout.right_col,
             ))
 
         if club.description:
             self._layout.right_col.add_widget(_make_wrapped_label(
                 text=club.description,
                 font_size=22,
+                width_source=self._layout.right_col,
             ))
 
         self._layout.right_col.add_widget(Widget())
+
+    @staticmethod
+    def _bind_width_to_column(widget, column, max_width):
+        def sync_width(_, width):
+            widget.width = min(_column_content_width(width), dp(max_width))
+
+        column.bind(width=sync_width)
+        sync_width(column, column.width)
 
 
 def _back_to_main_screen(_):
     App.get_running_app().switch_to_main(None)
 
 
-def _make_info_title(text):
+def _make_info_title(text, width_source):
     return _make_wrapped_label(
         text=f"[b]{text}[/b]",
         font_size=30,
         markup=True,
+        width_source=width_source,
     )
 
 
-def _make_wrapped_label(text, font_size, markup=False):
+def _make_wrapped_label(text, font_size, markup=False, width_source=None):
     label = Label(
         text=text,
         font_size=font_size,
         markup=markup,
         size_hint=(None, None),
-        width=dp(_INFO_LABEL_WIDTH),
         halign="left",
         valign="top",
     )
-    label.text_size = (dp(_INFO_LABEL_WIDTH), None)
-    label.bind(texture_size=lambda inst, val: setattr(inst, "height", val[1]))
+    label.bind(
+        texture_size=lambda inst, val: setattr(inst, "height", val[1]),
+    )
+    if width_source is not None:
+        def sync_width(_, width):
+            label.width = min(
+                _column_content_width(width),
+                dp(_INFO_LABEL_MAX_WIDTH),
+            )
+            label.text_size = (label.width, None)
+
+        width_source.bind(width=sync_width)
+        sync_width(width_source, width_source.width)
+
     return label
+
+
+def _column_content_width(column_width):
+    return max(column_width - dp(60), dp(120))
