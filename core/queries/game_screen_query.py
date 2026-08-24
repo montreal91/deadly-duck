@@ -15,6 +15,7 @@ from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 _NO_PLAYOFF_CLUB_ID = ""
 _NO_PLAYOFF_VALUE = "N/A"
+_NO_PLAYOFF_SCORE = ""
 
 
 class UpcomingMatch(NamedTuple):
@@ -244,10 +245,10 @@ def _make_empty_playoff_series(round_number):
         round_number=round_number,
         top_club_id=_NO_PLAYOFF_CLUB_ID,
         top_club_name=_NO_PLAYOFF_VALUE,
-        top_score=_NO_PLAYOFF_VALUE,
+        top_score=_NO_PLAYOFF_SCORE,
         bottom_club_id=_NO_PLAYOFF_CLUB_ID,
         bottom_club_name=_NO_PLAYOFF_VALUE,
-        bottom_score=_NO_PLAYOFF_VALUE,
+        bottom_score=_NO_PLAYOFF_SCORE,
         contains_manager_club=False,
     )
 

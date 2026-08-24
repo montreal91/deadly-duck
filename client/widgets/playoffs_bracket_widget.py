@@ -18,13 +18,16 @@ from kivy.uix.widget import Widget
 from client.widgets.factories import make_label
 
 
-_SERIES_HEIGHT = dp(78)
-_FIRST_ROUND_SERIES_GAP = dp(18)
+_MAX_SERIES_HEIGHT = dp(78)
+_MIN_SERIES_HEIGHT = dp(48)
+_MAX_FIRST_ROUND_SERIES_GAP = dp(18)
+_MIN_FIRST_ROUND_SERIES_GAP = dp(6)
 _ROUND_TITLE_HEIGHT = dp(32)
 _TEAM_NAME_WIDTH = dp(130)
 _SCORE_WIDTH = dp(28)
 _ROUND_GAP = dp(16)
 _TITLE_BODY_GAP = dp(10)
+_SERIES_TOP_MARGIN = dp(12)
 _ROUND_TITLES = {
     1: "Quarterfinals",
     2: "Semifinals",
@@ -37,14 +40,12 @@ class PlayoffsBracketWidget:
         self._standings = None
         self._root = BoxLayout(
             orientation="vertical",
-            size_hint_y=None,
+            size_hint=(1, 1),
             padding=(dp(8), dp(8)),
             spacing=dp(4),
-            height=dp(750),
         )
-        self._root.bind(size=self._root.setter("size"))
 
-        self._title = make_label(text="Playoffs Bracket", font_size=35)
+        self._title = make_label(text="Playoffs Bracket", font_size=28)
         self._root.add_widget(self._title)
         self._root.add_widget(Widget())
 
@@ -100,7 +101,14 @@ class _PlayoffBracketLayout(FloatLayout):
         body_top = self.top - _ROUND_TITLE_HEIGHT - _TITLE_BODY_GAP
         body_height = body_top - self.y
 
-        if body_height <= _SERIES_HEIGHT:
+        series_height = _calculate_series_height(self._grouped_rows, body_height)
+        first_round_gap = _calculate_first_round_gap(
+            self._grouped_rows,
+            body_height,
+            series_height,
+        )
+
+        if body_height <= series_height:
             return
 
         for round_index, (round_number, rows) in enumerate(self._grouped_rows):
@@ -111,13 +119,19 @@ class _PlayoffBracketLayout(FloatLayout):
                 width=series_width,
             ))
 
-            centers = _series_centers(round_number, len(rows), body_height)
+            centers = _series_centers(
+                round_number,
+                len(rows),
+                body_height,
+                series_height,
+                first_round_gap,
+            )
             for row_index, row in enumerate(rows):
                 center_y = self.y + centers[row_index]
                 series_widget = _make_series(
                     row,
-                    pos=(x, center_y - _SERIES_HEIGHT / 2),
-                    size=(series_width, _SERIES_HEIGHT),
+                    pos=(x, center_y - series_height / 2),
+                    size=(series_width, series_height),
                 )
                 self._series_widgets[(round_number, row_index)] = series_widget
                 self.add_widget(series_widget)
@@ -235,24 +249,70 @@ def _make_score_cell(value):
     return lbl
 
 
-def _series_centers(round_number, series_count, body_height):
-    first_round_step = _SERIES_HEIGHT + _FIRST_ROUND_SERIES_GAP
+def _series_centers(
+        round_number,
+        series_count,
+        body_height,
+        series_height,
+        first_round_gap,
+):
+    first_round_step = series_height + first_round_gap
     first_round_count = series_count * 2 ** (round_number - 1)
     first_round_total_height = (
-        first_round_count * _SERIES_HEIGHT
-        + (first_round_count - 1) * _FIRST_ROUND_SERIES_GAP
+        first_round_count * series_height
+        + (first_round_count - 1) * first_round_gap
     )
-    bottom_offset = max((body_height - first_round_total_height) / 2, 0)
+    top_offset = min(
+        _SERIES_TOP_MARGIN,
+        max(body_height - first_round_total_height, 0),
+    )
+    bottom_offset = max(body_height - first_round_total_height - top_offset, 0)
     group_size = 2 ** (round_number - 1)
 
     return [
         (
             bottom_offset
             + (index * group_size + (group_size - 1) / 2) * first_round_step
-            + _SERIES_HEIGHT / 2
+            + series_height / 2
         )
         for index in range(series_count)
     ]
+
+
+def _calculate_series_height(grouped_rows, body_height):
+    max_first_round_series = max(
+        len(rows) * 2 ** (round_number - 1)
+        for round_number, rows in grouped_rows
+    )
+    if max_first_round_series <= 0:
+        return _MAX_SERIES_HEIGHT
+
+    available = (
+        body_height
+        - (max_first_round_series - 1) * _MIN_FIRST_ROUND_SERIES_GAP
+    )
+    return min(
+        _MAX_SERIES_HEIGHT,
+        max(_MIN_SERIES_HEIGHT, available / max_first_round_series),
+    )
+
+
+def _calculate_first_round_gap(grouped_rows, body_height, series_height):
+    max_first_round_series = max(
+        len(rows) * 2 ** (round_number - 1)
+        for round_number, rows in grouped_rows
+    )
+    if max_first_round_series <= 1:
+        return _MAX_FIRST_ROUND_SERIES_GAP
+
+    available = (
+        body_height
+        - max_first_round_series * series_height
+    ) / (max_first_round_series - 1)
+    return min(
+        _MAX_FIRST_ROUND_SERIES_GAP,
+        max(_MIN_FIRST_ROUND_SERIES_GAP, available),
+    )
 
 
 def _update_series_canvas(block, *_):
