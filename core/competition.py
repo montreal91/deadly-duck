@@ -114,6 +114,30 @@ class AbstractCompetition:
                     schedule.append(match)
         return schedule
 
+    def get_club_schedule_days(self, club_pk: str) -> List[Optional[ScheduledMatch]]:
+        """List of upcoming competition days with optional club match."""
+
+        schedule = []
+        for day in self._schedule[self._day:]:
+            if day is None:
+                schedule.append(None)
+                continue
+
+            club_match = None
+            for match in day:
+                if match.is_played:
+                    continue
+                if club_pk in (match.home_pk, match.away_pk):
+                    club_match = match
+                    break
+
+            schedule.append(club_match)
+
+        while schedule and schedule[-1] is None:
+            schedule.pop()
+
+        return schedule
+
     def get_club_fame(self, club_pk: str) -> int:
         """Fame earned by club in the competition."""
 

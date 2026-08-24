@@ -3,9 +3,12 @@ Created December 24, 2025
 
 @author montreal91
 """
+from datetime import datetime
+from datetime import timedelta
 from typing import List
 from typing import NamedTuple
 from typing import Optional
+from typing import Protocol
 from typing import Union
 
 from core.competition import CompetitionType
@@ -18,6 +21,11 @@ _NO_PLAYOFF_VALUE = "N/A"
 class UpcomingMatch(NamedTuple):
     opponent_club_name: str
     home_away: str
+
+
+class UpcomingDay(NamedTuple):
+    day: str
+    match: Optional[UpcomingMatch]
 
 
 class StandingRow(NamedTuple):
@@ -62,9 +70,12 @@ class QueryResult(NamedTuple):
     level_ups_count: int
     upcoming_match: Optional[UpcomingMatch]
     standings: Standings
+    upcoming_days: List[UpcomingDay]
 
 
 class GameScreenGuiQueryHandler:
+    _club_provider: TemporalClubProvider
+
     def __init__(self, game_repository, club_provider: TemporalClubProvider):
         self._game_repository = game_repository
         self._club_provider = club_provider
@@ -75,24 +86,7 @@ class GameScreenGuiQueryHandler:
         clubs = self._club_provider.get_clubs_for_game(game_id)
 
         match = _get_match(competition=game.competition, club_id=manager_club_id)
-
-        upcoming_match = None
-
-        if match:
-            if match.home_pk == manager_club_id:
-                opponent_club = game.clubs[match.away_pk].name
-                upcoming_match = UpcomingMatch(
-                    opponent_club_name=opponent_club,
-                    home_away="Home",
-                )
-            elif match.away_pk == manager_club_id:
-                opponent_club = game.clubs[match.home_pk].name
-                upcoming_match = UpcomingMatch(
-                    opponent_club_name=opponent_club,
-                    home_away="Away",
-                )
-            else:
-                raise Exception("WTF Happened")
+        upcoming_match = _make_upcoming_match(match, clubs, manager_club_id)
 
         if context["competition_type"] == CompetitionType.CHAMPIONSHIP:
             raw_standings = context.get("standings", [])
@@ -132,6 +126,12 @@ class GameScreenGuiQueryHandler:
             ),
             upcoming_match=upcoming_match,
             standings=standings,
+            upcoming_days=_make_upcoming_days(
+                raw_days=context["remaining_matches"],
+                clubs=clubs,
+                manager_club_id=manager_club_id,
+                first_day=context["day"],
+            ),
         )
 
 
@@ -145,6 +145,44 @@ def _count_players_with_unspent_skill_points(clubs, manager_club_id) -> int:
         int(slot.player.skill_points > 0)
         for slot in club.players
     )
+
+
+def _make_upcoming_days(
+        raw_days,
+        clubs,
+        manager_club_id,
+        first_day,
+) -> List[UpcomingDay]:
+    current_day = datetime.strptime(first_day, "%Y-%b-%d").date()
+
+    return [
+        UpcomingDay(
+            day=(current_day + timedelta(days=day_index)).strftime("%Y-%b-%d"),
+            match=_make_upcoming_match(match, clubs, manager_club_id),
+        )
+        for day_index, match in enumerate(raw_days)
+    ]
+
+
+def _make_upcoming_match(match, clubs, manager_club_id) -> Optional[UpcomingMatch]:
+    if match is None:
+        return None
+
+    if match.home_pk == manager_club_id:
+        opponent_club = clubs[match.away_pk].name
+        return UpcomingMatch(
+            opponent_club_name=opponent_club,
+            home_away="Home",
+        )
+
+    if match.away_pk == manager_club_id:
+        opponent_club = clubs[match.home_pk].name
+        return UpcomingMatch(
+            opponent_club_name=opponent_club,
+            home_away="Away",
+        )
+
+    raise Exception("Match does not contain manager club.")
 
 
 def _make_playoff_standings(
