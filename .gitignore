@@ -9,6 +9,7 @@
 .pydevproject
 *.log
 .env
+.venv/
 configuration/oauth_*
 .mypy_cache/
 .saves
@@ -17,3 +18,4 @@ configuration/oauth_*
 dist/
 main.spec
 build/
+*.spec

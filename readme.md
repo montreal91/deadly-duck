@@ -8,15 +8,19 @@ manager.
 The achieved result is sort of interesting, but still needs some refinement.
 
 ### Requirements
-python 3.6+
+Python 3.10+, uv
 
-`pip install -r requirements.txt`
+`uv sync`
+
+For tests and packaging tools:
+
+`uv sync --group dev --group build`
 
 ### Installation
 Just download contents of this repository as an archive and then unpack it.
 
 ### Quickstart
-Run `python main.py` in your console.
+Run `uv run python main.py` in your console.
 
 ### Trivia
 Official birthday of the project is **Dec 18, 2015**
