@@ -1,0 +1,28 @@
+[project]
+name = "deadly-duck"
+version = "0.2"
+description = "Deadly Duck Tennis Manager"
+readme = "readme.md"
+requires-python = ">=3.10"
+dependencies = [
+    "Kivy==2.3.1",
+]
+
+[dependency-groups]
+dev = [
+    "colorama==0.4.6",
+    "iniconfig==2.3.0",
+    "packaging==26.3",
+    "pluggy==1.6.0",
+    "pytest==9.0.3",
+]
+build = [
+    "altgraph==0.17.5",
+    "pefile==2024.8.26",
+    "pyinstaller==6.22.2",
+    "pyinstaller-hooks-contrib==2026.6",
+    "pywin32-ctypes==0.2.3",
+]
+
+[tool.uv]
+package = false
