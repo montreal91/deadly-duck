@@ -56,8 +56,8 @@ class DdRatingsParamerers:
     ROUND_COEFFICIENT = 25
 
 
-class DdMiscConstants(Enum):
-    CURRENT_VERSION = "0.2"
+class MiscConstants(Enum):
+    CURRENT_VERSION = "0.3"
 
 
 class DdTrainingTypes(Enum):

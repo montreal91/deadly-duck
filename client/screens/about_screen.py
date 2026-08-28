@@ -12,7 +12,7 @@ from kivy.uix.screenmanager import Screen
 
 from client.constants import button_size
 from client.widgets.factories import make_label
-from configuration.config_game import DdMiscConstants
+from configuration.config_game import MiscConstants
 
 
 class AboutScreen(Screen):
@@ -37,7 +37,7 @@ class AboutScreen(Screen):
         layout.add_widget(genre_label)
 
         version_label = make_label(
-            f"Version: [b]{DdMiscConstants.CURRENT_VERSION.value}[/b]",
+            f"Version: [b]{MiscConstants.CURRENT_VERSION.value}[/b]",
             font_size=25,
         )
         version_label.halign = "center"

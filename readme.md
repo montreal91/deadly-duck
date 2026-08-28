@@ -1,6 +1,6 @@
 ## Deadly Duck Tennis Manager
 
-Current version: 0.2
+Current version: 0.3
 
 
 The basic idea of the game is to mix up some ideas of jRPG genre with sports

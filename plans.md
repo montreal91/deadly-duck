@@ -2,26 +2,14 @@
 
 Plans for upcoming versions
 
-## 0.2 (in progress)
-
-* [x] Stable IDs for players and clubs
-* [x] Persistence for players and clubs
-* [x] Skill selection on level up
-* [x] When selecting the club show their location and motto
-* [x] Calendar
-  * [x] Current date instead of abstract day (big ass competition refactoring)
-  * [x] Season starts in February
-  * [x] Upcoming matches widget
-* [x] Basic resolution sanity pass
-  * [x] Test 1366x768, 1920x1080 (Fix only blocking overlap/cutoff issues)
-
 ## 0.3 (In future)
 
+* [ ] Color codes for win/loss on the results screen
 * [ ] Regular Championship → Playoffs transition system
 * [ ] 12 clubs in playoffs
   * Top 4 seeds get a Bye in the first round
-* [ ] Farm clubs
 * [ ] Persistence for matches and competitions
+* [ ] Farm clubs
 * [ ] Player temperaments (Melancholic, Choleric, Phlegmatic, Sanguine)
   * They do nothing for now, but give a little bit of personality to the players.
 * [ ] Juice as long-term player resource
@@ -31,7 +19,6 @@ Plans for upcoming versions
 ## Later Versions
 
 * [ ] Skip playoffs if not participating
-* [ ] Color codes for win/loss on the results screen
 * [ ] Basic UI color palette
 * [ ] Widget for the five last matches of the opponent
 * [ ] Contract as first-class relationship
@@ -57,6 +44,19 @@ Plans for upcoming versions
 ### Achievements
 * Leader Leads - Win Playoffs as a top seed
 * The Triumph of the Underdog - Win Playoffs as 8th seed
+
+## 0.2 (released)
+
+* [x] Stable IDs for players and clubs
+* [x] Persistence for players and clubs
+* [x] Skill selection on level up
+* [x] When selecting the club show their location and motto
+* [x] Calendar
+  * [x] Current date instead of abstract day (big ass competition refactoring)
+  * [x] Season starts in February
+  * [x] Upcoming matches widget
+* [x] Basic resolution sanity pass
+  * [x] Test 1366x768, 1920x1080 (Fix only blocking overlap/cutoff issues)
 
 ## 0.1 (released)
 
