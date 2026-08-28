@@ -5,7 +5,7 @@ description = "Deadly Duck Tennis Manager"
 readme = "readme.md"
 requires-python = ">=3.10"
 dependencies = [
-    "kivy[base,media]>=2.3.1",
+    "kivy[base]>=2.3.1",
 ]
 
 [dependency-groups]
