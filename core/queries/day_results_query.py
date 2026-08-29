@@ -26,6 +26,7 @@ class SingleMatchResult(NamedTuple):
     home_player_name: str
     away_player_name: str
     score: str
+    user_result: Optional[str]
     experience_gained: Optional[int]
     user_player_name: Optional[str]
 
@@ -72,6 +73,7 @@ def _make_single_match_result(
         home_player_name=_get_player_name(result.home_player_snapshot),
         away_player_name=_get_player_name(result.away_player_snapshot),
         score=result.full_score,
+        user_result=_extract_user_result(result, manager_club_id),
         experience_gained=_extract_exp(result, manager_club_id),
         user_player_name=_extract_user_player_name(result, manager_club_id),
     )
@@ -91,6 +93,15 @@ def _extract_user_player_name(result, manager_club_id) -> Optional[str]:
         return _get_player_full_name(result.home_player_snapshot)
     elif result.away_pk == manager_club_id:
         return _get_player_full_name(result.away_player_snapshot)
+
+    return None
+
+
+def _extract_user_result(result, manager_club_id) -> Optional[str]:
+    if result.home_pk == manager_club_id:
+        return "Win" if result.home_sets > result.away_sets else "Loss"
+    elif result.away_pk == manager_club_id:
+        return "Win" if result.away_sets > result.home_sets else "Loss"
 
     return None
 

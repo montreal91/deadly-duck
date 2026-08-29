@@ -194,7 +194,7 @@ wheels = [
 
 [[package]]
 name = "deadly-duck"
-version = "0.2"
+version = "0.3"
 source = { virtual = "." }
 dependencies = [
     { name = "kivy", extra = ["base"] },

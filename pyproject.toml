@@ -1,6 +1,6 @@
 [project]
 name = "deadly-duck"
-version = "0.2"
+version = "0.3"
 description = "Deadly Duck Tennis Manager"
 readme = "readme.md"
 requires-python = ">=3.10"
