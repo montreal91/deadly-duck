@@ -82,6 +82,80 @@ def test_game_screen_query_uses_empty_scores_for_future_playoff_series():
     assert result.standings.rows[2].bottom_score == ""
 
 
+def test_game_screen_query_supports_twelve_club_preliminary_round():
+    game = _Game(
+        current_matches=[],
+        remaining_matches=[],
+        competition_type=CompetitionType.PLAY_OFFS,
+        standings=[
+            {
+                "clubs": ("seed-1", None),
+                "score": ("", ""),
+                "seeds": (1, ""),
+                "round_number": 1,
+            },
+            {
+                "clubs": ("seed-5", "seed-12"),
+                "score": (0, 0),
+                "seeds": (5, 12),
+                "round_number": 1,
+            },
+            {
+                "clubs": ("seed-3", None),
+                "score": ("", ""),
+                "seeds": (3, ""),
+                "round_number": 1,
+            },
+            {
+                "clubs": ("seed-6", "seed-11"),
+                "score": (0, 0),
+                "seeds": (6, 11),
+                "round_number": 1,
+            },
+            {
+                "clubs": ("seed-2", None),
+                "score": ("", ""),
+                "seeds": (2, ""),
+                "round_number": 1,
+            },
+            {
+                "clubs": ("seed-7", "seed-10"),
+                "score": (0, 0),
+                "seeds": (7, 10),
+                "round_number": 1,
+            },
+            {
+                "clubs": ("seed-4", None),
+                "score": ("", ""),
+                "seeds": (4, ""),
+                "round_number": 1,
+            },
+            {
+                "clubs": ("seed-8", "seed-9"),
+                "score": (0, 0),
+                "seeds": (8, 9),
+                "round_number": 1,
+            },
+        ],
+    )
+    handler = GameScreenGuiQueryHandler(
+        game_repository=_GameRepository(game),
+        club_provider=_ClubProvider({
+            f"seed-{seed}": _Club(f"Seed {seed}")
+            for seed in range(1, 13)
+        }),
+    )
+
+    result = handler("game", "seed-5")
+
+    assert [row.round_number for row in result.standings.rows].count(1) == 8
+    assert [row.round_number for row in result.standings.rows].count(2) == 4
+    assert [row.round_number for row in result.standings.rows].count(3) == 2
+    assert [row.round_number for row in result.standings.rows].count(4) == 1
+    assert result.standings.rows[0].bottom_club_name == "BYE"
+    assert result.standings.rows[0].bottom_seed == ""
+
+
 class _GameRepository:
     def __init__(self, game):
         self._game = game

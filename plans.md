@@ -6,7 +6,7 @@ Plans for upcoming versions
 
 * [x] Color codes for win/loss on the results screen
 * [x] Regular Championship → Playoffs transition system
-* [ ] 12 clubs in playoffs
+* [x] 12 clubs in playoffs
   * Top 4 seeds get a Bye in the first round
 * [ ] Persistence for matches and competitions
 * [ ] Farm clubs

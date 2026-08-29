@@ -15,6 +15,7 @@ from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 _NO_PLAYOFF_CLUB_ID = ""
 _NO_PLAYOFF_VALUE = "N/A"
+_PLAYOFF_BYE_VALUE = "BYE"
 _NO_PLAYOFF_SCORE = ""
 
 
@@ -197,51 +198,87 @@ def _make_playoff_standings(
     if not raw_standings:
         return PlayoffStandings(rows=rows)
 
-    first_round_size = _largest_power_of_two(len(raw_standings))
-
     for round_number, standing in _playoff_rounds(raw_standings):
         top_club_id = standing["clubs"][0]
         bottom_club_id = standing["clubs"][1]
 
         rows.append(PlayoffSeriesRow(
             round_number=round_number,
-            top_club_id=top_club_id,
-            top_club_name=clubs[top_club_id].name,
+            top_club_id=_playoff_club_id(top_club_id),
+            top_club_name=_playoff_club_name(top_club_id, clubs),
             top_seed=standing["seeds"][0],
             top_score=standing["score"][0],
-            bottom_club_id=bottom_club_id,
-            bottom_club_name=clubs[bottom_club_id].name,
+            bottom_club_id=_playoff_club_id(bottom_club_id),
+            bottom_club_name=_playoff_club_name(bottom_club_id, clubs),
             bottom_seed=standing["seeds"][1],
             bottom_score=standing["score"][1],
             contains_manager_club=manager_club_id in standing["clubs"],
         ))
 
-    rows.extend(_make_future_playoff_rounds(
-        first_round_size=first_round_size,
-        rendered_series=len(raw_standings),
-    ))
+    rows.extend(_make_future_playoff_rounds(rows))
 
     return PlayoffStandings(rows=rows)
 
 
-def _make_future_playoff_rounds(first_round_size, rendered_series):
+def _make_future_playoff_rounds(actual_rows):
     rows = []
-    round_number = 1
-    round_size = first_round_size
-    skipped_series = rendered_series
 
-    while round_size > 0:
-        if skipped_series >= round_size:
-            skipped_series -= round_size
-        else:
-            for _ in range(round_size - skipped_series):
-                rows.append(_make_empty_playoff_series(round_number))
-            skipped_series = 0
-
-        round_size //= 2
-        round_number += 1
+    for round_number, expected_size in _expected_playoff_round_sizes(actual_rows):
+        actual_size = len([
+            row
+            for row in actual_rows
+            if row.round_number == round_number
+        ])
+        for _ in range(expected_size - actual_size):
+            rows.append(_make_empty_playoff_series(round_number))
 
     return rows
+
+
+def _playoff_club_id(club_id):
+    if club_id is None:
+        return _NO_PLAYOFF_CLUB_ID
+    return club_id
+
+
+def _playoff_club_name(club_id, clubs):
+    if club_id is None:
+        return _PLAYOFF_BYE_VALUE
+    return clubs[club_id].name
+
+
+def _expected_playoff_round_sizes(rows):
+    max_seed = _max_playoff_seed(rows)
+
+    if max_seed == 12:
+        return [
+            (1, 8),
+            (2, 4),
+            (3, 2),
+            (4, 1),
+        ]
+
+    first_round_size = _largest_power_of_two(max(1, len(rows)))
+    round_sizes = []
+    round_number = 1
+
+    while first_round_size > 0:
+        round_sizes.append((round_number, first_round_size))
+        first_round_size //= 2
+        round_number += 1
+
+    return round_sizes
+
+
+def _max_playoff_seed(rows):
+    seeds = []
+    for row in rows:
+        if isinstance(row.top_seed, int):
+            seeds.append(row.top_seed)
+        if isinstance(row.bottom_seed, int):
+            seeds.append(row.bottom_seed)
+
+    return max(seeds, default=0)
 
 
 def _make_empty_playoff_series(round_number):
@@ -261,6 +298,11 @@ def _make_empty_playoff_series(round_number):
 
 def _playoff_rounds(raw_standings):
     if not raw_standings:
+        return
+
+    if "round_number" in raw_standings[0]:
+        for standing in raw_standings:
+            yield standing["round_number"], standing
         return
 
     round_size = _largest_power_of_two(len(raw_standings))
