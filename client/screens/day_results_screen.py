@@ -24,7 +24,7 @@ _ACTION_FONT_SIZE = 22
 _COLUMN_HORIZONTAL_PADDING = 24
 _MIN_COLUMN_CONTENT_WIDTH = 120
 _RESULT_HEIGHT = 84
-_USER_RESULT_HEIGHT = 108
+_USER_RESULT_HEIGHT = 134
 
 
 class DayResultsScreen(Screen):
@@ -91,10 +91,18 @@ class DayResultsScreen(Screen):
 
             if is_user_result:
                 with line.canvas.before:
-                    line._bg_color = Color(rgba=(.2, .2, .2, 1))
+                    line._bg_color = Color(rgba=_user_result_highlight_color(
+                        res.user_result
+                    ))
                     line._bg_rect = Rectangle(pos=line.pos, size=line.size)
                 line.bind(pos=_update_bg, size=_update_bg)
 
+                line.add_widget(_make_result_label(
+                    text=res.user_result,
+                    font_size=24,
+                    height=26,
+                    width_source=self._layout.center_col,
+                ))
             line.add_widget(_make_result_label(
                 text=f"{res.home_club_name} vs. {res.away_club_name}",
                 font_size=26,
@@ -182,6 +190,12 @@ def _sort_manager_club_results_first(results, manager_club_id):
 
 def _make_experience_text(player_name, experience_gained):
     return f"{player_name} gained {experience_gained} pts. of experience."
+
+
+def _user_result_highlight_color(user_result):
+    if user_result == "Win":
+        return 0, 0.25, 0, 1
+    return 0.25, 0, 0, 1
 
 
 def _update_bg(self, *_):
