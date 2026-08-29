@@ -12,6 +12,7 @@ from random import choice
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 from configuration.config_game import GameplayConstants
@@ -352,7 +353,10 @@ class ExhaustedLinearRecovery:
     Linear exhaustion, i.e. dependency of days to fully recover from exhaustion
     is linear.
     """
-    def __call__(self, player: Player) -> int:
+    def __call__(self, player: Optional[Player]) -> int:
+        if player is None:
+            return 0
+
         days_to_recover = player.exhaustion // self._exhaustion_factor + 1
         return int(round(player.max_stamina / days_to_recover))
 

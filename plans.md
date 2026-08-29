@@ -2,10 +2,10 @@
 
 Plans for upcoming versions
 
-## 0.3 (In future)
+## 0.3 (In Progress)
 
-* [ ] Color codes for win/loss on the results screen
-* [ ] Regular Championship → Playoffs transition system
+* [x] Color codes for win/loss on the results screen
+* [x] Regular Championship → Playoffs transition system
 * [ ] 12 clubs in playoffs
   * Top 4 seeds get a Bye in the first round
 * [ ] Persistence for matches and competitions

@@ -16,7 +16,6 @@ from core.competition import AbstractCompetition
 from core.competition import ScheduleDay
 from core.match_engine import MatchParams
 from core.match_result import MatchResult
-from core.regular_championship import DdStandingsRowStruct
 from core.scheduled_match import ScheduledMatch
 
 ClubPair = Tuple[str, str]
@@ -32,6 +31,13 @@ class DdPlayoffParams(NamedTuple):
     gap_days: int
     match_params: MatchParams
     match_importance: int
+
+
+class PlayoffSeed(NamedTuple):
+    """A seeded playoff participant."""
+
+    club_id: str
+    seed: int
 
 
 class DdPlayoffSeries:
@@ -59,7 +65,7 @@ class DdPlayoffSeries:
     def pair(self) -> ClubPair:
         """Returns pair of pks of contesting clubs."""
 
-        return (self._top_club_pk, self._bottom_club_pk)
+        return self._top_club_pk, self._bottom_club_pk
 
     @pair.setter
     def pair(self, val: ClubPair):
@@ -72,9 +78,10 @@ class DdPlayoffSeries:
     def score(self) -> Score:
         """Current score of the series."""
 
-        s = {}
-        s[self._top_club_pk] = 0
-        s[self._bottom_club_pk] = 0
+        s = {
+            self._top_club_pk: 0,
+            self._bottom_club_pk: 0
+        }
 
         for result in self._results:
             if result.home_sets > result.away_sets:
@@ -150,14 +157,17 @@ class Playoff(AbstractCompetition):
     def __init__(
         self,
         params: DdPlayoffParams,
-        standings: List[DdStandingsRowStruct],
+        seeds: List[PlayoffSeed],
     ):
-        super().__init__([row.club_id for row in standings], params)
-        self._standings = sorted(
-            standings,
-            key=lambda x: (x.sets_won, x.games_won),
-            reverse=True,
+        super().__init__([seed.club_id for seed in seeds], params)
+        assert len(seeds) == params.length, (
+            "Playoff seeds should match playoff length."
         )
+        self._seeds = list(seeds)
+        self._seed_by_club_id = {
+            seed.club_id: seed.seed
+            for seed in self._seeds
+        }
         self._round = 1
         self._series = []
         self._past_series = []
@@ -250,13 +260,13 @@ class Playoff(AbstractCompetition):
                 yield day
 
     def _get_club_pos(self, club_pk: str) -> int:
-        for i, row in enumerate(self._standings):
-            if row.club_id == club_pk:
+        for i, seed in enumerate(self._seeds):
+            if seed.club_id == club_pk:
                 return i
         return -1
 
     def _get_club_seed(self, club_pk: str) -> int:
-        return self._get_club_pos(club_pk) + 1
+        return self._seed_by_club_id[club_pk]
 
     def _InsertGap(self):
         gaps = [None for _ in range(self._params.gap_days)]
@@ -268,8 +278,8 @@ class Playoff(AbstractCompetition):
             for top, bottom in self._LONG:
                 series = DdPlayoffSeries(self._params)
                 series.pair = (
-                    self._standings[predraw[top]].club_id,
-                    self._standings[predraw[bottom]].club_id,
+                    self._seeds[predraw[top]].club_id,
+                    self._seeds[predraw[bottom]].club_id,
                 )
                 self._series.append(series)
                 self._series_by_id[series.series_id] = series
@@ -279,8 +289,8 @@ class Playoff(AbstractCompetition):
             for top, bottom in self._SHORT:
                 series = DdPlayoffSeries(self._params)
                 series.pair = (
-                    self._standings[predraw[top]].club_id,
-                    self._standings[predraw[bottom]].club_id,
+                    self._seeds[predraw[top]].club_id,
+                    self._seeds[predraw[bottom]].club_id,
                 )
                 self._series.append(series)
                 self._series_by_id[series.series_id] = series

@@ -5,6 +5,7 @@ Created Aug 22, 2026
 """
 import time
 from datetime import date
+from types import SimpleNamespace
 
 from core.game import Game
 from core.game import GameParams
@@ -16,6 +17,7 @@ from core.player import PlayerReputationCalculator
 from core.playoffs import DdPlayoffParams
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.regular_championship import ChampionshipParams
+from core.regular_championship import DdStandingsRowStruct
 
 
 def test_game_starts_on_first_season_calendar_date():
@@ -46,6 +48,39 @@ def test_next_season_starts_on_next_year_february_21():
     assert game.get_context(_first_club_id(game))["day"] == "2083-Feb-21"
 
 
+def test_game_starts_playoff_with_top_regular_season_clubs():
+    game = _make_game()
+    standings = [
+        DdStandingsRowStruct(str(i))
+        for i in range(10)
+    ]
+    game._competition = SimpleNamespace(standings=standings)
+
+    game._start_playoff()
+
+    assert game.competition.contains_club("0")
+    assert game.competition.contains_club("7")
+    assert not game.competition.contains_club("8")
+    assert not game.competition.contains_club("9")
+
+
+def test_proceed_skips_competition_when_manager_club_is_not_participating():
+    game = Game.__new__(Game)
+    game._manager_club_id = "manager"
+    game._competition = _CompetitionWithoutManager()
+    updates = []
+
+    def update():
+        updates.append(1)
+        return False, "Stopped"
+
+    game.update = update
+
+    game.proceed_to_next_competition()
+
+    assert len(updates) == 1
+
+
 def _make_game():
     TemporalClubProvider.initialize()
     now = time.time_ns() // 1_000_000
@@ -59,6 +94,13 @@ def _make_game():
 
 def _first_club_id(game):
     return next(iter(game.clubs))
+
+
+class _CompetitionWithoutManager:
+    day = 0
+
+    def contains_club(self, club_id):
+        return False
 
 
 def _game_params():

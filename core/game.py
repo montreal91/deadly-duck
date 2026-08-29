@@ -36,6 +36,7 @@ from core.player import Player
 from core.player import PlayerFactory
 from core.playoffs import Playoff
 from core.playoffs import DdPlayoffParams
+from core.playoffs import PlayoffSeed
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import DdStandingsRowStruct
 from core.regular_championship import RegularChampionship
@@ -252,8 +253,11 @@ class Game:
         """Updates game while player action is not required."""
 
         step = True
-        while self._competition.day != 0 and step:
-            step = self.update()
+        while step and (
+                self._competition.day != 0
+                or not self._manager_club_in_current_competition
+        ):
+            step, _ = self.update()
 
     def select_coach_for_player(
             self, coach_index: int, player_id: str, club_index: str
@@ -685,6 +689,12 @@ class Game:
         return self._manager_club_id == club_id
 
     @property
+    def _manager_club_in_current_competition(self) -> bool:
+        if self._manager_club_id is None:
+            return True
+        return self._competition.contains_club(self._manager_club_id)
+
+    @property
     def _formatted_current_date(self) -> str:
         return self._current_date.strftime("%Y-%b-%d")
 
@@ -708,7 +718,10 @@ class Game:
     def _start_playoff(self):
         self._competition = Playoff(
             self._params.playoff_params,
-            self._competition.standings,
+            _make_playoff_seeds(
+                self._competition.standings,
+                self._params.playoff_params.length,
+            ),
         )
 
     def _unselect(self):
@@ -753,3 +766,13 @@ class Game:
         [self._clubs[pk].set_coach_power(3) for pk in strong_clubs]
         [self._clubs[pk].set_coach_power(2) for pk in medium_clubs]
         [self._clubs[pk].set_coach_power(1) for pk in weaksy_clubs]
+
+
+def _make_playoff_seeds(
+        standings: List[DdStandingsRowStruct],
+        playoff_length: int,
+) -> List[PlayoffSeed]:
+    return [
+        PlayoffSeed(club_id=row.club_id, seed=seed)
+        for seed, row in enumerate(standings[:playoff_length], start=1)
+    ]

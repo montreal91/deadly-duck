@@ -10,8 +10,8 @@ from core.match_result import MatchResult
 from core.player import PlayerReputationCalculator
 from core.playoffs import DdPlayoffParams
 from core.playoffs import Playoff
+from core.playoffs import PlayoffSeed
 from core.regular_championship import ChampionshipParams
-from core.regular_championship import DdStandingsRowStruct
 from core.regular_championship import RegularChampionship
 from core.scheduled_match import ScheduledMatch
 from core.set_result import DdSetStatuses
@@ -82,10 +82,7 @@ def test_club_schedule_days_preserve_empty_days_between_matches():
 def test_playoff_has_ids_for_competition_series_and_matches():
     playoff = Playoff(
         params=_playoff_params(),
-        standings=[
-            DdStandingsRowStruct(str(i))
-            for i in range(8)
-        ],
+        seeds=_playoff_seeds(8),
     )
     match = _first_playoff_match(playoff)
 
@@ -95,18 +92,15 @@ def test_playoff_has_ids_for_competition_series_and_matches():
     assert not hasattr(match, "series")
 
 
-def test_playoff_standings_include_regular_season_seeds():
-    standings = [
-        DdStandingsRowStruct(str(i))
-        for i in range(8)
-    ]
+def test_playoff_standings_include_seeds():
+    seeds = _playoff_seeds(8)
     playoff = Playoff(
         params=_playoff_params(),
-        standings=standings,
+        seeds=seeds,
     )
     seed_by_club_id = {
-        row.club_id: seed
-        for seed, row in enumerate(standings, start=1)
+        seed.club_id: seed.seed
+        for seed in seeds
     }
 
     for standing in playoff.standings:
@@ -117,10 +111,7 @@ def test_playoff_standings_include_regular_season_seeds():
 def test_playoff_applies_results_to_series_by_series_id():
     playoff = Playoff(
         params=_playoff_params(),
-        standings=[
-            DdStandingsRowStruct(str(i))
-            for i in range(8)
-        ],
+        seeds=_playoff_seeds(8),
     )
     first_match = _first_playoff_match(playoff)
     results = [
@@ -139,6 +130,13 @@ def _first_playoff_match(playoff):
     while playoff.current_matches is None:
         playoff.apply_results([])
     return playoff.current_matches[0]
+
+
+def _playoff_seeds(length):
+    return [
+        PlayoffSeed(club_id=str(i), seed=i + 1)
+        for i in range(length)
+    ]
 
 
 def _match_result(match):
