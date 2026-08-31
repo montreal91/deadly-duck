@@ -18,3 +18,8 @@ name = "Clubs Players Roster Entries"
 id = 3
 file = "v003_player_skill_points.sql"
 name = "Player Skill Points"
+
+[[migration]]
+id = 4
+file = "v004_competitions_and_matches.sql"
+name = "Competitions And Matches"
