@@ -10,8 +10,9 @@ from core.match_result import MatchResult
 from core.player import PlayerReputationCalculator
 from core.playoffs import DdPlayoffParams
 from core.playoffs import Playoff
+from core.playoffs import PlayoffSeed
+from core.playoffs import DdPlayoffSeries
 from core.regular_championship import ChampionshipParams
-from core.regular_championship import DdStandingsRowStruct
 from core.regular_championship import RegularChampionship
 from core.scheduled_match import ScheduledMatch
 from core.set_result import DdSetStatuses
@@ -82,10 +83,7 @@ def test_club_schedule_days_preserve_empty_days_between_matches():
 def test_playoff_has_ids_for_competition_series_and_matches():
     playoff = Playoff(
         params=_playoff_params(),
-        standings=[
-            DdStandingsRowStruct(str(i))
-            for i in range(8)
-        ],
+        seeds=_playoff_seeds(8),
     )
     match = _first_playoff_match(playoff)
 
@@ -95,18 +93,15 @@ def test_playoff_has_ids_for_competition_series_and_matches():
     assert not hasattr(match, "series")
 
 
-def test_playoff_standings_include_regular_season_seeds():
-    standings = [
-        DdStandingsRowStruct(str(i))
-        for i in range(8)
-    ]
+def test_playoff_standings_include_seeds():
+    seeds = _playoff_seeds(8)
     playoff = Playoff(
         params=_playoff_params(),
-        standings=standings,
+        seeds=seeds,
     )
     seed_by_club_id = {
-        row.club_id: seed
-        for seed, row in enumerate(standings, start=1)
+        seed.club_id: seed.seed
+        for seed in seeds
     }
 
     for standing in playoff.standings:
@@ -117,10 +112,7 @@ def test_playoff_standings_include_regular_season_seeds():
 def test_playoff_applies_results_to_series_by_series_id():
     playoff = Playoff(
         params=_playoff_params(),
-        standings=[
-            DdStandingsRowStruct(str(i))
-            for i in range(8)
-        ],
+        seeds=_playoff_seeds(8),
     )
     first_match = _first_playoff_match(playoff)
     results = [
@@ -135,10 +127,110 @@ def test_playoff_applies_results_to_series_by_series_id():
     assert series.score == (1, 0)
 
 
+def test_playoff_series_accepts_one_missing_club_as_bye():
+    series = DdPlayoffSeries(_playoff_params())
+
+    series.pair = ("club", None)
+
+    assert series.winner == "club"
+    assert series.score == ("", "")
+
+
+def test_playoff_series_rejects_two_missing_clubs():
+    series = DdPlayoffSeries(_playoff_params())
+
+    try:
+        series.pair = (None, None)
+    except AssertionError as exc:
+        assert str(exc) == "Playoff series should have at least one club."
+    else:
+        raise AssertionError("Expected playoff series validation to fail.")
+
+
+def test_twelve_club_playoff_draws_full_preliminary_round():
+    playoff = Playoff(
+        params=_playoff_params(length=12),
+        seeds=_playoff_seeds(12),
+    )
+    preliminary_seed_pairs = [
+        standing["seeds"]
+        for standing in playoff.standings
+    ]
+    scheduled_seed_pairs = [
+        {
+            _seed_for_club(match.home_pk),
+            _seed_for_club(match.away_pk),
+        }
+        for match in playoff.current_matches
+    ]
+
+    assert len(preliminary_seed_pairs) == 8
+    assert len([
+        pair
+        for pair in preliminary_seed_pairs
+        if "" in pair
+    ]) == 4
+    assert len(scheduled_seed_pairs) == 4
+    assert all(not pair.intersection({1, 2, 3, 4}) for pair in scheduled_seed_pairs)
+    assert all(pair.intersection({5, 6, 7, 8}) for pair in scheduled_seed_pairs)
+    assert all(pair.intersection({9, 10, 11, 12}) for pair in scheduled_seed_pairs)
+
+
+def test_twelve_club_playoff_adds_protected_seeds_after_preliminary_round():
+    playoff = Playoff(
+        params=_playoff_params(
+            length=12,
+            series_matches_pattern=(True,),
+        ),
+        seeds=_playoff_seeds(12),
+    )
+    preliminary_match_winners = {
+        match.home_pk
+        for match in playoff.current_matches
+    }
+
+    playoff.apply_results([
+        _match_result(match)
+        for match in playoff.current_matches
+    ])
+
+    quarterfinal_seed_pairs = [
+        {
+            _seed_for_club(match.home_pk),
+            _seed_for_club(match.away_pk),
+        }
+        for match in playoff.current_matches
+    ]
+
+    assert len(quarterfinal_seed_pairs) == 4
+    assert {1, 2, 3, 4} == {
+        seed
+        for pair in quarterfinal_seed_pairs
+        for seed in pair.intersection({1, 2, 3, 4})
+    }
+    assert preliminary_match_winners == {
+        club_id
+        for match in playoff.current_matches
+        for club_id in (match.home_pk, match.away_pk)
+        if _seed_for_club(club_id) > 4
+    }
+
+
 def _first_playoff_match(playoff):
     while playoff.current_matches is None:
         playoff.apply_results([])
     return playoff.current_matches[0]
+
+
+def _playoff_seeds(length):
+    return [
+        PlayoffSeed(club_id=str(i), seed=i + 1)
+        for i in range(length)
+    ]
+
+
+def _seed_for_club(club_id):
+    return int(club_id) + 1
 
 
 def _match_result(match):
@@ -168,10 +260,10 @@ def _championship_params():
     )
 
 
-def _playoff_params():
+def _playoff_params(length=8, series_matches_pattern=(True, True, False)):
     return DdPlayoffParams(
-        series_matches_pattern=(True, True, False),
-        length=8,
+        series_matches_pattern=series_matches_pattern,
+        length=length,
         gap_days=0,
         match_params=_match_params(),
         match_importance=1,

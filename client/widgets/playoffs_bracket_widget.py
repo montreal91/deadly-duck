@@ -33,6 +33,12 @@ _ROUND_TITLES = {
     2: "Semifinals",
     3: "Final",
 }
+_PRELIMINARY_ROUND_TITLES = {
+    1: "Preliminary",
+    2: "Quarterfinals",
+    3: "Semifinals",
+    4: "Final",
+}
 
 
 class PlayoffsBracketWidget:
@@ -95,6 +101,7 @@ class _PlayoffBracketLayout(FloatLayout):
             return
 
         round_count = len(self._grouped_rows)
+        has_preliminary = _has_preliminary(self._grouped_rows)
         series_width = (
             self.width - _ROUND_GAP * (round_count - 1)
         ) / round_count
@@ -115,6 +122,7 @@ class _PlayoffBracketLayout(FloatLayout):
             x = self.x + round_index * (series_width + _ROUND_GAP)
             self.add_widget(_make_round_title(
                 round_number,
+                has_preliminary,
                 pos=(x, body_top + _TITLE_BODY_GAP),
                 width=series_width,
             ))
@@ -144,7 +152,14 @@ class _PlayoffBracketLayout(FloatLayout):
             for round_number, rows in self._grouped_rows[:-1]:
                 for row_index, _ in enumerate(rows):
                     source = self._series_widgets[(round_number, row_index)]
-                    target_key = (round_number + 1, row_index // 2)
+                    target_key = (
+                        round_number + 1,
+                        _target_row_index(
+                            round_number,
+                            row_index,
+                            self._grouped_rows,
+                        ),
+                    )
                     target = self._series_widgets.get(target_key)
 
                     if target is None:
@@ -163,9 +178,29 @@ class _PlayoffBracketLayout(FloatLayout):
                     ), width=1.1)
 
 
-def _make_round_title(round_number, pos=None, width=None):
+def _target_row_index(round_number, row_index, grouped_rows):
+    current_rows = dict(grouped_rows)[round_number]
+    next_rows = dict(grouped_rows).get(round_number + 1, [])
+    if len(current_rows) == len(next_rows):
+        return row_index
+    return row_index // 2
+
+
+def _has_preliminary(grouped_rows):
+    round_sizes = {
+        round_number: len(rows)
+        for round_number, rows in grouped_rows
+    }
+    return (
+        len(grouped_rows) == 4
+        and round_sizes.get(1) == round_sizes.get(2, 0) * 2
+    )
+
+
+def _make_round_title(round_number, has_preliminary, pos=None, width=None):
+    titles = _PRELIMINARY_ROUND_TITLES if has_preliminary else _ROUND_TITLES
     title = Label(
-        text=_ROUND_TITLES.get(round_number, f"Round {round_number}"),
+        text=titles.get(round_number, f"Round {round_number}"),
         font_size=24,
         halign="center",
         valign="middle",
@@ -272,7 +307,8 @@ def _series_centers(
         first_round_gap,
 ):
     first_round_step = series_height + first_round_gap
-    first_round_count = series_count * 2 ** (round_number - 1)
+    round_depth = round_number - 1
+    first_round_count = series_count * 2 ** round_depth
     first_round_total_height = (
         first_round_count * series_height
         + (first_round_count - 1) * first_round_gap
@@ -282,7 +318,7 @@ def _series_centers(
         max(body_height - first_round_total_height, 0),
     )
     bottom_offset = max(body_height - first_round_total_height - top_offset, 0)
-    group_size = 2 ** (round_number - 1)
+    group_size = 2 ** round_depth
 
     centers = [
         (

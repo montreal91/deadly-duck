@@ -90,6 +90,9 @@ class AbstractCompetition:
         for match in chain(*self._results):
             yield copy(match)
 
+    def contains_club(self, club_pk: str) -> bool:
+        return club_pk in self._club_ids
+
     @property
     def standings(self) -> List[Any]:
         """List of current standings."""
