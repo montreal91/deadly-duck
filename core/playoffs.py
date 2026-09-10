@@ -403,9 +403,11 @@ class Playoff(AbstractCompetition):
                 if not i:
                     pair = (pair[1], pair[0])
                 scheduled_match = ScheduledMatch(
-                    pair[0],
-                    pair[1],
+                    competition_id=self._competition_id,
+                    home_pk=pair[0],
+                    away_pk=pair[1],
                     playoff_series_id=series.series_id,
+                    schedule_day=len(self._schedule),
                 )
                 day.append(scheduled_match)
             day.reverse()
