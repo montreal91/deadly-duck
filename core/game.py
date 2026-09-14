@@ -403,9 +403,10 @@ class Game:
 
     @property
     def _decision_required(self) -> bool:
-        if self._competition.current_matches is None:
+        matches = self._competition.current_matches
+        if matches is None:
             return False
-        for match in self._competition.current_matches:
+        for match in matches:
             if self._manager_club_id not in (match.home_pk, match.away_pk):
                 continue
             if not self._clubs[self._manager_club_id].has_selected_player:
@@ -666,7 +667,7 @@ class Game:
         )
         for club in self._clubs.values():
             for slot in club.players:
-                if slot.player.player_id in excluded_player_ids:
+                if slot.player is None or slot.player.player_id in excluded_player_ids:
                     continue
                 slot.player.RecoverStamina(
                     recovery_function(slot.player)
