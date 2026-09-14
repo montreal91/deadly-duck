@@ -3,9 +3,11 @@ Created September 14, 2026
 
 @author montreal91
 """
+from pickle import HIGHEST_PROTOCOL
+from pickle import dumps
+from sqlite3 import Connection
 from sqlite3 import Row
 from sqlite3 import Binary
-import pickle
 from typing import Dict
 from typing import List
 
@@ -18,83 +20,57 @@ from core.regular_championship import RegularChampionship
 class CompetitionRepository:
     _INSTANCE = None
 
+    _cache: Dict[str, List[AbstractCompetition]]
+
     @staticmethod
     def temporal_initialize(conn=None):
         CompetitionRepository._INSTANCE = CompetitionRepository(conn)
 
     @staticmethod
-    def temporal_get_instance():
+    def temporal_get_instance() -> "CompetitionRepository":
         if CompetitionRepository._INSTANCE is None:
             raise Exception("CompetitionRepository has not been initialized.")
 
         return CompetitionRepository._INSTANCE
 
-    def __init__(self, conn=None):
+    def __init__(self, conn: Connection):
         self._conn = conn
-        self._ongoing_competitions: Dict[str, AbstractCompetition] = {}
+        self._cache = {}
 
         if self._conn is not None:
             self._conn.row_factory = Row
             self._conn.execute("PRAGMA foreign_keys = ON;")
 
-    def get_ongoing_competitions(self) -> List[AbstractCompetition]:
+    def get_ongoing_competitions(self, game_id: str) -> List[AbstractCompetition]:
+        if game_id in self._cache:
+            return self._cache[game_id]
+
         if self._conn is None:
-            return list(self._ongoing_competitions.values())
+            raise RuntimeError("CompetitionRepository has no SQLite connection.")
 
         rows = self._conn.execute(
             """
-            SELECT game_id, object
-            FROM competition
-            WHERE is_over = 0
-            ORDER BY game_id, season_index, day
-            """
-        ).fetchall()
-
-        competitions = []
-        for row in rows:
-            competition = self._load_competition_from_row(row)
-            competitions.append(competition)
-            self._ongoing_competitions[row["game_id"]] = competition
-
-        return competitions
-
-    def get_current_competition(self, game_id: str) -> AbstractCompetition:
-        if game_id in self._ongoing_competitions:
-            return self._ongoing_competitions[game_id]
-
-        if self._conn is None:
-            raise RuntimeError(f"No ongoing competition for game_id={game_id}.")
-
-        row = self._conn.execute(
-            """
-            SELECT game_id, object
+            SELECT day, object
             FROM competition
             WHERE game_id = :game_id
               AND is_over = 0
+            ORDER BY season_index, day
             """,
             {"game_id": game_id},
-        ).fetchone()
+        ).fetchall()
 
-        if row is None:
-            raise RuntimeError(f"No ongoing competition for game_id={game_id}.")
+        res = [
+            _load_competition_from_row(row)
+            for row in rows
+        ]
+        self._cache[game_id] = res
+        return res
 
-        competition = self._load_competition_from_row(row)
-        self._ongoing_competitions[game_id] = competition
-        return competition
-
-    def set_current_competition(
-            self,
-            game_id: str,
-            competition: AbstractCompetition,
-    ):
-        self._ongoing_competitions[game_id] = competition
-
-    def save(
+    def save_competition(
             self,
             game_id: str,
             competition: AbstractCompetition,
             season_index: int,
-            is_over: bool = False,
     ):
         if self._conn is None:
             raise RuntimeError("CompetitionRepository has no SQLite connection.")
@@ -135,27 +111,22 @@ class CompetitionRepository:
                     "type": competition_type.value,
                     "day": competition.day,
                     "season_index": season_index,
-                    "is_over": int(is_over),
-                    "object": Binary(pickle.dumps(
+                    "is_over": int(competition.is_over),
+                    "object": Binary(dumps(
                         competition,
-                        pickle.HIGHEST_PROTOCOL,
+                        HIGHEST_PROTOCOL,
                     )),
                 },
             )
 
-        if not is_over:
-            self._ongoing_competitions[game_id] = competition
-        elif self._ongoing_competitions.get(game_id) is competition:
-            del self._ongoing_competitions[game_id]
 
-    @staticmethod
-    def _load_competition_from_row(row) -> AbstractCompetition:
-        if row["object"] is None:
-            raise RuntimeError(
-                "Ongoing competition row has no serialized object."
-            )
+def _load_competition_from_row(row) -> AbstractCompetition:
+    if row["object"] is None or row["day"] is None:
+        raise RuntimeError(
+            "The stored object is invalid."
+        )
 
-        return pickle.loads(row["object"])
+    return AbstractCompetition.reconstruct(row["object"], row["day"])
 
 
 def _competition_type(competition) -> CompetitionType:

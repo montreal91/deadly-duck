@@ -3,16 +3,21 @@ Created December 30, 2025
 
 @author montreal91
 """
-from typing import NamedTuple
+from dataclasses import dataclass
+from typing import Optional
 
+from core.game import Game
+from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.game_repository import GameRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 
-class NextDayCommand(NamedTuple):
+@dataclass(frozen=True)
+class NextDayCommand:
     game_id: str
 
-
-class NextDayCommandResult(NamedTuple):
+@dataclass(frozen=True)
+class NextDayCommandResult:
     success: bool
     reason: str
 
@@ -20,16 +25,16 @@ class NextDayCommandResult(NamedTuple):
 class NextDayCommandHandler:
     def __init__(
             self,
-            game_repository,
+            game_repository: GameRepository,
             club_repository: TemporalClubProvider,
-            competition_repository=None,
+            competition_repository: CompetitionRepository,
     ):
         self._game_repository = game_repository
         self._club_repository = club_repository
         self._competition_repository = competition_repository
 
     def __call__(self, command):
-        game = self._game_repository.get_game(command.game_id)
+        game: Optional[Game] = self._game_repository.get_game(command.game_id)
 
         if game is None:
             return NextDayCommandResult(
@@ -37,38 +42,8 @@ class NextDayCommandHandler:
                 reason=f"Game with id={command.game_id} not found"
             )
 
-        previous_competition = game.competition
-        previous_season_index = game.season_index
         res, reason = game.update()
         self._game_repository.save_game(game)
         self._club_repository.save_clubs(game.clubs.values())
-        self._save_competitions(
-            game,
-            previous_competition,
-            previous_season_index,
-        )
 
         return NextDayCommandResult(success=res, reason=reason)
-
-    def _save_competitions(
-            self,
-            game,
-            previous_competition,
-            previous_season_index: int,
-    ):
-        if self._competition_repository is None:
-            return
-
-        if previous_competition is not game.competition:
-            self._competition_repository.save(
-                game_id=game.game_id,
-                competition=previous_competition,
-                season_index=previous_season_index,
-                is_over=True,
-            )
-
-        self._competition_repository.save(
-            game_id=game.game_id,
-            competition=game.competition,
-            season_index=game.season_index,
-        )

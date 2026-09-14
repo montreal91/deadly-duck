@@ -4,11 +4,9 @@ Created Aug 24, 2026
 @author montreal91
 """
 from types import SimpleNamespace
-from typing import Dict
+from unittest.mock import Mock
 
-from core.club import Club
 from core.competition import CompetitionType
-from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.queries.game_screen_query import GameScreenGuiQueryHandler
 from core.queries.game_screen_query import PlayoffStandings
 from core.scheduled_match import ScheduledMatch
@@ -17,15 +15,15 @@ from core.scheduled_match import ScheduledMatch
 def test_game_screen_query_converts_remaining_matches_to_upcoming_days():
     first_match = ScheduledMatch("manager", "opponent")
     second_match = ScheduledMatch("opponent", "manager")
-    game = _Game(
+    game = _game(
         current_matches=[first_match],
         remaining_matches=[first_match, None, second_match],
     )
     handler = GameScreenGuiQueryHandler(
-        game_repository=_GameRepository(game),
-        club_provider=_ClubProvider({
-            "manager": _Club("Manager Club"),
-            "opponent": _Club("Opponent Club"),
+        game_repository=_game_repository(game),
+        club_provider=_club_provider({
+            "manager": _club("Manager Club"),
+            "opponent": _club("Opponent Club"),
         }),
     )
 
@@ -42,7 +40,7 @@ def test_game_screen_query_converts_remaining_matches_to_upcoming_days():
 
 
 def test_game_screen_query_uses_empty_scores_for_future_playoff_series():
-    game = _Game(
+    game = _game(
         current_matches=[],
         remaining_matches=[],
         competition_type=CompetitionType.PLAY_OFFS,
@@ -60,12 +58,12 @@ def test_game_screen_query_uses_empty_scores_for_future_playoff_series():
         ],
     )
     handler = GameScreenGuiQueryHandler(
-        game_repository=_GameRepository(game),
-        club_provider=_ClubProvider({
-            "manager": _Club("Manager Club"),
-            "opponent": _Club("Opponent Club"),
-            "other-1": _Club("Other Club 1"),
-            "other-2": _Club("Other Club 2"),
+        game_repository=_game_repository(game),
+        club_provider=_club_provider({
+            "manager": _club("Manager Club"),
+            "opponent": _club("Opponent Club"),
+            "other-1": _club("Other Club 1"),
+            "other-2": _club("Other Club 2"),
         }),
     )
 
@@ -83,7 +81,7 @@ def test_game_screen_query_uses_empty_scores_for_future_playoff_series():
 
 
 def test_game_screen_query_supports_twelve_club_preliminary_round():
-    game = _Game(
+    game = _game(
         current_matches=[],
         remaining_matches=[],
         competition_type=CompetitionType.PLAY_OFFS,
@@ -139,9 +137,9 @@ def test_game_screen_query_supports_twelve_club_preliminary_round():
         ],
     )
     handler = GameScreenGuiQueryHandler(
-        game_repository=_GameRepository(game),
-        club_provider=_ClubProvider({
-            f"seed-{seed}": _Club(f"Seed {seed}")
+        game_repository=_game_repository(game),
+        club_provider=_club_provider({
+            f"seed-{seed}": _club(f"Seed {seed}")
             for seed in range(1, 13)
         }),
     )
@@ -156,51 +154,42 @@ def test_game_screen_query_supports_twelve_club_preliminary_round():
     assert result.standings.rows[0].bottom_seed == ""
 
 
-class _GameRepository:
-    def __init__(self, game):
-        self._game = game
-
-    def get_game(self, _game_id):
-        return self._game
+def _game_repository(game):
+    repository = Mock()
+    repository.get_game.return_value = game
+    return repository
 
 
-class _ClubProvider(TemporalClubProvider):
-    def __init__(self, clubs):
-        super().__init__()
-        self._clubs = clubs
-
-    def get_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
-        return self._clubs
+def _club_provider(clubs):
+    provider = Mock()
+    provider.get_clubs_for_game.return_value = clubs
+    return provider
 
 
-class _Game:
-    def __init__(
-            self,
-            current_matches,
-            remaining_matches,
-            competition_type=CompetitionType.CHAMPIONSHIP,
-            standings=None,
-    ):
-        self.competition = SimpleNamespace(current_matches=current_matches)
-        self._remaining_matches = remaining_matches
-        self._competition_type = competition_type
-        self._standings = standings or []
-
-    def get_context(self, _manager_club_id):
-        return {
-            "day": "2082-Feb-21",
-            "history": [{}],
-            "balance": 0,
-            "club_name": "Manager Club",
-            "competition": "Regular Season",
-            "competition_type": self._competition_type,
-            "has_matches": True,
-            "remaining_matches": self._remaining_matches,
-            "standings": self._standings,
-        }
+def _game(
+        current_matches,
+        remaining_matches,
+        competition_type=CompetitionType.CHAMPIONSHIP,
+        standings=None,
+):
+    game = Mock()
+    game.cmp = SimpleNamespace(current_matches=current_matches)
+    game.get_context.return_value = {
+        "day": "2082-Feb-21",
+        "history": [{}],
+        "balance": 0,
+        "club_name": "Manager Club",
+        "competition": "Regular Season",
+        "competition_type": competition_type,
+        "has_matches": True,
+        "remaining_matches": remaining_matches,
+        "standings": standings or [],
+    }
+    return game
 
 
-class _Club:
-    def __init__(self, name):
-        self.name = name
-        self.players = []
+def _club(name):
+    club = Mock()
+    club.name = name
+    club.players = []
+    return club

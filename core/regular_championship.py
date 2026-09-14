@@ -12,7 +12,6 @@ from typing import List
 from typing import NamedTuple
 
 from core.competition import AbstractCompetition
-from core.competition import ScheduleDay
 from core.match_engine import MatchParams
 from core.match_result import MatchResult
 from core.scheduled_match import ScheduledMatch
@@ -54,10 +53,6 @@ class RegularChampionship(AbstractCompetition):
         self._make_schedule()
 
         self._standings = {}
-
-    @property
-    def is_over(self) -> bool:
-        return self._day >= len(self._schedule)
 
     @property
     def match_importance(self) -> int:
@@ -113,6 +108,8 @@ class RegularChampionship(AbstractCompetition):
         self._day += 1
         if results:
             self._results.append(results)
+
+        self._is_over = self._day >= len(self._schedule)
 
     def _make_match(self, home_id: str, away_id: str, schedule_day: int) -> ScheduledMatch:
         return ScheduledMatch(

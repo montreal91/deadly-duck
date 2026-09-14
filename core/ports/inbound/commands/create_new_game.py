@@ -4,16 +4,18 @@ Created December 29, 2025
 @author montreal91
 """
 import time
-from typing import NamedTuple
+from dataclasses import dataclass
 
 from core.game import Game
 
 
-class CreateNewGameCommand(NamedTuple):
+@dataclass(frozen=True)
+class CreateNewGameCommand:
     game_id: str
 
 
-class CreateNewGameCommandResult(NamedTuple):
+@dataclass(frozen=True)
+class CreateNewGameCommandResult:
     game_id: str
 
 
@@ -23,14 +25,12 @@ class CreateNewGameCommandHandler:
             game_repository,
             game_parameters,
             club_provider,
-            competition_repository=None,
     ):
         self._game_repository = game_repository
         self._parameters = game_parameters
         self._club_provider = club_provider
-        self._competition_repository = competition_repository
 
-    def __call__(self, command):
+    def __call__(self, command: CreateNewGameCommand) -> CreateNewGameCommandResult:
         game = Game(
             game_id=command.game_id,
             params=self._parameters,
@@ -39,11 +39,4 @@ class CreateNewGameCommandHandler:
         )
         self._game_repository.save_game(game)
         self._club_provider.save_clubs(game.clubs.values())
-        if self._competition_repository is not None:
-            self._competition_repository.save(
-                game_id=game.game_id,
-                competition=game.competition,
-                season_index=game.season_index,
-            )
-
         return CreateNewGameCommandResult(game.game_id)

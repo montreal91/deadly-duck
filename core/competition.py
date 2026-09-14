@@ -4,6 +4,7 @@ Created May 20, 2019
 
 @author montreal91
 """
+import pickle
 from copy import copy
 from enum import Enum
 from itertools import chain
@@ -33,6 +34,13 @@ class AbstractCompetition:
     _day: int
     _params: Any
     _results: List[List[MatchResult]]
+    _is_over: bool
+
+    @staticmethod
+    def reconstruct(blob, day: int) -> "AbstractCompetition":
+        res = pickle.loads(blob)
+        res._day = day
+        return res
 
     def __init__(
             self,
@@ -46,6 +54,7 @@ class AbstractCompetition:
         self._params = params
         self._results = []
         self._schedule = []
+        self._is_over = False
 
     @property
     def competition_id(self):
@@ -68,7 +77,7 @@ class AbstractCompetition:
     @property
     def is_over(self) -> bool:
         """Checks if competition is over"""
-        return False
+        return self._is_over
 
     @property
     def match_importance(self) -> int:

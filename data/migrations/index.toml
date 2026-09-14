@@ -33,3 +33,8 @@ name = "Competition Object"
 id = 6
 file = "v006_competition_is_over.sql"
 name = "Competition Is Over"
+
+[[migration]]
+id = 7
+file = "v007_drop_competition_game_fk.sql"
+name = "Drop Competition Game Foreign Key"

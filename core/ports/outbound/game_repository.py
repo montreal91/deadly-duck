@@ -5,7 +5,9 @@ Created December 26, 2025
 """
 import pickle
 from sqlite3 import Binary
-from typing import Dict, Optional
+from sqlite3 import Connection
+from typing import Dict
+from typing import Optional
 
 from core.game import Game
 from persistence.sql import read_sql_file
@@ -14,7 +16,7 @@ from persistence.sql import read_sql_file
 class GameRepository:
     _games: Dict[str, Game]
 
-    def __init__(self, conn):
+    def __init__(self, conn: Connection):
         self._games = {}
         self._conn = conn
 
@@ -23,23 +25,26 @@ class GameRepository:
         self._get_game_ids_sql = read_sql_file("data/sql/get_game_ids.sql")
 
     def get_game(self, game_id) -> Optional[Game]:
-        if game_id not in self._games:
-            self._load_game(game_id)
+        if game_id in self._games:
+            return self._games[game_id]
 
-        return self._games.get(game_id)
+        game = self._load_game(game_id)
+        self._games[game_id] = game
+
+        return game
 
     def get_game_ids(self):
         query_res = self._conn.execute(self._get_game_ids_sql).fetchall()
         return [row[0] for row in query_res]
 
     def save_game(self, game: Game):
-        self._games[game.game_id] = game
+        self._games = {} # invalidate cache
         self._save_game_to_file(game)
 
-    def _load_game(self, game_id):
+    def _load_game(self, game_id: str) -> Game:
         res = self._conn.execute(self._get_games_sql, {"id": game_id}).fetchone()
         game = pickle.loads(res[1])
-        self._games[game_id] = game
+        return game
 
     def _save_game_to_file(self, game: Game):
         blob = pickle.dumps(game, pickle.HIGHEST_PROTOCOL)

@@ -201,13 +201,6 @@ class Playoff(AbstractCompetition):
         return [match for match in res if not match.is_played]
 
     @property
-    def is_over(self):
-        if len(self._series) > 1:
-            return False
-        last_day = self._day >= len(self._schedule)
-        return self._series[0].winner is not None and last_day
-
-    @property
     def match_importance(self) -> int:
         return self._params.match_importance * self._round
 
@@ -271,6 +264,8 @@ class Playoff(AbstractCompetition):
 
         if self._day == len(self._schedule) and not self.is_over:
             self._make_new_round()
+
+        self._update_is_over()
 
     @property
     def _remaining_days(self):
@@ -420,6 +415,12 @@ class Playoff(AbstractCompetition):
                 series = self._series_by_id[match.playoff_series_id]
                 if series.winner is not None:
                     match.is_played = True
+
+    def _update_is_over(self):
+        if len(self._series) > 1:
+            return False
+        last_day = self._day >= len(self._schedule)
+        return self._series[0].winner is not None and last_day
 
 
 def _draw_parts(num: int):

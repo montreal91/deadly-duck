@@ -74,7 +74,6 @@ class ApplicationContext:
             self._game_repository,
             self._params,
             self._temporal_club_provider,
-            self._competition_repository,
         )
 
         self._select_club_command_handler = SelectClubCommandHandler(

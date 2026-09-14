@@ -3,12 +3,9 @@ Created August 28, 2026
 
 @author montreal91
 """
-from types import SimpleNamespace
-from typing import Dict
+from unittest.mock import Mock
 
-from core.club import Club
 from core.match_result import MatchResult
-from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.queries.day_results_query import DayResultsQuery
 from core.queries.day_results_query import DayResultsQueryHandler
 from core.set_result import DdSetStatuses
@@ -43,14 +40,23 @@ def test_day_results_query_omits_user_result_for_other_clubs():
 
 
 def _handler(results):
+    game = Mock()
+    game.get_context.return_value = {"last_results": results}
+
+    game_repository = Mock()
+    game_repository.get_game.return_value = game
+
+    club_provider = Mock()
+    club_provider.get_clubs_for_game.return_value = {
+        "manager": _club("Manager Club"),
+        "opponent": _club("Opponent Club"),
+        "home": _club("Home Club"),
+        "away": _club("Away Club"),
+    }
+
     return DayResultsQueryHandler(
-        game_repository=_GameRepository(_Game(results)),
-        club_provider=_ClubProvider({
-            "manager": _Club("Manager Club"),
-            "opponent": _Club("Opponent Club"),
-            "home": _Club("Home Club"),
-            "away": _Club("Away Club"),
-        }),
+        game_repository=game_repository,
+        club_provider=club_provider,
     )
 
 
@@ -77,33 +83,7 @@ def _player(first_name):
     }
 
 
-class _GameRepository:
-    def __init__(self, game):
-        self._game = game
-
-    def get_game(self, _game_id):
-        return self._game
-
-
-class _ClubProvider(TemporalClubProvider):
-    def __init__(self, clubs):
-        super().__init__()
-        self._clubs = clubs
-
-    def get_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
-        return self._clubs
-
-
-class _Game:
-    def __init__(self, results):
-        self._results = results
-
-    def get_context(self, _manager_club_id):
-        return {
-            "last_results": self._results,
-        }
-
-
-class _Club:
-    def __init__(self, name):
-        self.name = name
+def _club(name):
+    club = Mock()
+    club.name = name
+    return club

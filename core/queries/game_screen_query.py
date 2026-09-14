@@ -88,7 +88,7 @@ class GameScreenGuiQueryHandler:
         context = game.get_context(manager_club_id)
         clubs = self._club_provider.get_clubs_for_game(game_id)
 
-        match = _get_match(competition=game.competition, club_id=manager_club_id)
+        match = _get_match(competition=game.cmp, club_id=manager_club_id)
         upcoming_match = _make_upcoming_match(match, clubs, manager_club_id)
 
         if context["competition_type"] == CompetitionType.CHAMPIONSHIP:
