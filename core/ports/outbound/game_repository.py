@@ -32,7 +32,7 @@ class GameRepository:
         query_res = self._conn.execute(self._get_game_ids_sql).fetchall()
         return [row[0] for row in query_res]
 
-    def save_game(self, game):
+    def save_game(self, game: Game):
         self._games[game.game_id] = game
         self._save_game_to_file(game)
 

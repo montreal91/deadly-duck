@@ -81,9 +81,11 @@ class GameService:
             self,
             game_repository,
             game_parameters,
+            competition_repository=None,
     ):
         self._game_repository = game_repository
         self._parameters = game_parameters
+        self._competition_repository = competition_repository
 
     def get_saved_games(self):
         return SavedGamesInfo(names=self._game_repository.get_game_ids())
@@ -115,18 +117,34 @@ class GameService:
             opponent=_opponent_dto_to_info(context.get("opponent", None)),
         )
 
-    def proceed(self, game_id):
-        game = self._game_repository.get_game(game_id)
-        if game is None:
-            return
-        game.proceed_to_next_competition()
-        self._game_repository.save_game(game)
-
     def get_manager_club_id(self, game_id):
         game = self._game_repository.get_game(game_id)
         if game is None:
             return -1
         return game.manager_club_id
+
+    def _save_competitions(
+            self,
+            game,
+            previous_competition,
+            previous_season_index: int,
+    ):
+        if self._competition_repository is None:
+            return
+
+        if previous_competition is not game.competition:
+            self._competition_repository.save(
+                game_id=game.game_id,
+                competition=previous_competition,
+                season_index=previous_season_index,
+                is_current=False,
+            )
+
+        self._competition_repository.save(
+            game_id=game.game_id,
+            competition=game.competition,
+            season_index=game.season_index,
+        )
 
 
 def _player_to_row_info(player, is_selected, coach_level):

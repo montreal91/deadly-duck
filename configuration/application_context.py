@@ -30,6 +30,7 @@ from core.playoffs import DdPlayoffParams
 from core.ports.inbound.commands.create_new_game import CreateNewGameCommandHandler
 from core.ports.inbound.commands.select_club import SelectClubCommandHandler
 from core.ports.outbound.game_repository import GameRepository
+from core.ports.outbound.competition_repository import CompetitionRepository
 from core.ports.outbound.player_repository import PlayerRepository
 from core.queries.club_selection_screen_query import ClubSelectionScreenQueryHandler
 from core.queries.day_results_query import DayResultsQueryHandler
@@ -57,7 +58,9 @@ class ApplicationContext:
         self._db_connection = _make_db_connection("data/duck.db")
 
         TemporalClubProvider.initialize(self._db_connection)
+        CompetitionRepository.temporal_initialize(self._db_connection)
         self._temporal_club_provider = TemporalClubProvider.get_instance()
+        self._competition_repository = CompetitionRepository.temporal_get_instance()
 
         self._game_repository = GameRepository(
             self._db_connection,
@@ -71,6 +74,7 @@ class ApplicationContext:
             self._game_repository,
             self._params,
             self._temporal_club_provider,
+            self._competition_repository,
         )
 
         self._select_club_command_handler = SelectClubCommandHandler(
@@ -85,11 +89,13 @@ class ApplicationContext:
         self._next_day_command_handler = NextDayCommandHandler(
             self._game_repository,
             self._temporal_club_provider,
+            self._competition_repository,
         )
 
         self._game_service = GameService(
             game_repository=self._game_repository,
             game_parameters=self._params,
+            competition_repository=self._competition_repository,
         )
 
         self._game_screen_ui_query_handler = GameScreenGuiQueryHandler(

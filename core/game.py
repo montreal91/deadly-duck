@@ -170,6 +170,10 @@ class Game:
         return self._manager_club_id
 
     @property
+    def season_index(self) -> int:
+        return len(self._history) - 1
+
+    @property
     def is_over(self) -> bool:
         """Indicates if game is over."""
 
