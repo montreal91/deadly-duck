@@ -23,3 +23,13 @@ name = "Player Skill Points"
 id = 4
 file = "v004_competitions_and_matches.sql"
 name = "Competitions And Matches"
+
+[[migration]]
+id = 5
+file = "v005_competition_object.sql"
+name = "Competition Object"
+
+[[migration]]
+id = 6
+file = "v006_competition_is_over.sql"
+name = "Competition Is Over"

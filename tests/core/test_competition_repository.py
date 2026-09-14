@@ -40,7 +40,7 @@ def test_save_competition_in_sqlite():
             type,
             day,
             season_index,
-            is_current
+            is_over
         FROM competition
         """
         ).fetchall()
@@ -52,12 +52,12 @@ def test_save_competition_in_sqlite():
             CompetitionType.CHAMPIONSHIP.value,
             2,
             3,
-            1,
+            0,
         ),
     ]
 
 
-def test_save_competition_updates_existing_row_and_current_flag():
+def test_save_competition_updates_existing_row_and_over_flag():
     conn = _make_connection()
     repository = CompetitionRepository(conn)
     first_competition = _competition("first-competition", day=2)
@@ -66,21 +66,22 @@ def test_save_competition_updates_existing_row_and_current_flag():
     repository.save("game", first_competition, season_index=0)
     first_competition._day = 3
     repository.save("game", first_competition, season_index=0)
+    repository.save("game", first_competition, season_index=0, is_over=True)
     repository.save("game", second_competition, season_index=1)
 
     rows = [
         tuple(row)
         for row in conn.execute(
         """
-        SELECT competition_id, day, season_index, is_current
+        SELECT competition_id, day, season_index, is_over
         FROM competition
         ORDER BY competition_id
         """
         ).fetchall()
     ]
     assert rows == [
-        ("first-competition", 3, 0, 0),
-        ("second-competition", 0, 1, 1),
+        ("first-competition", 3, 0, 1),
+        ("second-competition", 0, 1, 0),
     ]
 
 
@@ -91,6 +92,28 @@ def test_save_competition_requires_sqlite_connection():
         repository.save("game", _competition("competition"), season_index=0)
 
     assert str(exc.value) == "CompetitionRepository has no SQLite connection."
+
+
+def test_get_ongoing_competitions_loads_current_competitions():
+    conn = _make_connection()
+    repository = CompetitionRepository(conn)
+    current_competition = _competition("current-competition", day=2)
+    historical_competition = _competition("historical-competition", day=5)
+
+    repository.save("game", historical_competition, season_index=0)
+    repository.save(
+        "game",
+        historical_competition,
+        season_index=0,
+        is_over=True,
+    )
+    repository.save("game", current_competition, season_index=1)
+
+    loaded = repository.get_ongoing_competitions()
+
+    assert len(loaded) == 1
+    assert loaded[0].competition_id == "current-competition"
+    assert loaded[0].day == 2
 
 
 def test_next_day_handler_saves_current_competition():
@@ -106,7 +129,7 @@ def test_next_day_handler_saves_current_competition():
     handler(NextDayCommand("game"))
 
     assert competition_repository.saved == [
-        ("game", "competition", 0, True),
+        ("game", "competition", 0, False),
     ]
 
 
@@ -132,8 +155,8 @@ def test_next_day_handler_saves_replaced_competition_as_historical():
     handler(NextDayCommand("game"))
 
     assert competition_repository.saved == [
-        ("game", "previous-competition", 0, False),
-        ("game", "next-competition", 1, True),
+        ("game", "previous-competition", 0, True),
+        ("game", "next-competition", 1, False),
     ]
 
 
@@ -181,7 +204,8 @@ def _make_connection():
             type TEXT NOT NULL,
             day INTEGER NOT NULL,
             season_index INTEGER NOT NULL,
-            is_current INTEGER NOT NULL,
+            is_over INTEGER NOT NULL,
+            object BLOB,
             PRIMARY KEY (game_id, competition_id),
             FOREIGN KEY (game_id) REFERENCES game(game_id)
         );
@@ -230,11 +254,11 @@ class _CompetitionRepository:
             game_id,
             competition,
             season_index,
-            is_current=True,
+            is_over=False,
     ):
         self.saved.append((
             game_id,
             competition.competition_id,
             season_index,
-            is_current,
+            is_over,
         ))

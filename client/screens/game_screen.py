@@ -131,10 +131,9 @@ class GameScreen(Screen):
         self._club_id = GameContext.get_instance().club_id
 
     def update(self):
-        info = self._game_service.get_main_screen_info(self._game_id, self._club_id)
         gui_info = self._query_handler(self._game_id, self._club_id)
 
-        self._layout.title.text = info.club_name
+        self._layout.title.text = gui_info.club_name
         self._date_label.text = f"Date: {gui_info.day}"
         self._season_label.text = f"Your Season: {gui_info.season}"
         self._current_stage_label.text = f"Current Stage: {gui_info.current_competition}"

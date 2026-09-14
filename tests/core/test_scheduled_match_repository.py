@@ -132,7 +132,7 @@ def _make_connection():
             type TEXT NOT NULL,
             day INTEGER NOT NULL,
             season_index INTEGER NOT NULL,
-            is_current INTEGER NOT NULL,
+            is_over INTEGER NOT NULL,
             PRIMARY KEY (game_id, competition_id),
             FOREIGN KEY (game_id) REFERENCES game(game_id)
         );
@@ -171,7 +171,7 @@ def _make_connection():
             type,
             day,
             season_index,
-            is_current
+            is_over
         )
         VALUES (
             'game',
@@ -179,7 +179,7 @@ def _make_connection():
             'championship',
             0,
             0,
-            1
+            0
         );
         """
     )

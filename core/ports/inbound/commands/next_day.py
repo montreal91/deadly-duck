@@ -64,7 +64,7 @@ class NextDayCommandHandler:
                 game_id=game.game_id,
                 competition=previous_competition,
                 season_index=previous_season_index,
-                is_current=False,
+                is_over=True,
             )
 
         self._competition_repository.save(

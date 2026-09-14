@@ -5,6 +5,7 @@ Created May 11, 2024
 
 @author montreal91
 """
+from dataclasses import dataclass
 from typing import List
 from typing import NamedTuple
 from typing import Optional
@@ -65,8 +66,8 @@ class CourtInfo(NamedTuple):
 class SavedGamesInfo(NamedTuple):
     names: List[str]
 
-
-class OpponentInfo(NamedTuple):
+@dataclass
+class OpponentInfo:
     club_name: str
     player: Optional[PlayerListInfo]
 
@@ -75,7 +76,7 @@ class PlayerSelectionScreenInfo(NamedTuple):
     players: List[PlayerListInfo]
     opponent: OpponentInfo
 
-
+# TODO: Replace this qlass with Queries
 class GameService:
     def __init__(
             self,
@@ -89,18 +90,6 @@ class GameService:
 
     def get_saved_games(self):
         return SavedGamesInfo(names=self._game_repository.get_game_ids())
-
-    def get_main_screen_info(self, game_id, manager_club_id):
-        game = self._game_repository.get_game(game_id)
-        context = game.get_context(manager_club_id)
-
-        info = MainScreenInfo(
-            day=context["day"],
-            balance=context["balance"],
-            club_name=context["club_name"],
-        )
-
-        return info
 
     def get_player_selection_gui_info(self, game_id, manager_club_id):
         context = self._game_repository.get_game(game_id).get_context(manager_club_id)
@@ -122,29 +111,6 @@ class GameService:
         if game is None:
             return -1
         return game.manager_club_id
-
-    def _save_competitions(
-            self,
-            game,
-            previous_competition,
-            previous_season_index: int,
-    ):
-        if self._competition_repository is None:
-            return
-
-        if previous_competition is not game.competition:
-            self._competition_repository.save(
-                game_id=game.game_id,
-                competition=previous_competition,
-                season_index=previous_season_index,
-                is_current=False,
-            )
-
-        self._competition_repository.save(
-            game_id=game.game_id,
-            competition=game.competition,
-            season_index=game.season_index,
-        )
 
 
 def _player_to_row_info(player, is_selected, coach_level):
@@ -168,7 +134,7 @@ def _player_to_row_info(player, is_selected, coach_level):
 
 def _opponent_dto_to_info(opponent_dto):
     if opponent_dto is None:
-        return None
+        return OpponentInfo("", None)
 
     player_info = None
 

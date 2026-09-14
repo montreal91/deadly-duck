@@ -54,7 +54,7 @@ def test_game_starts_playoff_with_top_regular_season_clubs():
         DdStandingsRowStruct(str(i))
         for i in range(10)
     ]
-    game._competition = SimpleNamespace(standings=standings)
+    game._set_competition(SimpleNamespace(standings=standings))
 
     game._start_playoff()
 
@@ -66,8 +66,9 @@ def test_game_starts_playoff_with_top_regular_season_clubs():
 
 def test_proceed_skips_competition_when_manager_club_is_not_participating():
     game = Game.__new__(Game)
+    game._game_id = "calendar-test"
     game._manager_club_id = "manager"
-    game._competition = _CompetitionWithoutManager()
+    game._set_competition(_CompetitionWithoutManager())
     updates = []
 
     def update():

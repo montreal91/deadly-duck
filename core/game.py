@@ -40,6 +40,7 @@ from core.playoffs import PlayoffSeed
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import DdStandingsRowStruct
 from core.regular_championship import RegularChampionship
+from core.ports.outbound.competition_repository import CompetitionRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.scheduled_match import ScheduledMatch
 from core.skill_upgrade_system import upgrade_skills
@@ -94,7 +95,6 @@ class Game:
 
     _game_id: str
     _attendance_calculator: Callable
-    _competition: AbstractCompetition
     _contract_calculator: Callable[[int], int]
     _clubs: Dict[str, Club]
     _current_date: date
@@ -137,10 +137,10 @@ class Game:
         clubs = tcp.init_clubs_for_game(self._game_id)
         self._clubs = clubs
 
-        self._competition = RegularChampionship(
+        self._set_competition(RegularChampionship(
             list(clubs),
             self._params.championship_params
-        )
+        ))
 
         self._simulate(self._params.years_to_simulate)
         self._generate_free_agents()
@@ -155,7 +155,21 @@ class Game:
 
     @property
     def competition(self):
-        return self._competition
+        return self._competition_repository.get_current_competition(self._game_id)
+
+    @property
+    def _competition_repository(self):
+        try:
+            return CompetitionRepository.temporal_get_instance()
+        except Exception:
+            CompetitionRepository.temporal_initialize()
+            return CompetitionRepository.temporal_get_instance()
+
+    def _set_competition(self, competition: AbstractCompetition):
+        self._competition_repository.set_current_competition(
+            self._game_id,
+            competition,
+        )
 
     @property
     def clubs(self):
@@ -183,7 +197,7 @@ class Game:
     def season_over(self) -> bool:
         """Checks if season is over."""
 
-        return isinstance(self._competition, Playoff) and self._competition.is_over
+        return isinstance(self.competition, Playoff) and self.competition.is_over
 
     @property
     def created_ts(self):
@@ -224,11 +238,11 @@ class Game:
             last_results=self._last_results,
             opponent=self._get_opponent(pk),
             practice_cost=self._calculate_club_practice_cost(club=self._clubs[pk]),
-            remaining_matches=self._competition.get_club_schedule_days(pk),
+            remaining_matches=self.competition.get_club_schedule_days(pk),
             standings=self._standings,
-            title=self._competition.title,
+            title=self.competition.title,
             user_players=self._get_user_players(pk),
-            competition=self._competition.title,
+            competition=self.competition.title,
             competition_type=self._competition_type,
             has_matches=self._has_matches(),
         )
@@ -258,7 +272,7 @@ class Game:
 
         step = True
         while step and (
-                self._competition.day != 0
+                self.competition.day != 0
                 or not self._manager_club_in_current_competition
         ):
             step, _ = self.update()
@@ -370,7 +384,7 @@ class Game:
             self._next_season()
             self._drop_stats()
 
-        if self._competition.is_over:
+        if self.competition.is_over:
             self._update_season_fame()
             self._save_competition_results()
             self._start_playoff()
@@ -382,7 +396,7 @@ class Game:
 
     @property
     def _can_practice(self) -> bool:
-        if self._competition.current_matches is not None:
+        if self.competition.current_matches is not None:
             return False
         return self._competition_type == CompetitionType.CHAMPIONSHIP
 
@@ -407,7 +421,7 @@ class Game:
 
     @property
     def _decision_required(self) -> bool:
-        matches = self._competition.current_matches
+        matches = self.competition.current_matches
         if matches is None:
             return False
         for match in matches:
@@ -426,24 +440,24 @@ class Game:
 
     @property
     def _standings(self) -> List[DdStandingsRowStruct]:
-        standings = self._competition.standings
+        standings = self.competition.standings
         if standings:
             return standings
         return [DdStandingsRowStruct(i) for i in self._clubs]
 
     @property
     def _competition_type(self) -> CompetitionType:
-        if isinstance(self._competition, RegularChampionship):
+        if isinstance(self.competition, RegularChampionship):
             return CompetitionType.CHAMPIONSHIP
-        if isinstance(self._competition, Playoff):
+        if isinstance(self.competition, Playoff):
             return CompetitionType.PLAY_OFFS
         raise Exception("Unknown competition type.")
 
     @property
     def _training_check(self) -> bool:
-        if self._competition.current_matches is not None:
+        if self.competition.current_matches is not None:
             return True
-        if self._competition.title != "Championship":
+        if self.competition.title != "Championship":
             return True
 
         def check_club(c: Club) -> bool:
@@ -457,7 +471,7 @@ class Game:
         return True
 
     def _has_matches(self):
-        matches = self._competition.current_matches
+        matches = self.competition.current_matches
 
         if matches is None:
             return False
@@ -477,7 +491,7 @@ class Game:
 
     def _collect_competition_fame(self):
         for pk in self._clubs:
-            self._season_fame[pk] = self._competition.get_club_fame(pk)
+            self._season_fame[pk] = self.competition.get_club_fame(pk)
 
     def _drop_stats(self):
         for club in self._clubs.values():
@@ -512,10 +526,10 @@ class Game:
                 return True
             return pair.away_pk == pk
 
-        if self._competition.is_over:
+        if self.competition.is_over:
             return None
 
-        schedule = self._competition.current_matches
+        schedule = self.competition.current_matches
 
         # Just in case
         if schedule is None:
@@ -606,10 +620,10 @@ class Game:
         self._generate_free_agents()
 
         self._shuffle_coach_powers()
-        self._competition = RegularChampionship(
+        self._set_competition(RegularChampionship(
             list(self._clubs),
             self._params.championship_params
-        )
+        ))
         self._history.append({})
         self._reset_current_date_to_next_season_start()
 
@@ -626,7 +640,7 @@ class Game:
             club.perform_practice()
 
     def _play_one_day(self):
-        current_matches = self._competition.current_matches
+        current_matches = self.competition.current_matches
         playing_player_ids = self._get_playing_player_ids(current_matches)
 
         if current_matches is None:
@@ -635,10 +649,10 @@ class Game:
             self._results = process_matches(
                 current_matches,
                 self._clubs,
-                self._competition.match_params,
+                self.competition.match_params,
             )
 
-        self._competition.apply_results(self._results)
+        self.competition.apply_results(self._results)
         self._calculate_match_income()
 
         self._recover(excluded_player_ids=playing_player_ids)
@@ -697,7 +711,7 @@ class Game:
     def _manager_club_in_current_competition(self) -> bool:
         if self._manager_club_id is None:
             return True
-        return self._competition.contains_club(self._manager_club_id)
+        return self.competition.contains_club(self._manager_club_id)
 
     @property
     def _formatted_current_date(self) -> str:
@@ -718,16 +732,16 @@ class Game:
             self.update()
 
     def _save_competition_results(self):
-        self._history[-1][self._competition_type] = self._competition.standings
+        self._history[-1][self._competition_type] = self.competition.standings
 
     def _start_playoff(self):
-        self._competition = Playoff(
+        self._set_competition(Playoff(
             self._params.playoff_params,
             _make_playoff_seeds(
-                self._competition.standings,
+                self.competition.standings,
                 self._params.playoff_params.length,
             ),
-        )
+        ))
 
     def _unselect(self):
         for club in self._clubs.values():
