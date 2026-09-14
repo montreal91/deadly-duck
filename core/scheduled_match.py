@@ -13,8 +13,8 @@ class ScheduledMatch:
             self,
             home_pk,
             away_pk,
-            competition_id,
-            schedule_day,
+            competition_id="",
+            schedule_day=0,
             match_id=None,
             playoff_series_id=None,
     ):
