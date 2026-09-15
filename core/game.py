@@ -208,7 +208,17 @@ class Game:
     def season_over(self) -> bool:
         """Checks if season is over."""
 
-        return isinstance(self.cmp, Playoff) and self.cmp.is_over
+        repo = CompetitionRepository.temporal_get_instance()
+        competitions = repo.get_season_competitions(
+            self._game_id,
+            self._season_index,
+        )
+        playoffs = [
+            competition
+            for competition in competitions
+            if isinstance(competition, Playoff)
+        ]
+        return any(playoff.is_over for playoff in playoffs)
 
     @property
     def created_ts(self):
@@ -396,8 +406,7 @@ class Game:
             self._save_competition_results()
             self._next_season()
             self._drop_stats()
-
-        if self.cmp.is_over:
+        elif self._is_regular_season_over():
             self._update_season_fame()
             self._save_competition_results()
             self._start_playoff()
@@ -406,6 +415,20 @@ class Game:
         self._updated_ts = time.time_ns() // 1_000_000
 
         return True, "Ok"
+
+    def _is_regular_season_over(self) -> bool:
+        repo = CompetitionRepository.temporal_get_instance()
+        competitions = repo.get_season_competitions(
+            self._game_id,
+            self._season_index,
+        )
+        regulars = [cmp for cmp in competitions if isinstance(cmp, RegularChampionship)]
+        playoffs = [cmp for cmp in competitions if isinstance(cmp, Playoff)]
+
+        return bool(regulars) and not playoffs and all(
+            regular.is_over
+            for regular in regulars
+        )
 
     @property
     def _can_practice(self) -> bool:
@@ -710,10 +733,12 @@ class Game:
 
     def _start_playoff(self):
         repo = CompetitionRepository.temporal_get_instance()
+        regulars = self._get_regular_championships()
+
         playoffs = Playoff(
             self._params.playoff_params,
             _make_playoff_seeds(
-                self.cmp.standings,
+                regulars[-1].standings,
                 self._params.playoff_params.length,
             ),
         )
@@ -722,6 +747,12 @@ class Game:
             competition=playoffs,
             season_index=self._season_index,
         )
+
+    def _get_regular_championships(self) -> List[AbstractCompetition]:
+        repo = CompetitionRepository.temporal_get_instance()
+        cmps = repo.get_season_competitions(self._game_id, self._season_index)
+
+        return [c for c in cmps if isinstance(c, RegularChampionship)]
 
     def _unselect(self):
         for club in self._clubs.values():

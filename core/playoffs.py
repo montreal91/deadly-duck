@@ -258,14 +258,16 @@ class Playoff(AbstractCompetition):
             series.add_result(result)
 
         self._day += 1
+
         if results:
             self._results.append(results)
+
         self._update_schedule()
+        self._update_is_over()
 
         if self._day == len(self._schedule) and not self.is_over:
             self._make_new_round()
 
-        self._update_is_over()
 
     @property
     def _remaining_days(self):
@@ -418,9 +420,9 @@ class Playoff(AbstractCompetition):
 
     def _update_is_over(self):
         if len(self._series) > 1:
-            return False
+            return
         last_day = self._day >= len(self._schedule)
-        return self._series[0].winner is not None and last_day
+        self._is_over = self._series[0].winner is not None and last_day
 
 
 def _draw_parts(num: int):

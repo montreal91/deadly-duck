@@ -3,6 +3,9 @@ Created Aug 22, 2026
 
 @author montreal91
 """
+from typing import List
+from typing import Optional
+
 from core.match_engine import MatchParams
 from core.match import ExhaustionCalculator
 from core.match import DdLinearProbabilityCalculator
@@ -32,7 +35,7 @@ def test_regular_championship_applies_current_results_by_match_id():
         params=_championship_params(),
     )
     competition._schedule = [[ScheduledMatch("home", "away")]]
-    match = competition.current_matches[0]
+    match = _matches(competition.current_matches)[0]
     result = _match_result(match)
 
     competition.apply_results([result])
@@ -117,7 +120,7 @@ def test_playoff_applies_results_to_series_by_series_id():
     first_match = _first_playoff_match(playoff)
     results = [
         _match_result(match)
-        for match in playoff.current_matches
+        for match in _matches(playoff.current_matches)
     ]
 
     playoff.apply_results(results)
@@ -161,7 +164,7 @@ def test_twelve_club_playoff_draws_full_preliminary_round():
             _seed_for_club(match.home_pk),
             _seed_for_club(match.away_pk),
         }
-        for match in playoff.current_matches
+        for match in _matches(playoff.current_matches)
     ]
 
     assert len(preliminary_seed_pairs) == 8
@@ -186,12 +189,12 @@ def test_twelve_club_playoff_adds_protected_seeds_after_preliminary_round():
     )
     preliminary_match_winners = {
         match.home_pk
-        for match in playoff.current_matches
+        for match in _matches(playoff.current_matches)
     }
 
     playoff.apply_results([
         _match_result(match)
-        for match in playoff.current_matches
+        for match in _matches(playoff.current_matches)
     ])
 
     quarterfinal_seed_pairs = [
@@ -199,7 +202,7 @@ def test_twelve_club_playoff_adds_protected_seeds_after_preliminary_round():
             _seed_for_club(match.home_pk),
             _seed_for_club(match.away_pk),
         }
-        for match in playoff.current_matches
+        for match in _matches(playoff.current_matches)
     ]
 
     assert len(quarterfinal_seed_pairs) == 4
@@ -210,10 +213,31 @@ def test_twelve_club_playoff_adds_protected_seeds_after_preliminary_round():
     }
     assert preliminary_match_winners == {
         club_id
-        for match in playoff.current_matches
+        for match in _matches(playoff.current_matches)
         for club_id in (match.home_pk, match.away_pk)
         if _seed_for_club(club_id) > 4
     }
+
+
+def test_playoff_finishes_after_final_series():
+    playoff = Playoff(
+        params=_playoff_params(series_matches_pattern=(True,)),
+        seeds=_playoff_seeds(8),
+    )
+
+    for _ in range(3):
+        playoff.apply_results([
+            _match_result(match)
+            for match in _matches(playoff.current_matches)
+        ])
+
+    assert playoff.is_over
+
+
+def _matches(current_matches: Optional[List[ScheduledMatch]]):
+    if current_matches is None:
+        return []
+    return current_matches
 
 
 def _first_playoff_match(playoff):

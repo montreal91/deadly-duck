@@ -16,7 +16,7 @@ from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.regular_championship import ChampionshipParams
 
 
-def make_game(game_id: str):
+def make_game(game_id: str) -> Game:
     TemporalClubProvider.initialize()
     now = time.time_ns() // 1_000_000
     return Game(

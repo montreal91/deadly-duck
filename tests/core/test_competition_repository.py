@@ -88,6 +88,32 @@ def test_save_competition_updates_existing_row_and_over_flag():
     ]
 
 
+def test_get_season_competitions_returns_competitions_for_requested_season():
+    conn = _make_connection()
+    repository = CompetitionRepository(conn)
+    previous_season_competition = _competition("previous-season", day=5)
+    first_competition = _competition("first-competition", day=2)
+    second_competition = _competition("second-competition", day=0)
+    second_competition._is_over = True
+
+    repository.save_competition("game", previous_season_competition, season_index=0)
+    repository.save_competition("game", first_competition, season_index=1)
+    repository.save_competition("game", second_competition, season_index=1)
+
+    competitions = repository.get_season_competitions(
+        game_id="game",
+        season_index=1,
+    )
+
+    assert [
+        (competition.competition_id, competition.day, competition.is_over)
+        for competition in competitions
+    ] == [
+        ("second-competition", 0, True),
+        ("first-competition", 2, False),
+    ]
+
+
 def test_next_day_handler_saves_current_competition():
     conn = _make_connection()
     CompetitionRepository.temporal_initialize(conn)

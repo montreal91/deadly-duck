@@ -66,6 +66,29 @@ class CompetitionRepository:
         self._cache[game_id] = res
         return res
 
+    def get_season_competitions(self, game_id: str, season_index: int) -> List[AbstractCompetition]:
+        if self._conn is None:
+            raise RuntimeError("CompetitionRepository has no SQLite connection.")
+
+        rows = self._conn.execute(
+            """
+            SELECT day, object
+            FROM competition
+            WHERE game_id = :game_id
+              AND season_index = :season_index
+            ORDER BY day
+            """,
+            {
+                "game_id": game_id,
+                "season_index": season_index,
+            },
+        ).fetchall()
+
+        return [
+            _load_competition_from_row(row)
+            for row in rows
+        ]
+
     def save_competition(
             self,
             game_id: str,
@@ -118,6 +141,7 @@ class CompetitionRepository:
                     )),
                 },
             )
+        self._cache = {}
 
 
 def _load_competition_from_row(row) -> AbstractCompetition:

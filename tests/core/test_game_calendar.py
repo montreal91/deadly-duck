@@ -10,6 +10,7 @@ import pytest
 
 from core.competition import CompetitionType
 from core.game import Game
+from core.playoffs import Playoff
 from core.ports.outbound.competition_repository import CompetitionRepository
 from tests.core.fixtures.game import make_game
 
@@ -40,6 +41,20 @@ def test_next_season_starts_on_next_year_february_21():
 
     assert game.current_date == date(2083, 2, 21)
     assert game.get_context(_first_club_id(game))["day"] == "2083-Feb-21"
+
+
+def test_regular_season_end_starts_playoffs():
+    conn = _make_connection()
+    CompetitionRepository.temporal_initialize(conn)
+    game = make_game("calendar-test")
+    regular_season_length = len(game.cmp._schedule)
+
+    for _ in range(regular_season_length):
+        success, reason = game.update()
+        assert success, reason
+
+    print(type(game.cmp))
+    assert isinstance(game.cmp, Playoff)
 
 
 @pytest.mark.skip
