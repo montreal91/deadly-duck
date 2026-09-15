@@ -26,7 +26,7 @@ from core.game_service import GameService
 from core.match import ExhaustionCalculator
 from core.match import DdLinearProbabilityCalculator
 from core.player import PlayerReputationCalculator
-from core.playoffs import DdPlayoffParams
+from core.playoffs import PlayoffParams
 from core.ports.inbound.commands.create_new_game import CreateNewGameCommandHandler
 from core.ports.inbound.commands.select_club import SelectClubCommandHandler
 from core.ports.outbound.game_repository import GameRepository
@@ -253,7 +253,7 @@ def _get_params() -> GameParams:
             "match_importance", 0
         ),
     )
-    playoff_params = DdPlayoffParams(
+    playoff_params = PlayoffParams(
         series_matches_pattern=(
             True, True, False, False, True, False, True,
         ),

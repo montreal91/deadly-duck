@@ -3,13 +3,14 @@ Created December 24, 2025
 
 @author montreal91
 """
+from dataclasses import dataclass
 from datetime import datetime
 from datetime import timedelta
 from typing import List
-from typing import NamedTuple
 from typing import Optional
 from typing import Union
 
+from core.competition import AbstractCompetition
 from core.competition import CompetitionType
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
@@ -19,17 +20,20 @@ _PLAYOFF_BYE_VALUE = "BYE"
 _NO_PLAYOFF_SCORE = ""
 
 
-class UpcomingMatch(NamedTuple):
+@dataclass(frozen=True)
+class UpcomingMatch:
     opponent_club_name: str
     home_away: str
 
 
-class UpcomingDay(NamedTuple):
+@dataclass(frozen=True)
+class UpcomingDay:
     day: str
     match: Optional[UpcomingMatch]
 
 
-class StandingRow(NamedTuple):
+@dataclass(frozen=True)
+class StandingRow:
     pos: int
     club_id: str
     club_name: str
@@ -38,11 +42,13 @@ class StandingRow(NamedTuple):
     games: int
 
 
-class ChampionshipStandings(NamedTuple):
+@dataclass(frozen=True)
+class ChampionshipStandings:
     rows: List[StandingRow]
 
 
-class PlayoffSeriesRow(NamedTuple):
+@dataclass(frozen=True)
+class PlayoffSeriesRow:
     round_number: int
     top_club_id: str
     top_club_name: str
@@ -55,14 +61,16 @@ class PlayoffSeriesRow(NamedTuple):
     contains_manager_club: bool
 
 
-class PlayoffStandings(NamedTuple):
+@dataclass(frozen=True)
+class PlayoffStandings:
     rows: List[PlayoffSeriesRow]
 
 
 Standings = Union[ChampionshipStandings, PlayoffStandings]
 
 
-class QueryResult(NamedTuple):
+@dataclass(frozen=True)
+class QueryResult:
     day: str
     season: int
     balance: int
@@ -112,6 +120,8 @@ class GameScreenGuiQueryHandler:
                 clubs=clubs,
                 manager_club_id=manager_club_id,
             )
+        elif context["competition_type"] is None:
+            standings = ChampionshipStandings([])
         else:
             raise Exception("Unknown competition type")
 
@@ -325,7 +335,10 @@ def _largest_power_of_two(value):
     return res
 
 
-def _get_match(competition, club_id):
+def _get_match(competition: Optional[AbstractCompetition], club_id):
+    if competition is None:
+        return None
+
     matches = competition.current_matches
 
     if matches is None:

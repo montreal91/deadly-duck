@@ -22,7 +22,6 @@ from typing import Set
 from typing import Tuple
 
 from configuration.config_game import GameplayConstants
-from core import competition
 from core.club import Club
 from core.club import ClubPlayerSlot
 from core.competition import AbstractCompetition
@@ -30,19 +29,19 @@ from core.competition import CompetitionType
 from core.financial import DdPracticeCalculator
 from core.financial import DdStaticContractCalculator
 from core.financial import DdTransaction
-from core.match_result import MatchResult
 from core.match_processing_system import process_matches
+from core.match_result import MatchResult
 from core.player import ExhaustedLinearRecovery
 from core.player import Player
 from core.player import PlayerFactory
 from core.playoffs import Playoff
-from core.playoffs import DdPlayoffParams
+from core.playoffs import PlayoffParams
 from core.playoffs import PlayoffSeed
+from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import DdStandingsRowStruct
 from core.regular_championship import RegularChampionship
-from core.ports.outbound.competition_repository import CompetitionRepository
-from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.scheduled_match import ScheduledMatch
 from core.skill_upgrade_system import upgrade_skills
 
@@ -61,7 +60,7 @@ class GameParams(NamedTuple):
 
     # Various parameters
     championship_params: ChampionshipParams
-    playoff_params: DdPlayoffParams
+    playoff_params: PlayoffParams
 
     # Other data
     contracts: List[int]
@@ -86,15 +85,19 @@ logging.basicConfig(
 )
 
 
-def _get_competition_type(cmp) -> CompetitionType:
+def _get_competition_type(cmp: Optional[AbstractCompetition]) -> Optional[CompetitionType]:
     if isinstance(cmp, RegularChampionship):
         return CompetitionType.CHAMPIONSHIP
     elif isinstance(cmp, Playoff):
         return CompetitionType.PLAY_OFFS
+    elif cmp is None:
+        return None
     raise Exception(f"Unknown competition type. {type(cmp)}")
 
 
-def _has_matches(cmp: AbstractCompetition) -> bool:
+def _has_matches(cmp: Optional[AbstractCompetition]) -> bool:
+    if cmp is None:
+        return False
     matches = cmp.current_matches
 
     if matches is None:
@@ -102,6 +105,19 @@ def _has_matches(cmp: AbstractCompetition) -> bool:
 
     return len(matches) > 0
 
+
+def _get_remaining_matches(competition: Optional[AbstractCompetition], club_id: str) -> List[Optional[ScheduledMatch]]:
+    if competition is None:
+        return []
+
+    return competition.get_club_schedule_days(club_id)
+
+
+def _get_competition_title(competition: Optional[AbstractCompetition]) -> str:
+    if competition is None:
+        return ""
+
+    return competition.title
 
 class Game:
     """
@@ -178,9 +194,14 @@ class Game:
         return self._current_date
 
     @property
-    def cmp(self) -> AbstractCompetition:
+    def cmp(self) -> Optional[AbstractCompetition]:
         repo = CompetitionRepository.temporal_get_instance()
-        return repo.get_ongoing_competitions(self._game_id)[0]
+        comps = repo.get_ongoing_competitions(self._game_id)
+
+        if not comps:
+            return None
+
+        return comps[0]
 
     @property
     def clubs(self):
@@ -259,13 +280,13 @@ class Game:
             free_agents=self._get_free_agents(),
             history=self._history,
             last_results=self._last_results,
-            opponent=self._get_opponent(pk),
+            opponent=self._get_opponent(cmp, pk),
             practice_cost=self._calculate_club_practice_cost(club=self._clubs[pk]),
-            remaining_matches=cmp.get_club_schedule_days(pk),
+            remaining_matches=_get_remaining_matches(cmp, pk),
             standings=self._get_standings(cmp=cmp),
-            title=cmp.title,
+            title=_get_competition_title(cmp),
             user_players=self._get_user_players(pk),
-            competition=cmp.title,
+            competition=_get_competition_title(cmp),
             competition_type=_get_competition_type(cmp=cmp),
             has_matches=_has_matches(cmp=cmp),
         )
@@ -374,9 +395,16 @@ class Game:
         Proceeds to the next day if possible.
         All scheduled matches are performed.
         """
+        repo = CompetitionRepository.temporal_get_instance()
+        cmps = repo.get_ongoing_competitions(self._game_id)
+        if len(cmps) == 0:
+            cmp = None
+        else:
+            cmp = cmps[0]
+
 
         for club_pk in self._clubs:
-            if not self._is_club_valid(club_pk):
+            if not self._is_club_valid(club_pk, cmp):
                 self._clubs[club_pk].set_controlled(False)
 
         if self.is_over:
@@ -475,7 +503,9 @@ class Game:
 
         return self._results
 
-    def _get_standings(self, cmp) -> List[DdStandingsRowStruct]:
+    def _get_standings(self, cmp: Optional[AbstractCompetition]) -> List[DdStandingsRowStruct]:
+        if cmp is None:
+            return []
         standings = cmp.standings
         if standings:
             return standings
@@ -536,16 +566,16 @@ class Game:
             res.append((agent, self._contract_calculator(agent.level),))
         return res
 
-    def _get_opponent(self, pk: str) -> Optional[OpponentDto]:
+    def _get_opponent(self, cmp: Optional[AbstractCompetition], pk: str) -> Optional[OpponentDto]:
         def schedule_filter(pair: ScheduledMatch):
             if pair.home_pk == pk:
                 return True
             return pair.away_pk == pk
 
-        if self.cmp.is_over:
+        if cmp is None or cmp.is_over:
             return None
 
-        schedule = self.cmp.current_matches
+        schedule = cmp.current_matches
 
         # Just in case
         if schedule is None:
@@ -592,8 +622,11 @@ class Game:
                 )
                 club.add_player(new_player)
 
-    def _is_club_valid(self, pk: str) -> bool:
-        opponent = self._get_opponent(pk)
+    def _is_club_valid(self, pk: str, cmp: Optional[AbstractCompetition]) -> bool:
+        if cmp is None:
+            return True
+
+        opponent = self._get_opponent(cmp, pk)
         club: Club = self._clubs[pk]
         if opponent is None or not self._is_manager_club(pk):
             return True

@@ -1,13 +1,11 @@
-
 """
 Created Apr 26, 2019
 
 @author montreal91
 """
-
+from dataclasses import dataclass
 from random import shuffle
 from typing import List
-from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -24,7 +22,8 @@ BracketPair = Tuple[int, int]
 Score = Tuple[Union[int, str], Union[int, str]]
 
 
-class DdPlayoffParams(NamedTuple):
+@dataclass(frozen=True)
+class PlayoffParams:
     """A passive class to store playoff parameters."""
 
     series_matches_pattern: Tuple[bool, ...]
@@ -34,24 +33,30 @@ class DdPlayoffParams(NamedTuple):
     match_importance: int
 
 
-class PlayoffSeed(NamedTuple):
+@dataclass(frozen=True)
+class PlayoffSeed:
     """A seeded playoff participant."""
 
     club_id: str
     seed: int
 
 
-class DdPlayoffSeries:
+class PlayoffSeries:
     """A class to describe inner logic of a playoff series."""
 
     _bottom_club_pk: Optional[str]
-    _params: DdPlayoffParams
+    _params: PlayoffParams
     _results: List[MatchResult]
     _round_number: int
     _series_id: str
     _top_club_pk: Optional[str]
 
-    def __init__(self, params: DdPlayoffParams, series_id=None, round_number=1):
+    def __init__(
+            self,
+            params: PlayoffParams,
+            series_id: Optional[str] = None,
+            round_number: int = 1
+    ):
         self._params = params
         self._results = []
         self._round_number = round_number
@@ -169,13 +174,13 @@ class Playoff(AbstractCompetition):
         (3, 7),
     )
 
-    _series: List[DdPlayoffSeries]
-    _past_series: List[DdPlayoffSeries]
+    _series: List[PlayoffSeries]
+    _past_series: List[PlayoffSeries]
 
     def __init__(
-        self,
-        params: DdPlayoffParams,
-        seeds: List[PlayoffSeed],
+            self,
+            params: PlayoffParams,
+            seeds: List[PlayoffSeed],
     ):
         super().__init__([seed.club_id for seed in seeds], params)
         assert len(seeds) == params.length, (
@@ -194,7 +199,7 @@ class Playoff(AbstractCompetition):
         self._make_new_round()
 
     @property
-    def current_matches(self) ->  Optional[ScheduleDay]:
+    def current_matches(self) -> Optional[ScheduleDay]:
         res = super().current_matches
         if res is None:
             return res
@@ -219,6 +224,18 @@ class Playoff(AbstractCompetition):
             )
             result.append(res)
         return result
+
+    @property
+    def series(self) -> List[PlayoffSeries]:
+        return self._series + self._past_series
+
+    @property
+    def params(self) -> PlayoffParams:
+        return self._params
+
+    @property
+    def current_round(self) -> int:
+        return self._round
 
     @property
     def title(self) -> str:
@@ -267,7 +284,6 @@ class Playoff(AbstractCompetition):
 
         if self._day == len(self._schedule) and not self.is_over:
             self._make_new_round()
-
 
     @property
     def _remaining_days(self):
@@ -353,7 +369,7 @@ class Playoff(AbstractCompetition):
             top_club_id: Optional[str],
             bottom_club_id: Optional[str],
     ):
-        series = DdPlayoffSeries(self._params, round_number=self._round)
+        series = PlayoffSeries(self._params, round_number=self._round)
         series.pair = (top_club_id, bottom_club_id)
         return series
 

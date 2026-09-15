@@ -11,10 +11,10 @@ from core.match import ExhaustionCalculator
 from core.match import DdLinearProbabilityCalculator
 from core.match_result import MatchResult
 from core.player import PlayerReputationCalculator
-from core.playoffs import DdPlayoffParams
+from core.playoffs import PlayoffParams
 from core.playoffs import Playoff
 from core.playoffs import PlayoffSeed
-from core.playoffs import DdPlayoffSeries
+from core.playoffs import PlayoffSeries
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import RegularChampionship
 from core.scheduled_match import ScheduledMatch
@@ -131,7 +131,7 @@ def test_playoff_applies_results_to_series_by_series_id():
 
 
 def test_playoff_series_accepts_one_missing_club_as_bye():
-    series = DdPlayoffSeries(_playoff_params())
+    series = PlayoffSeries(_playoff_params())
 
     series.pair = ("club", None)
 
@@ -140,7 +140,7 @@ def test_playoff_series_accepts_one_missing_club_as_bye():
 
 
 def test_playoff_series_rejects_two_missing_clubs():
-    series = DdPlayoffSeries(_playoff_params())
+    series = PlayoffSeries(_playoff_params())
 
     try:
         series.pair = (None, None)
@@ -285,7 +285,7 @@ def _championship_params():
 
 
 def _playoff_params(length=8, series_matches_pattern=(True, True, False)):
-    return DdPlayoffParams(
+    return PlayoffParams(
         series_matches_pattern=series_matches_pattern,
         length=length,
         gap_days=0,

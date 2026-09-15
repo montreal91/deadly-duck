@@ -7,9 +7,13 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from core.competition import CompetitionType
+from core.ports.outbound.competition_repository import CompetitionRepository
 from core.queries.game_screen_query import GameScreenGuiQueryHandler
 from core.queries.game_screen_query import PlayoffStandings
 from core.scheduled_match import ScheduledMatch
+from tests.core.fixtures.game import make_game
+from tests.core.test_game_calendar import _insert_clubs
+from tests.core.test_game_calendar import _make_connection
 
 
 def test_game_screen_query_converts_remaining_matches_to_upcoming_days():
@@ -154,6 +158,30 @@ def test_game_screen_query_supports_twelve_club_preliminary_round():
     assert result.standings.rows[0].bottom_seed == ""
 
 
+def test_game_screen_query_after_playoff_end_does_not_crash():
+    conn = _make_connection()
+    CompetitionRepository.temporal_initialize(conn)
+    game = make_game("calendar-test")
+    _insert_clubs(conn, game)
+    cmp = game.cmp
+
+    if cmp is None:
+        assert False, "This should not happen."
+
+    regular_season_length = len(cmp._schedule or [])
+
+    for _ in range(regular_season_length + 9):
+        success, reason = game.update()
+        assert success, reason
+
+    handler = GameScreenGuiQueryHandler(
+        game_repository=_game_repository(game),
+        club_provider=_club_provider(game.clubs),
+    )
+
+    handler("calendar-test", _first_club_id(game))
+
+
 def _game_repository(game):
     repository = Mock()
     repository.get_game.return_value = game
@@ -193,3 +221,7 @@ def _club(name):
     club.name = name
     club.players = []
     return club
+
+
+def _first_club_id(game):
+    return next(iter(game.clubs))

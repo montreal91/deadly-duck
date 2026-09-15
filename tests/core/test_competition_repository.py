@@ -12,13 +12,19 @@ from core.competition import CompetitionType
 from core.match import DdLinearProbabilityCalculator
 from core.match import ExhaustionCalculator
 from core.match_engine import MatchParams
+from core.match_result import MatchResult
 from core.player import PlayerReputationCalculator
 from core.ports.inbound.commands.next_day import NextDayCommand
 from core.ports.inbound.commands.next_day import NextDayCommandHandler
 from core.ports.outbound.competition_repository import CompetitionRepository
 from core.ports.outbound.game_repository import GameRepository
+from core.playoffs import Playoff
+from core.playoffs import PlayoffParams
+from core.playoffs import PlayoffSeed
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import RegularChampionship
+from core.set_result import DdSetStatuses
+from core.set_result import SetResult
 from tests.core.fixtures.game import make_game
 
 
@@ -114,6 +120,81 @@ def test_get_season_competitions_returns_competitions_for_requested_season():
     ]
 
 
+def test_save_playoff_competition_inserts_playoff_series():
+    conn = _make_connection()
+    repository = CompetitionRepository(conn)
+    playoff = _playoff("playoff")
+
+    repository.save_competition("game", playoff, season_index=0)
+
+    rows = [
+        tuple(row)
+        for row in conn.execute(
+        """
+        SELECT competition_id, series_id, round_number, position
+        FROM playoff_series
+        ORDER BY round_number, position
+        """
+        ).fetchall()
+    ]
+
+    assert rows == [
+        (
+            "playoff",
+            series.series_id,
+            series.round_number,
+            position,
+        )
+        for position, series in enumerate(playoff._series)
+    ]
+
+
+def test_get_ongoing_playoff_competitions_loads_series_from_table():
+    conn = _make_connection()
+    repository = CompetitionRepository(conn)
+    playoff = _playoff("playoff")
+    first_series = playoff._series[0]
+    repository.save_competition("game", playoff, season_index=0)
+    conn.execute(
+        """
+        UPDATE playoff_series
+        SET top_club_id = '7',
+            bottom_club_id = '6'
+        WHERE game_id = 'game'
+          AND series_id = :series_id
+        """,
+        {"series_id": first_series.series_id},
+    )
+
+    loaded_playoff = repository.get_ongoing_competitions("game")[0]
+
+    assert loaded_playoff._series[0].series_id == first_series.series_id
+    assert loaded_playoff._series[0].pair == ("7", "6")
+    assert loaded_playoff._series_by_id[first_series.series_id].pair == ("7", "6")
+
+
+def test_get_ongoing_playoff_competitions_preserves_series_results():
+    conn = _make_connection()
+    repository = CompetitionRepository(conn)
+    playoff = _playoff("playoff")
+    playoff.apply_results([
+        _match_result(match)
+        for match in playoff.current_matches
+    ])
+    expected_scores = [
+        series.score
+        for series in playoff._past_series
+    ]
+    repository.save_competition("game", playoff, season_index=0)
+
+    loaded_playoff = repository.get_ongoing_competitions("game")[0]
+
+    assert [
+        series.score
+        for series in loaded_playoff._past_series
+    ] == expected_scores
+
+
 def test_next_day_handler_saves_current_competition():
     conn = _make_connection()
     CompetitionRepository.temporal_initialize(conn)
@@ -180,6 +261,36 @@ def _competition(competition_id: str, day: int = 0):
     return competition
 
 
+def _playoff(competition_id: str):
+    playoff = Playoff(
+        params=_playoff_params(),
+        seeds=[
+            PlayoffSeed(club_id=str(i), seed=i + 1)
+            for i in range(8)
+        ],
+    )
+    playoff._competition_id = competition_id
+    return playoff
+
+
+def _match_result(match):
+    result = MatchResult()
+    result.match_id = match.match_id
+    result.home_pk = match.home_pk
+    result.away_pk = match.away_pk
+    result.AddSetResult(SetResult(
+        home_games=6,
+        away_games=4,
+        set_status=DdSetStatuses.REGULAR,
+    ))
+    result.AddSetResult(SetResult(
+        home_games=6,
+        away_games=4,
+        set_status=DdSetStatuses.REGULAR,
+    ))
+    return result
+
+
 def _championship_params():
     match_params = MatchParams(
         games_to_win=1,
@@ -192,6 +303,23 @@ def _championship_params():
         match_params=match_params,
         recovery_day=2,
         rounds=2,
+        match_importance=1,
+    )
+
+
+def _playoff_params():
+    match_params = MatchParams(
+        games_to_win=1,
+        sets_to_win=1,
+        exhaustion_function=ExhaustionCalculator(1),
+        probability_function=DdLinearProbabilityCalculator(0.003),
+        reputation_function=PlayerReputationCalculator(1, 1),
+    )
+    return PlayoffParams(
+        match_params=match_params,
+        series_matches_pattern=(True,),
+        length=8,
+        gap_days=0,
         match_importance=1,
     )
 
@@ -219,8 +347,43 @@ def _make_connection() -> sqlite3.Connection:
             PRIMARY KEY (game_id, competition_id)
         );
 
+        CREATE TABLE club (
+            game_id TEXT NOT NULL,
+            club_id TEXT NOT NULL,
+            PRIMARY KEY (game_id, club_id)
+        );
+
+        CREATE TABLE playoff_series (
+            game_id TEXT NOT NULL,
+            competition_id TEXT NOT NULL,
+            series_id TEXT NOT NULL,
+            round_number INTEGER NOT NULL,
+            position INTEGER NOT NULL,
+            top_club_id TEXT,
+            bottom_club_id TEXT,
+            PRIMARY KEY (game_id, series_id),
+            UNIQUE (game_id, competition_id, round_number, position),
+            FOREIGN KEY (game_id, top_club_id)
+                REFERENCES club(game_id, club_id),
+            FOREIGN KEY (game_id, bottom_club_id)
+                REFERENCES club(game_id, club_id)
+        );
+
         INSERT INTO game (game_id)
         VALUES ('game');
+
+        INSERT INTO club (game_id, club_id)
+        VALUES
+            ('game', '0'),
+            ('game', '1'),
+            ('game', '2'),
+            ('game', '3'),
+            ('game', '4'),
+            ('game', '5'),
+            ('game', '6'),
+            ('game', '7'),
+            ('game', 'home'),
+            ('game', 'away');
         """
     )
     return conn

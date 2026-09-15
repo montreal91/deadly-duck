@@ -11,7 +11,7 @@ from core.match import DdLinearProbabilityCalculator
 from core.match import ExhaustionCalculator
 from core.match_engine import MatchParams
 from core.player import PlayerReputationCalculator
-from core.playoffs import DdPlayoffParams
+from core.playoffs import PlayoffParams
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.regular_championship import ChampionshipParams
 
@@ -41,7 +41,7 @@ def _game_params():
             rounds=2,
             match_importance=1,
         ),
-        playoff_params=DdPlayoffParams(
+        playoff_params=PlayoffParams(
             series_matches_pattern=(True, True, False),
             length=8,
             gap_days=0,
