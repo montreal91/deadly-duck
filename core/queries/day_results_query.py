@@ -3,22 +3,27 @@ Created December 26, 2025
 
 @author montreal91
 """
-from typing import List, Dict
+from dataclasses import dataclass
+from typing import Dict
+from typing import List
 from typing import Optional
-from typing import NamedTuple
 
 from core.club import Club
 from core.match_result import MatchResult
+from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.game_repository import GameRepository
+from core.ports.outbound.match_result_repository import MatchResultRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 
+@dataclass(frozen=True)
 class DayResultsQuery:
-    def __init__(self, game_id, manager_club_id):
-        self.game_id = game_id
-        self.manager_club_id = manager_club_id
+    game_id: str
+    manager_club_id: str
 
 
-class SingleMatchResult(NamedTuple):
+@dataclass(frozen=True)
+class SingleMatchResult:
     home_club_id: str
     away_club_id: str
     home_club_name: str
@@ -31,25 +36,41 @@ class SingleMatchResult(NamedTuple):
     user_player_name: Optional[str]
 
 
-class DayResultsQueryResult(NamedTuple):
+@dataclass(frozen=True)
+class DayResultsQueryResult:
     match_results_list: List[SingleMatchResult]
 
 
 class DayResultsQueryHandler:
-    def __init__(self, game_repository, club_provider: TemporalClubProvider):
+    def __init__(
+            self,
+            game_repository: GameRepository,
+            club_provider: TemporalClubProvider,
+            competition_repository: CompetitionRepository,
+            match_result_repository: MatchResultRepository,
+    ):
         self._game_repository = game_repository
         self._club_provider = club_provider
+        self._match_result_repository = match_result_repository
+        self._competition_repository = competition_repository
 
-    def __call__(self, query):
-        game_context = self._game_repository.get_game(query.game_id).get_context(query.manager_club_id)
+    def __call__(self, query: DayResultsQuery) -> DayResultsQueryResult:
         clubs = self._club_provider.get_clubs_for_game(query.game_id)
-
-        last_results = game_context["last_results"]
         results = []
-        for result in last_results:
+
+        for result in self._get_last_results(query.game_id):
             results.append(_make_single_match_result(result, clubs, query.manager_club_id))
 
         return DayResultsQueryResult(match_results_list=results)
+
+    def _get_last_results(self, game_id: str) -> List[MatchResult]:
+        ongoing_competitions = self._competition_repository.get_ongoing_competitions_ids(game_id)
+        last_results = []
+
+        for c in ongoing_competitions:
+            last_results.extend(self._match_result_repository.get_latest_results(game_id, c))
+
+        return last_results
 
 
 def _get_player_name(player_json):

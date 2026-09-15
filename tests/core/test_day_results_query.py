@@ -53,10 +53,18 @@ def _handler(results):
         "home": _club("Home Club"),
         "away": _club("Away Club"),
     }
+    competition_repository = Mock()
+    competition_repository.get_ongoing_competitions_ids.return_value = [
+        "competition",
+    ]
+    match_result_repository = Mock()
+    match_result_repository.get_latest_results.return_value = results
 
     return DayResultsQueryHandler(
         game_repository=game_repository,
         club_provider=club_provider,
+        competition_repository=competition_repository,
+        match_result_repository=match_result_repository,
     )
 
 

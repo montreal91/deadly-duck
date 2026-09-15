@@ -131,9 +131,9 @@ def test_save_playoff_competition_inserts_playoff_series():
         tuple(row)
         for row in conn.execute(
         """
-        SELECT competition_id, series_id, round_number, position
+        SELECT competition_id, series_id, round_number
         FROM playoff_series
-        ORDER BY round_number, position
+        ORDER BY round_number, series_id
         """
         ).fetchall()
     ]
@@ -143,9 +143,11 @@ def test_save_playoff_competition_inserts_playoff_series():
             "playoff",
             series.series_id,
             series.round_number,
-            position,
         )
-        for position, series in enumerate(playoff._series)
+        for series in sorted(
+            playoff._series,
+            key=lambda series: (series.round_number, series.series_id),
+        )
     ]
 
 
@@ -167,10 +169,9 @@ def test_get_ongoing_playoff_competitions_loads_series_from_table():
     )
 
     loaded_playoff = repository.get_ongoing_competitions("game")[0]
+    loaded_series = loaded_playoff._series_by_id[first_series.series_id]
 
-    assert loaded_playoff._series[0].series_id == first_series.series_id
-    assert loaded_playoff._series[0].pair == ("7", "6")
-    assert loaded_playoff._series_by_id[first_series.series_id].pair == ("7", "6")
+    assert loaded_series.pair == ("7", "6")
 
 
 def test_get_ongoing_playoff_competitions_preserves_series_results():
@@ -197,8 +198,8 @@ def test_get_ongoing_playoff_competitions_preserves_series_results():
 
 def test_next_day_handler_saves_current_competition():
     conn = _make_connection()
-    CompetitionRepository.temporal_initialize(conn)
-    competition_repository = CompetitionRepository.temporal_get_instance()
+    CompetitionRepository.tmp_initialize(conn)
+    competition_repository = CompetitionRepository.tmp_get_instance()
 
     game_repository = GameRepository(conn)
     game = make_game("game")
@@ -358,11 +359,9 @@ def _make_connection() -> sqlite3.Connection:
             competition_id TEXT NOT NULL,
             series_id TEXT NOT NULL,
             round_number INTEGER NOT NULL,
-            position INTEGER NOT NULL,
             top_club_id TEXT,
             bottom_club_id TEXT,
             PRIMARY KEY (game_id, series_id),
-            UNIQUE (game_id, competition_id, round_number, position),
             FOREIGN KEY (game_id, top_club_id)
                 REFERENCES club(game_id, club_id),
             FOREIGN KEY (game_id, bottom_club_id)

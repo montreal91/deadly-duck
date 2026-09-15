@@ -12,7 +12,10 @@ from typing import Union
 
 from core.competition import AbstractCompetition
 from core.competition import CompetitionType
+from core.ports.outbound.game_repository import GameRepository
+from core.ports.outbound.match_result_repository import MatchResultRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
+from core.scheduled_match import ScheduledMatch
 
 _NO_PLAYOFF_CLUB_ID = ""
 _NO_PLAYOFF_VALUE = "N/A"
@@ -87,20 +90,35 @@ class QueryResult:
 class GameScreenGuiQueryHandler:
     _club_provider: TemporalClubProvider
 
-    def __init__(self, game_repository, club_provider: TemporalClubProvider):
+    def __init__(
+            self,
+            game_repository: GameRepository,
+            club_provider: TemporalClubProvider,
+            match_result_repository: MatchResultRepository,
+    ):
         self._game_repository = game_repository
         self._club_provider = club_provider
+        self._match_result_repository = match_result_repository
 
     def __call__(self, game_id, manager_club_id):
         game = self._game_repository.get_game(game_id)
+
+        if game is None:
+            raise RuntimeError("Game not found")
+
         context = game.get_context(manager_club_id)
         clubs = self._club_provider.get_clubs_for_game(game_id)
 
-        match = _get_match(competition=game.cmp, club_id=manager_club_id)
+        competition = game.cmp
+
+        match = _get_match(competition=competition, club_id=manager_club_id)
         upcoming_match = _make_upcoming_match(match, clubs, manager_club_id)
 
         if context["competition_type"] == CompetitionType.CHAMPIONSHIP:
-            raw_standings = context.get("standings", [])
+            raw_standings = self._match_result_repository.get_regular_championship_standings(
+                game_id,
+                _get_competition_id(competition)
+            )
             res_standings = []
 
             for pos, standing in enumerate(raw_standings):
@@ -335,17 +353,21 @@ def _largest_power_of_two(value):
     return res
 
 
-def _get_match(competition: Optional[AbstractCompetition], club_id):
+def _get_match(competition: Optional[AbstractCompetition], club_id) -> Optional[ScheduledMatch]:
     if competition is None:
         return None
 
     matches = competition.current_matches
-
-    if matches is None:
-        return None
 
     for match in matches:
         if match.home_pk == club_id or match.away_pk == club_id:
             return match
 
     return None
+
+
+def _get_competition_id(competition: Optional[AbstractCompetition]):
+    if competition is None:
+        return ""
+
+    return competition.competition_id

@@ -9,6 +9,7 @@ from copy import copy
 from enum import Enum
 from itertools import chain
 from typing import Any
+from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Optional
@@ -30,10 +31,10 @@ class AbstractCompetition:
 
     _club_ids: List[str]
     _competition_id: str
-    _schedule: List[Optional[ScheduleDay]]
+    _schedule: Dict[int, List[ScheduledMatch]]
     _day: int
     _params: Any
-    _results: List[List[MatchResult]]
+    _results: Dict[int, List[MatchResult]]
     _is_over: bool
 
     @staticmethod
@@ -52,8 +53,8 @@ class AbstractCompetition:
         self._competition_id = competition_id or str(uuid4())
         self._day = 0
         self._params = params
-        self._results = []
-        self._schedule = []
+        self._results = {}
+        self._schedule = {}
         self._is_over = False
 
     @property
@@ -61,12 +62,12 @@ class AbstractCompetition:
         return self._competition_id
 
     @property
-    def current_matches(self) -> Optional[ScheduleDay]:
+    def current_matches(self) -> List[ScheduledMatch]:
         """List of current matches."""
 
-        if self._day < len(self._schedule):
-            return self._schedule[self._day]
-        return []
+        # if self._day < len(self._schedule):
+        #     return self._schedule[self._day]
+        return self._schedule.get(self._day, [])
 
     @property
     def day(self):
@@ -116,37 +117,37 @@ class AbstractCompetition:
         """List of matches scheduled for a club."""
 
         schedule = []
-        for day in self._schedule:
-            if day is None:
-                continue
-            for match in day:
-                if match.is_played:
-                    continue
-                if club_pk in (match.home_pk, match.away_pk):
-                    schedule.append(match)
+        # for day in self._schedule:
+        #     if day is None:
+        #         continue
+        #     for match in day:
+        #         if match.is_played:
+        #             continue
+        #         if club_pk in (match.home_pk, match.away_pk):
+        #             schedule.append(match)
         return schedule
 
     def get_club_schedule_days(self, club_pk: str) -> List[Optional[ScheduledMatch]]:
         """List of upcoming competition days with optional club match."""
 
         schedule = []
-        for day in self._schedule[self._day:]:
-            if day is None:
-                schedule.append(None)
-                continue
-
-            club_match = None
-            for match in day:
-                if match.is_played:
-                    continue
-                if club_pk in (match.home_pk, match.away_pk):
-                    club_match = match
-                    break
-
-            schedule.append(club_match)
-
-        while schedule and schedule[-1] is None:
-            schedule.pop()
+        # for day in self._schedule[self._day:]:
+        #     if day is None:
+        #         schedule.append(None)
+        #         continue
+        #
+        #     club_match = None
+        #     for match in day:
+        #         if match.is_played:
+        #             continue
+        #         if club_pk in (match.home_pk, match.away_pk):
+        #             club_match = match
+        #             break
+        #
+        #     schedule.append(club_match)
+        #
+        # while schedule and schedule[-1] is None:
+        #     schedule.pop()
 
         return schedule
 
@@ -156,10 +157,10 @@ class AbstractCompetition:
     def apply_results(self, results: List[MatchResult]):
         """Applies externally processed match results to current matches."""
 
-    def update(self) -> List[MatchResult]:
-        """Updates the state of the competition."""
+    def make_schedule(self):
+        pass
 
-    def _make_schedule(self):
+    def get_full_schedule(self) -> List[ScheduledMatch]:
         pass
 
     def _validate_current_results(self, results: List[MatchResult]):

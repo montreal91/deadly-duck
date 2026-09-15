@@ -33,29 +33,30 @@ def test_save_matches_in_sqlite():
 
     repository.save_matches("game", [first_match, second_match])
 
-    rows = conn.execute(
-        """
-        SELECT
-            game_id,
-            competition_id,
-            match_id,
-            schedule_day,
-            position,
-            home_club_id,
-            away_club_id,
-            playoff_series_id,
-            is_played
-        FROM scheduled_match
-        ORDER BY position
-        """
-    ).fetchall()
+    rows = [
+        tuple(row)
+        for row in conn.execute(
+            """
+            SELECT
+                game_id,
+                competition_id,
+                match_id,
+                schedule_day,
+                home_club_id,
+                away_club_id,
+                playoff_series_id,
+                is_played
+            FROM scheduled_match
+            ORDER BY match_id
+            """
+        ).fetchall()
+    ]
     assert rows == [
         (
             "game",
             "competition",
             "first-match",
             2,
-            0,
             "home",
             "away",
             None,
@@ -66,7 +67,6 @@ def test_save_matches_in_sqlite():
             "competition",
             "second-match",
             2,
-            1,
             "away",
             "home",
             "series",
@@ -90,15 +90,74 @@ def test_save_matches_updates_existing_match():
     match.is_played = True
     repository.save_matches("game", [match])
 
-    rows = conn.execute(
-        """
-        SELECT is_played
-        FROM scheduled_match
-        WHERE game_id = 'game'
-          AND match_id = 'match'
-        """
-    ).fetchall()
+    rows = [
+        tuple(row)
+        for row in conn.execute(
+            """
+            SELECT is_played
+            FROM scheduled_match
+            WHERE game_id = 'game'
+              AND match_id = 'match'
+            """
+        ).fetchall()
+    ]
     assert rows == [(1,)]
+
+
+def test_get_matches_for_competition_returns_unplayed_matches_for_requested_day():
+    conn = _make_connection()
+    repository = ScheduledMatchRepository(conn)
+    expected_match = ScheduledMatch(
+        home_pk="home",
+        away_pk="away",
+        competition_id="competition",
+        schedule_day=2,
+        match_id="expected-match",
+        playoff_series_id="series",
+    )
+    other_day_match = ScheduledMatch(
+        home_pk="home",
+        away_pk="away",
+        competition_id="competition",
+        schedule_day=3,
+        match_id="other-day-match",
+    )
+    other_competition_match = ScheduledMatch(
+        home_pk="home",
+        away_pk="away",
+        competition_id="other-competition",
+        schedule_day=2,
+        match_id="other-competition-match",
+    )
+    played_match = ScheduledMatch(
+        home_pk="home",
+        away_pk="away",
+        competition_id="competition",
+        schedule_day=2,
+        match_id="played-match",
+    )
+    played_match.set_played()
+    repository.save_matches("game", [
+        expected_match,
+        other_day_match,
+        other_competition_match,
+        played_match,
+    ])
+
+    matches = repository.get_matches_for_competition(
+        game_id="game",
+        competition_id="competition",
+        day=2,
+    )
+
+    assert len(matches) == 1
+    assert matches[0].match_id == "expected-match"
+    assert matches[0].home_pk == "home"
+    assert matches[0].away_pk == "away"
+    assert matches[0].competition_id == "competition"
+    assert matches[0].schedule_day == 2
+    assert matches[0].playoff_series_id == "series"
+    assert not matches[0].is_played
 
 
 def test_save_matches_requires_sqlite_connection():
@@ -106,6 +165,15 @@ def test_save_matches_requires_sqlite_connection():
 
     with pytest.raises(RuntimeError) as exc:
         repository.save_matches("game", [])
+
+    assert str(exc.value) == "ScheduledMatchRepository has no SQLite connection."
+
+
+def test_get_matches_for_competition_requires_sqlite_connection():
+    repository = ScheduledMatchRepository()
+
+    with pytest.raises(RuntimeError) as exc:
+        repository.get_matches_for_competition("game", "competition", 0)
 
     assert str(exc.value) == "ScheduledMatchRepository has no SQLite connection."
 
@@ -142,13 +210,11 @@ def _make_connection():
             competition_id TEXT NOT NULL,
             match_id TEXT NOT NULL,
             schedule_day INTEGER NOT NULL,
-            position INTEGER NOT NULL,
             home_club_id TEXT NOT NULL,
             away_club_id TEXT NOT NULL,
             playoff_series_id TEXT,
             is_played INTEGER NOT NULL,
             PRIMARY KEY (game_id, match_id),
-            UNIQUE (game_id, competition_id, schedule_day, position),
             FOREIGN KEY (game_id, competition_id)
                 REFERENCES competition(game_id, competition_id),
             FOREIGN KEY (game_id, home_club_id)
@@ -176,6 +242,14 @@ def _make_connection():
         VALUES (
             'game',
             'competition',
+            'championship',
+            0,
+            0,
+            0
+        ),
+        (
+            'game',
+            'other-competition',
             'championship',
             0,
             0,

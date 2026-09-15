@@ -160,7 +160,7 @@ def test_game_screen_query_supports_twelve_club_preliminary_round():
 
 def test_game_screen_query_after_playoff_end_does_not_crash():
     conn = _make_connection()
-    CompetitionRepository.temporal_initialize(conn)
+    CompetitionRepository.tmp_initialize(conn)
     game = make_game("calendar-test")
     _insert_clubs(conn, game)
     cmp = game.cmp

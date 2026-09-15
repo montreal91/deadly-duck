@@ -24,11 +24,11 @@ class CompetitionRepository:
     _cache: Dict[str, List[AbstractCompetition]]
 
     @staticmethod
-    def temporal_initialize(conn=None):
+    def tmp_initialize(conn=None):
         CompetitionRepository._INSTANCE = CompetitionRepository(conn)
 
     @staticmethod
-    def temporal_get_instance() -> "CompetitionRepository":
+    def tmp_get_instance() -> "CompetitionRepository":
         if CompetitionRepository._INSTANCE is None:
             raise Exception("CompetitionRepository has not been initialized.")
 
@@ -41,6 +41,26 @@ class CompetitionRepository:
         if self._conn is not None:
             self._conn.row_factory = Row
             self._conn.execute("PRAGMA foreign_keys = ON;")
+
+    def get_ongoing_competitions_ids(self, game_id: str) -> List[str]:
+        if self._conn is None:
+            raise RuntimeError("CompetitionRepository has no SQLite connection.")
+
+        rows = self._conn.execute(
+            """
+            SELECT competition_id
+            FROM competition
+            WHERE game_id = :game_id
+              AND is_over = 0
+            ORDER BY season_index, day
+            """,
+            {"game_id": game_id},
+        ).fetchall()
+
+        return [
+            row["competition_id"]
+            for row in rows
+        ]
 
     def get_ongoing_competitions(self, game_id: str) -> List[AbstractCompetition]:
         if game_id in self._cache:
@@ -171,11 +191,7 @@ class CompetitionRepository:
             },
         )
 
-        positions = {}
         for series in playoff.series:
-            position_key = series.round_number
-            position = positions.get(position_key, 0)
-            positions[position_key] = position + 1
             top_club_id, bottom_club_id = series.pair
 
             self._conn.execute(
@@ -185,7 +201,6 @@ class CompetitionRepository:
                     competition_id,
                     series_id,
                     round_number,
-                    position,
                     top_club_id,
                     bottom_club_id
                 )
@@ -194,7 +209,6 @@ class CompetitionRepository:
                     :competition_id,
                     :series_id,
                     :round_number,
-                    :position,
                     :top_club_id,
                     :bottom_club_id
                 )
@@ -204,7 +218,6 @@ class CompetitionRepository:
                     "competition_id": playoff.competition_id,
                     "series_id": series.series_id,
                     "round_number": series.round_number,
-                    "position": position,
                     "top_club_id": top_club_id,
                     "bottom_club_id": bottom_club_id,
                 },
@@ -225,7 +238,7 @@ class CompetitionRepository:
             FROM playoff_series
             WHERE game_id = :game_id
               AND competition_id = :competition_id
-            ORDER BY round_number, position
+            ORDER BY round_number, series_id
             """,
             {
                 "game_id": game_id,

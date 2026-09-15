@@ -26,5 +26,8 @@ class ScheduledMatch:
         self.playoff_series_id = playoff_series_id
         self.is_played = False
 
+    def set_played(self):
+        self.is_played = True
+
     def __repr__(self):
         return f"<{self.match_id}: {self.home_pk} - {self.away_pk}>"

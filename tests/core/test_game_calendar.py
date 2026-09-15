@@ -46,7 +46,7 @@ def test_next_season_starts_on_next_year_february_21():
 
 def test_regular_season_end_starts_playoffs():
     conn = _make_connection()
-    CompetitionRepository.temporal_initialize(conn)
+    CompetitionRepository.tmp_initialize(conn)
     game = make_game("calendar-test")
     _insert_clubs(conn, game)
     regular_season_length = len(game.cmp._schedule)
@@ -62,7 +62,7 @@ def test_regular_season_end_starts_playoffs():
 def test_game_starts_playoff_with_top_regular_season_clubs():
     # TODO: fix this test
     conn = _make_connection()
-    CompetitionRepository.temporal_initialize(conn)
+    CompetitionRepository.tmp_initialize(conn)
     game = make_game("calendar-test")
 
     game._start_playoff()
@@ -133,11 +133,9 @@ def _make_connection():
             competition_id TEXT NOT NULL,
             series_id TEXT NOT NULL,
             round_number INTEGER NOT NULL,
-            position INTEGER NOT NULL,
             top_club_id TEXT,
             bottom_club_id TEXT,
             PRIMARY KEY (game_id, series_id),
-            UNIQUE (game_id, competition_id, round_number, position),
             FOREIGN KEY (game_id, top_club_id)
                 REFERENCES club(game_id, club_id),
             FOREIGN KEY (game_id, bottom_club_id)

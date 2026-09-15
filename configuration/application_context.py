@@ -31,7 +31,9 @@ from core.ports.inbound.commands.create_new_game import CreateNewGameCommandHand
 from core.ports.inbound.commands.select_club import SelectClubCommandHandler
 from core.ports.outbound.game_repository import GameRepository
 from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.match_result_repository import MatchResultRepository
 from core.ports.outbound.player_repository import PlayerRepository
+from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
 from core.queries.club_selection_screen_query import ClubSelectionScreenQueryHandler
 from core.queries.day_results_query import DayResultsQueryHandler
 from core.queries.game_screen_query import GameScreenGuiQueryHandler
@@ -58,9 +60,13 @@ class ApplicationContext:
         self._db_connection = _make_db_connection("data/duck.db")
 
         TemporalClubProvider.initialize(self._db_connection)
-        CompetitionRepository.temporal_initialize(self._db_connection)
+        CompetitionRepository.tmp_initialize(self._db_connection)
+        ScheduledMatchRepository.tmp_init(self._db_connection)
+        MatchResultRepository.tmp_init(self._db_connection)
         self._temporal_club_provider = TemporalClubProvider.get_instance()
-        self._competition_repository = CompetitionRepository.temporal_get_instance()
+        self._competition_repository = CompetitionRepository.tmp_get_instance()
+        self._scheduled_match_repository = ScheduledMatchRepository.tmp_get_instance()
+        self._match_result_repository = MatchResultRepository.tmp_get_instance()
 
         self._game_repository = GameRepository(
             self._db_connection,
@@ -100,11 +106,14 @@ class ApplicationContext:
         self._game_screen_ui_query_handler = GameScreenGuiQueryHandler(
             self._game_repository,
             self._temporal_club_provider,
+            self._match_result_repository,
         )
 
         self._day_results_query_handler = DayResultsQueryHandler(
             self._game_repository,
             self._temporal_club_provider,
+            self._competition_repository,
+            self._match_result_repository,
         )
 
         self._roster_management_screen_query_handler = RosterManagementScreenQueryHandler(

@@ -393,7 +393,7 @@ class Playoff(AbstractCompetition):
                 new_round.append(new_series)
                 self._series_by_id[new_series.series_id] = new_series
             self._series = new_round
-        self._make_schedule()
+        self.make_schedule()
 
     def _series_winners(self) -> List[str]:
         winners = []
@@ -405,7 +405,7 @@ class Playoff(AbstractCompetition):
             winners.append(winner)
         return winners
 
-    def _make_schedule(self):
+    def make_schedule(self):
         self._insert_gap()
         for i in self._params.series_matches_pattern:
             day = []

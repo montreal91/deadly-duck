@@ -20,19 +20,18 @@ CREATE TABLE IF NOT EXISTS scheduled_match (
     competition_id TEXT NOT NULL,
     match_id TEXT NOT NULL,
     schedule_day INTEGER NOT NULL,
-    position INTEGER NOT NULL,
     home_club_id TEXT NOT NULL,
     away_club_id TEXT NOT NULL,
     playoff_series_id TEXT,
     is_played INTEGER NOT NULL,
-    PRIMARY KEY (game_id, match_id),
-    UNIQUE (game_id, competition_id, schedule_day, position),
-    FOREIGN KEY (game_id, competition_id)
-        REFERENCES competition(game_id, competition_id),
-    FOREIGN KEY (game_id, home_club_id)
-        REFERENCES club(game_id, club_id),
-    FOREIGN KEY (game_id, away_club_id)
-        REFERENCES club(game_id, club_id)
+    PRIMARY KEY (game_id, match_id)
+    -- TODO: reimplement the constraints when all model lives in sqlite
+--    FOREIGN KEY (game_id, competition_id)
+--        REFERENCES competition(game_id, competition_id),
+--    FOREIGN KEY (game_id, home_club_id)
+--        REFERENCES club(game_id, club_id),
+--    FOREIGN KEY (game_id, away_club_id)
+--        REFERENCES club(game_id, club_id)
 );
 
 CREATE TABLE IF NOT EXISTS match_result (

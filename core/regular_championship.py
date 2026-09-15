@@ -34,8 +34,15 @@ class DdStandingsRowStruct:
         self.sets_won = 0
         self.games_won = 0
 
+@dataclass(frozen=True)
+class RegularChampionshipStandingsRow:
+    club_id: str
+    matches_played: int
+    sets_won: int
+    games_won: int
 
-@dataclass
+
+@dataclass(frozen=True)
 class _MatchPair:
     home_pk: str
     away_pk: str
@@ -50,7 +57,6 @@ class RegularChampionship(AbstractCompetition):
 
     def __init__(self, club_ids, params):
         super().__init__(club_ids, params)
-        self._make_schedule()
 
         self._standings = {}
 
@@ -60,33 +66,33 @@ class RegularChampionship(AbstractCompetition):
 
     @property
     def standings(self) -> List[DdStandingsRowStruct]:
-        if self._day in self._standings:
-            return self._standings[self._day]
+        # if self._day in self._standings:
+        #     return self._standings[self._day]
+        #
+        # results = {}
+        # for club_id in self._club_ids:
+        #     results[club_id] = DdStandingsRowStruct(club_id=club_id)
+        #
+        # for day in self._results:
+        #     for match in day:
+        #         results[match.home_pk].sets_won += match.home_sets
+        #         results[match.home_pk].games_won += match.home_games
+        #
+        #         results[match.away_pk].sets_won += match.away_sets
+        #         results[match.away_pk].games_won += match.away_games
+        #
+        #         results[match.home_pk].matches_played += 1
+        #         results[match.away_pk].matches_played += 1
+        #
+        # results_list = [results[cid] for cid in results]
+        #
+        # self._standings[self._day] = sorted(
+        #     results_list,
+        #     key=lambda x: (x.sets_won, x.games_won),
+        #     reverse=True
+        # )
 
-        results = {}
-        for club_id in self._club_ids:
-            results[club_id] = DdStandingsRowStruct(club_id=club_id)
-
-        for day in self._results:
-            for match in day:
-                results[match.home_pk].sets_won += match.home_sets
-                results[match.home_pk].games_won += match.home_games
-
-                results[match.away_pk].sets_won += match.away_sets
-                results[match.away_pk].games_won += match.away_games
-
-                results[match.home_pk].matches_played += 1
-                results[match.away_pk].matches_played += 1
-
-        results_list = [results[cid] for cid in results]
-
-        self._standings[self._day] = sorted(
-            results_list,
-            key=lambda x: (x.sets_won, x.games_won),
-            reverse=True
-        )
-
-        return self._standings[self._day]
+        return []
 
     @property
     def title(self):
@@ -102,14 +108,49 @@ class RegularChampionship(AbstractCompetition):
     def apply_results(self, results: List[MatchResult]):
         self._validate_current_results(results)
 
-        for match in self.current_matches or []:
-            match.is_played = True
-
+        self._results[self._day] = results
         self._day += 1
-        if results:
-            self._results.append(results)
 
-        self._is_over = self._day >= len(self._schedule)
+        # for match in self.current_matches or []:
+        #     match.is_played = True
+        #
+        # self._day += 1
+        # if results:
+        #     self._results.append(results)
+
+        self._is_over = self._day >= self._get_max_day()
+
+    def make_schedule(self):
+        pk_list = list(self._club_ids)
+        shuffle(pk_list)
+        days = self._make_full_schedule(pk_list)
+        shuffle(days)
+
+        day = -1
+        done = 0
+        # schedule = []
+        self._schedule = {}
+        while done < len(days):
+            day += 1
+            if day % self._params.recovery_day == 0:
+                self._schedule[day] = []
+                continue
+
+            self._schedule[day] = self._make_new_day(matches=days[done], day=day)
+            done += 1
+
+        # schedule.append([])
+        # return _flatten_matches(schedule)
+
+    def get_full_schedule(self) -> List[ScheduledMatch]:
+        return _flatten_matches(self._schedule)
+
+    def _validate_current_results(self, results: List[MatchResult]):
+        super()._validate_current_results(results)
+        # Do something else
+
+    def _get_max_day(self) -> int:
+        return max(self._schedule.keys()) + 1
 
     def _make_match(self, home_id: str, away_id: str, schedule_day: int) -> ScheduledMatch:
         return ScheduledMatch(
@@ -119,7 +160,7 @@ class RegularChampionship(AbstractCompetition):
             schedule_day=schedule_day
         )
 
-    def _make_full_schedule(self, pk_list: List[str]):
+    def _make_full_schedule(self, pk_list: List[str]) -> List[List[_MatchPair]]:
         def mirror_day(matches: List[_MatchPair]) -> List[_MatchPair]:
             return [_MatchPair(m.away_pk, m.home_pk) for m in matches]
 
@@ -147,28 +188,6 @@ class RegularChampionship(AbstractCompetition):
                 res.extend(compose_days(match, in_div))
         return res
 
-    def _make_schedule(self):
-        pk_list = list(self._club_ids)
-        shuffle(pk_list)
-        days = self._make_full_schedule(pk_list)
-        shuffle(days)
-
-        day = -1
-        done = 0
-        while done < len(days):
-            day += 1
-            if day % self._params.recovery_day == 0:
-                self._schedule.append(None)
-                continue
-
-            self._schedule.append(
-                self._make_new_day(matches=days[done], day=day)
-                # days[done]
-            )
-            done += 1
-
-        self._schedule.append(None)
-
     def _make_new_day(self, day: int, matches: List[_MatchPair]) -> List[ScheduledMatch]:
         return [self._make_match(m.home_pk, m.away_pk, day) for m in matches]
 
@@ -191,3 +210,12 @@ def _make_basic_schedule(pk_list: List[str]) -> List[List[_MatchPair]]:
             yield shift(lst, i)
 
     return [make_pairs(l) for l in shift_gen(pk_list)]
+
+
+def _flatten_matches(matches: Dict[int, List[ScheduledMatch]]) -> List[ScheduledMatch]:
+    res = []
+
+    for d in matches.values():
+        res.extend(d)
+
+    return res

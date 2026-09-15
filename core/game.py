@@ -38,6 +38,8 @@ from core.playoffs import Playoff
 from core.playoffs import PlayoffParams
 from core.playoffs import PlayoffSeed
 from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.match_result_repository import MatchResultRepository
+from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import DdStandingsRowStruct
@@ -133,7 +135,6 @@ class Game:
     _clubs: Dict[str, Club]
     _current_date: date
     _free_agents: List[Player]
-    # _history: List[Dict[CompetitionType, Any]]
     _params: GameParams
     _player_factory: PlayerFactory
     _season_fame: Dict[str, int]
@@ -173,14 +174,19 @@ class Game:
         self._clubs = clubs
         self._season_index = 0
 
-        competition_repository = CompetitionRepository.temporal_get_instance()
+        competition_repository = CompetitionRepository.tmp_get_instance()
         initial_competition = RegularChampionship(list(clubs), self._params.championship_params)
+
+        match_repository = ScheduledMatchRepository.tmp_get_instance()
+        initial_competition.make_schedule()
+        matches = initial_competition.get_full_schedule()
 
         competition_repository.save_competition(
             game_id=self._game_id,
             competition=initial_competition,
             season_index=self._season_index
         )
+        match_repository.save_matches(self._game_id, matches)
 
         self._simulate(self._params.years_to_simulate)
         self._generate_free_agents()
@@ -195,7 +201,7 @@ class Game:
 
     @property
     def cmp(self) -> Optional[AbstractCompetition]:
-        repo = CompetitionRepository.temporal_get_instance()
+        repo = CompetitionRepository.tmp_get_instance()
         comps = repo.get_ongoing_competitions(self._game_id)
 
         if not comps:
@@ -229,7 +235,7 @@ class Game:
     def season_over(self) -> bool:
         """Checks if season is over."""
 
-        repo = CompetitionRepository.temporal_get_instance()
+        repo = CompetitionRepository.tmp_get_instance()
         competitions = repo.get_season_competitions(
             self._game_id,
             self._season_index,
@@ -279,11 +285,11 @@ class Game:
             clubs=[club.name for club in self._clubs.values()],
             free_agents=self._get_free_agents(),
             history=self._history,
-            last_results=self._last_results,
+            # last_results=self._last_results,
             opponent=self._get_opponent(cmp, pk),
             practice_cost=self._calculate_club_practice_cost(club=self._clubs[pk]),
             remaining_matches=_get_remaining_matches(cmp, pk),
-            standings=self._get_standings(cmp=cmp),
+            # standings=self._get_standings(cmp=cmp),
             title=_get_competition_title(cmp),
             user_players=self._get_user_players(pk),
             competition=_get_competition_title(cmp),
@@ -395,7 +401,7 @@ class Game:
         Proceeds to the next day if possible.
         All scheduled matches are performed.
         """
-        repo = CompetitionRepository.temporal_get_instance()
+        repo = CompetitionRepository.tmp_get_instance()
         cmps = repo.get_ongoing_competitions(self._game_id)
         if len(cmps) == 0:
             cmp = None
@@ -445,7 +451,7 @@ class Game:
         return True, "Ok"
 
     def _is_regular_season_over(self) -> bool:
-        repo = CompetitionRepository.temporal_get_instance()
+        repo = CompetitionRepository.tmp_get_instance()
         competitions = repo.get_season_competitions(
             self._game_id,
             self._season_index,
@@ -461,7 +467,7 @@ class Game:
     @property
     def _can_practice(self) -> bool:
         cmp = self.cmp
-        if cmp.current_matches is not None:
+        if cmp is None or cmp.current_matches is not None:
             return False
         return _get_competition_type(cmp) == CompetitionType.CHAMPIONSHIP
 
@@ -496,20 +502,20 @@ class Game:
                 return True
         return False
 
-    @property
-    def _last_results(self) -> List[MatchResult]:
-        if not self._results:
-            return []
+    # @property
+    # def _last_results(self) -> List[MatchResult]:
+    #     if not self._results:
+    #         return []
+    #
+    #     return self._results
 
-        return self._results
-
-    def _get_standings(self, cmp: Optional[AbstractCompetition]) -> List[DdStandingsRowStruct]:
-        if cmp is None:
-            return []
-        standings = cmp.standings
-        if standings:
-            return standings
-        return [DdStandingsRowStruct(i) for i in self._clubs]
+    # def _get_standings(self, cmp: Optional[AbstractCompetition]) -> List[DdStandingsRowStruct]:
+    #     if cmp is None:
+    #         return []
+    #     standings = cmp.standings
+    #     if standings:
+    #         return standings
+    #     return [DdStandingsRowStruct(i) for i in self._clubs]
 
     @property
     def _training_check(self) -> bool:
@@ -666,27 +672,38 @@ class Game:
             club.perform_practice()
 
     def _play_one_day(self):
-        cmp = self.cmp
-        current_matches = cmp.current_matches
-        playing_player_ids = self._get_playing_player_ids(current_matches)
+        repo = CompetitionRepository.tmp_get_instance()
+        scheduled_matches_repository = ScheduledMatchRepository.tmp_get_instance()
+        match_result_repository = MatchResultRepository.tmp_get_instance()
 
-        if current_matches is None:
-            self._results = []
-        else:
-            self._results = process_matches(
-                current_matches,
-                self._clubs,
-                cmp.match_params,
+        competitions = repo.get_ongoing_competitions(self._game_id)
+
+        playing_player_ids: List[str] = []
+
+        for competition in competitions:
+            current_matches = scheduled_matches_repository.get_matches_for_competition(
+                self._game_id,
+                competition.competition_id,
+                competition.day,
             )
 
-        cmp.apply_results(self._results)
+            playing_player_ids.extend(self._get_playing_player_ids(current_matches))
+            results = process_matches(
+                current_matches, self._clubs, competition.match_params
+            )
+
+            competition.apply_results(results)
+
+            for match in current_matches:
+                match.set_played()
+
+            scheduled_matches_repository.save_matches(self._game_id, current_matches)
+            match_result_repository.save_match_results(self._game_id, results)
+            repo.save_competition(self._game_id, competition, self._season_index)
+
+        #TODO: Remove these from here
         self._calculate_match_income()
-
-        repo = CompetitionRepository.temporal_get_instance()
-        repo.save_competition(self.game_id, cmp, self._season_index)
-
-        self._recover(excluded_player_ids=playing_player_ids)
-
+        self._recover(excluded_player_ids=set(playing_player_ids))
         self._hire_players_if_needed()
 
     def _process_player_hire(self, club_pk: str, player: Player):
@@ -739,9 +756,13 @@ class Game:
 
     @property
     def _manager_club_in_current_competition(self) -> bool:
+        cmp = self.cmp
+        if cmp is None:
+            return False
+
         if self._manager_club_id is None:
             return True
-        return self.cmp.contains_club(self._manager_club_id)
+        return cmp.contains_club(self._manager_club_id)
 
     @property
     def _formatted_current_date(self) -> str:
@@ -765,7 +786,7 @@ class Game:
         pass
 
     def _start_playoff(self):
-        repo = CompetitionRepository.temporal_get_instance()
+        repo = CompetitionRepository.tmp_get_instance()
         regulars = self._get_regular_championships()
 
         playoffs = Playoff(
@@ -782,7 +803,7 @@ class Game:
         )
 
     def _get_regular_championships(self) -> List[AbstractCompetition]:
-        repo = CompetitionRepository.temporal_get_instance()
+        repo = CompetitionRepository.tmp_get_instance()
         cmps = repo.get_season_competitions(self._game_id, self._season_index)
 
         return [c for c in cmps if isinstance(c, RegularChampionship)]
