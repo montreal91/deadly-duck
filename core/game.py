@@ -39,6 +39,7 @@ from core.playoffs import PlayoffParams
 from core.playoffs import PlayoffSeed
 from core.ports.outbound.competition_repository import CompetitionRepository
 from core.ports.outbound.match_result_repository import MatchResultRepository
+from core.ports.outbound.player_repository import PlayerRepository
 from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.regular_championship import ChampionshipParams
@@ -100,12 +101,8 @@ def _get_competition_type(cmp: Optional[AbstractCompetition]) -> Optional[Compet
 def _has_matches(cmp: Optional[AbstractCompetition]) -> bool:
     if cmp is None:
         return False
-    matches = cmp.current_matches
 
-    if matches is None:
-        return False
-
-    return len(matches) > 0
+    return len(cmp.current_matches) > 0
 
 
 def _get_remaining_matches(competition: Optional[AbstractCompetition], club_id: str) -> List[Optional[ScheduledMatch]]:
@@ -174,21 +171,7 @@ class Game:
         self._clubs = clubs
         self._season_index = 0
 
-        competition_repository = CompetitionRepository.tmp_get_instance()
-        initial_competition = RegularChampionship(list(clubs), self._params.championship_params)
-
-        match_repository = ScheduledMatchRepository.tmp_get_instance()
-        initial_competition.make_schedule()
-        matches = initial_competition.get_full_schedule()
-
-        competition_repository.save_competition(
-            game_id=self._game_id,
-            competition=initial_competition,
-            season_index=self._season_index
-        )
-        match_repository.save_matches(self._game_id, matches)
-
-        self._simulate(self._params.years_to_simulate)
+        self._start_regular_championship(list(self._clubs.keys()))
         self._generate_free_agents()
 
     @property
@@ -266,7 +249,7 @@ class Game:
 
         player = self._clubs[club_id].pop_player(player_id)
         player.has_next_contract = False
-        player.RecoverStamina(player.max_stamina)
+        player.recover_stamina(player.max_stamina)
 
         self._free_agents.append(player)
 
@@ -436,10 +419,7 @@ class Game:
         self._unselect()
 
         if self.season_over:
-            self._update_season_fame()
-            self._save_competition_results()
             self._next_season()
-            self._drop_stats()
         elif self._is_regular_season_over():
             self._update_season_fame()
             self._save_competition_results()
@@ -493,30 +473,18 @@ class Game:
 
     @property
     def _decision_required(self) -> bool:
-        matches = self.cmp.current_matches
-        if matches is None:
+        cmp = self.cmp
+
+        if cmp is None or not cmp.current_matches:
             return False
-        for match in matches:
+
+        for match in cmp.current_matches:
             if self._manager_club_id not in (match.home_pk, match.away_pk):
                 continue
             if not self._clubs[self._manager_club_id].has_selected_player:
                 return True
+
         return False
-
-    # @property
-    # def _last_results(self) -> List[MatchResult]:
-    #     if not self._results:
-    #         return []
-    #
-    #     return self._results
-
-    # def _get_standings(self, cmp: Optional[AbstractCompetition]) -> List[DdStandingsRowStruct]:
-    #     if cmp is None:
-    #         return []
-    #     standings = cmp.standings
-    #     if standings:
-    #         return standings
-    #     return [DdStandingsRowStruct(i) for i in self._clubs]
 
     @property
     def _training_check(self) -> bool:
@@ -548,10 +516,10 @@ class Game:
                 comment="Income"
             ))
 
-    def _drop_stats(self):
-        for club in self._clubs.values():
-            for data in club.players:
-                data.player.DropStats()
+    # def _drop_stats(self):
+    #     for club in self._clubs.values():
+    #         for data in club.players:
+    #             data.player.DropStats()
 
     def _generate_free_agents(self):
         new_agents = []
@@ -585,15 +553,13 @@ class Game:
             return None
 
         schedule = cmp.current_matches
-
-        # Just in case
-        if schedule is None:
-            return None
         planned_match = [pair for pair in schedule if schedule_filter(pair)]
 
         if not planned_match:
             return None
+
         actual_match = planned_match[0]
+
         if actual_match.home_pk == pk:
             # Home case
             res = OpponentDto()
@@ -610,6 +576,7 @@ class Game:
             res.player = None
             res.fame = None
             return res
+
         raise Exception("Bad schedule.")
 
     def _get_user_players(self, pk: str):
@@ -661,6 +628,8 @@ class Game:
         self._shuffle_coach_powers()
         self._reset_current_date_to_next_season_start()
         self._season_index += 1
+        self._process_season_end_players()
+        self._start_regular_championship(list(self._clubs))
 
     def _perform_practice(self):
         if not self._can_practice:
@@ -740,7 +709,7 @@ class Game:
             for slot in club.players:
                 if slot.player is None or slot.player.player_id in excluded_player_ids:
                     continue
-                slot.player.RecoverStamina(
+                slot.player.recover_stamina(
                     recovery_function(slot.player)
                 )
 
@@ -813,11 +782,38 @@ class Game:
             playoffs.get_full_schedule(),
         )
 
+    def _start_regular_championship(self, clubs: List[str]):
+        competition_repository = CompetitionRepository.tmp_get_instance()
+        initial_competition = RegularChampionship(list(clubs), self._params.championship_params)
+
+        match_repository = ScheduledMatchRepository.tmp_get_instance()
+        initial_competition.make_schedule()
+        matches = initial_competition.get_full_schedule()
+
+        competition_repository.save_competition(
+            game_id=self._game_id,
+            competition=initial_competition,
+            season_index=self._season_index
+        )
+        match_repository.save_matches(self._game_id, matches)
+
     def _get_regular_championships(self) -> List[AbstractCompetition]:
         repo = CompetitionRepository.tmp_get_instance()
         cmps = repo.get_season_competitions(self._game_id, self._season_index)
 
         return [c for c in cmps if isinstance(c, RegularChampionship)]
+
+    def _process_season_end_players(self):
+        repo = PlayerRepository.tmp_get_instance()
+        players = repo.get_all_active_players(
+            game_id=self._game_id,
+            max_age=GameplayConstants.RETIREMENT_AGE.value,
+        )
+
+        for player in players:
+            player.age_up()
+            player.after_season_rest()
+            repo.save_player(player)
 
     def _unselect(self):
         for club in self._clubs.values():

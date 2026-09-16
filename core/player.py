@@ -234,7 +234,7 @@ class Player(Jsonable):
     def technique(self) -> int:
         return self._technique
 
-    def AddExhaustion(self, value: int):
+    def add_exhaustion(self, value: int):
         """Adds Exhaustion."""
 
         self._exhaustion += value
@@ -268,26 +268,23 @@ class Player(Jsonable):
             old_level += 1
             self._skill_points += GameplayConstants.SKILL_POINTS_PER_LEVEL.value
 
-    def AddReputation(self, rep: int):
+    def add_reputation(self, rep: int):
         """Adds new reputation."""
         self._reputation += rep
 
-    def AfterSeasonRest(self):
+    def after_season_rest(self):
         self._exhaustion = 0
-        self.RecoverStamina(self.max_stamina)
+        self.recover_stamina(self.max_stamina)
 
-    def AgeUp(self):
+    def age_up(self):
         self._age += 1
 
-    def DropStats(self):
-        self._stats = PlayerStats()
-
-    def RecoverStamina(self, recovered_stamina: int):
+    def recover_stamina(self, recovered_stamina: int):
         self._current_stamina += recovered_stamina
         self._current_stamina = max(self._current_stamina, 0)
         self._current_stamina = min(self._current_stamina, self.max_stamina)
 
-    def RemoveStaminaLostInMatch(self, lost_stamina: int):
+    def remove_stamina_lost_in_match(self, lost_stamina: int):
         self._current_stamina -= lost_stamina
         self._current_stamina = max(self._current_stamina, 0)
 
@@ -315,7 +312,7 @@ class PlayerFactory:
         )
 
         player.add_experience(level_exp(level))
-        player.AfterSeasonRest()
+        player.after_season_rest()
 
         return player
 

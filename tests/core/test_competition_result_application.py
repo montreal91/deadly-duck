@@ -34,7 +34,7 @@ def test_regular_championship_applies_current_results_by_match_id():
         club_ids=["home", "away"],
         params=_championship_params(),
     )
-    competition._schedule = [[ScheduledMatch("home", "away")]]
+    competition._schedule = {0: [ScheduledMatch("home", "away")]}
     match = _matches(competition.current_matches)[0]
     result = _match_result(match)
 
@@ -53,7 +53,7 @@ def test_regular_championship_rejects_results_for_wrong_match_id():
         club_ids=["home", "away"],
         params=_championship_params(),
     )
-    competition._schedule = [[ScheduledMatch("home", "away")]]
+    competition._schedule = {1: [ScheduledMatch("home", "away")]}
     result = _match_result(ScheduledMatch("home", "away"))
 
     try:
@@ -71,12 +71,12 @@ def test_club_schedule_days_preserve_empty_days_between_matches():
     )
     first_match = ScheduledMatch("home", "away")
     second_match = ScheduledMatch("away", "home")
-    competition._schedule = [
-        [first_match],
-        None,
-        [second_match],
-        None,
-    ]
+    competition._schedule = {
+        1: [first_match],
+        2: [],
+        3: [second_match],
+        4: [],
+    }
 
     schedule = competition.get_club_schedule_days("home")
 

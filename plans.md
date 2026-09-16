@@ -43,7 +43,7 @@ Plans for upcoming versions
 
 ### Achievements
 * Leader Leads - Win Playoffs as a top seed
-* The Triumph of the Underdog - Win Playoffs as 8th seed
+* The Triumph of the Underdog - Win Playoffs as 12th seed
 
 ## 0.2 (released)
 

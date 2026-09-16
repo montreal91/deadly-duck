@@ -7,7 +7,10 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from core.competition import CompetitionType
+from core.playoffs import Playoff
 from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.match_result_repository import MatchResultRepository
+from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
 from core.queries.game_screen_query import GameScreenGuiQueryHandler
 from core.queries.game_screen_query import PlayoffStandings
 from core.scheduled_match import ScheduledMatch
@@ -29,6 +32,8 @@ def test_game_screen_query_converts_remaining_matches_to_upcoming_days():
             "manager": _club("Manager Club"),
             "opponent": _club("Opponent Club"),
         }),
+        match_result_repository=_match_result_repository(),
+        competition_repository=_competition_repository(game),
     )
 
     result = handler("game", "manager")
@@ -69,6 +74,8 @@ def test_game_screen_query_uses_empty_scores_for_future_playoff_series():
             "other-1": _club("Other Club 1"),
             "other-2": _club("Other Club 2"),
         }),
+        match_result_repository=_match_result_repository(),
+        competition_repository=_competition_repository(game),
     )
 
     result = handler("game", "manager")
@@ -146,6 +153,8 @@ def test_game_screen_query_supports_twelve_club_preliminary_round():
             f"seed-{seed}": _club(f"Seed {seed}")
             for seed in range(1, 13)
         }),
+        match_result_repository=_match_result_repository(),
+        competition_repository=_competition_repository(game),
     )
 
     result = handler("game", "seed-5")
@@ -160,7 +169,10 @@ def test_game_screen_query_supports_twelve_club_preliminary_round():
 
 def test_game_screen_query_after_playoff_end_does_not_crash():
     conn = _make_connection()
+    _create_schedule_result_tables(conn)
     CompetitionRepository.tmp_initialize(conn)
+    ScheduledMatchRepository.tmp_init(conn)
+    MatchResultRepository.tmp_init(conn)
     game = make_game("calendar-test")
     _insert_clubs(conn, game)
     cmp = game.cmp
@@ -177,9 +189,79 @@ def test_game_screen_query_after_playoff_end_does_not_crash():
     handler = GameScreenGuiQueryHandler(
         game_repository=_game_repository(game),
         club_provider=_club_provider(game.clubs),
+        match_result_repository=MatchResultRepository.tmp_get_instance(),
+        competition_repository=CompetitionRepository.tmp_get_instance(),
     )
 
     handler("calendar-test", _first_club_id(game))
+
+
+def test_game_screen_query_shows_bracket_when_playoffs_start():
+    conn = _make_connection()
+    _create_schedule_result_tables(conn)
+    CompetitionRepository.tmp_initialize(conn)
+    ScheduledMatchRepository.tmp_init(conn)
+    MatchResultRepository.tmp_init(conn)
+
+    game = make_game("playoff-bracket-test")
+    _insert_clubs(conn, game)
+
+    regular_season_length = len(game.cmp._schedule)
+    for _ in range(regular_season_length):
+        success, reason = game.update()
+        assert success, reason
+
+    assert isinstance(game.cmp, Playoff)
+
+    handler = GameScreenGuiQueryHandler(
+        game_repository=_game_repository(game),
+        club_provider=_club_provider(game.clubs),
+        match_result_repository=MatchResultRepository.tmp_get_instance(),
+        competition_repository=CompetitionRepository.tmp_get_instance(),
+    )
+
+    result = handler("playoff-bracket-test", _first_club_id(game))
+
+    assert isinstance(result.standings, PlayoffStandings)
+    assert result.standings.rows
+
+
+def _create_schedule_result_tables(conn):
+    conn.executescript(
+        """
+        CREATE TABLE scheduled_match (
+            game_id TEXT NOT NULL,
+            competition_id TEXT NOT NULL,
+            match_id TEXT NOT NULL,
+            schedule_day INTEGER NOT NULL,
+            home_club_id TEXT NOT NULL,
+            away_club_id TEXT NOT NULL,
+            playoff_series_id TEXT,
+            is_played INTEGER NOT NULL,
+            PRIMARY KEY (game_id, match_id)
+        );
+
+        CREATE TABLE match_result (
+            game_id TEXT NOT NULL,
+            competition_id TEXT NOT NULL,
+            match_id TEXT NOT NULL,
+            home_club_id TEXT NOT NULL,
+            away_club_id TEXT NOT NULL,
+            home_player_id TEXT,
+            away_player_id TEXT,
+            home_player_snapshot TEXT,
+            away_player_snapshot TEXT,
+            home_sets INTEGER NOT NULL,
+            away_sets INTEGER NOT NULL,
+            home_games INTEGER NOT NULL,
+            away_games INTEGER NOT NULL,
+            full_score TEXT NOT NULL,
+            attendance INTEGER NOT NULL,
+            income INTEGER NOT NULL,
+            PRIMARY KEY (game_id, match_id)
+        );
+        """
+    )
 
 
 def _game_repository(game):
@@ -194,6 +276,18 @@ def _club_provider(clubs):
     return provider
 
 
+def _match_result_repository(standings=None):
+    repository = Mock()
+    repository.get_regular_championship_standings.return_value = standings or []
+    return repository
+
+
+def _competition_repository(game):
+    repository = Mock()
+    repository.get_ongoing_competitions.return_value = [game.cmp]
+    return repository
+
+
 def _game(
         current_matches,
         remaining_matches,
@@ -201,7 +295,10 @@ def _game(
         standings=None,
 ):
     game = Mock()
-    game.cmp = SimpleNamespace(current_matches=current_matches)
+    game.cmp = SimpleNamespace(
+        competition_id="competition",
+        current_matches=current_matches,
+    )
     game.get_context.return_value = {
         "day": "2082-Feb-21",
         "history": [{}],

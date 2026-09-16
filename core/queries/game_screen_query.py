@@ -12,9 +12,12 @@ from typing import Union
 
 from core.competition import AbstractCompetition
 from core.competition import CompetitionType
+from core.playoffs import Playoff
+from core.ports.outbound.competition_repository import CompetitionRepository
 from core.ports.outbound.game_repository import GameRepository
 from core.ports.outbound.match_result_repository import MatchResultRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
+from core.regular_championship import RegularChampionship
 from core.scheduled_match import ScheduledMatch
 
 _NO_PLAYOFF_CLUB_ID = ""
@@ -79,7 +82,7 @@ class QueryResult:
     balance: int
     club_name: str
     current_competition: str
-    competition_type: CompetitionType
+    competition_type: Optional[CompetitionType]
     has_matches: bool
     level_ups_count: int
     upcoming_match: Optional[UpcomingMatch]
@@ -94,11 +97,13 @@ class GameScreenGuiQueryHandler:
             self,
             game_repository: GameRepository,
             club_provider: TemporalClubProvider,
-            match_result_repository: Optional[MatchResultRepository] = None,
+            match_result_repository: MatchResultRepository,
+            competition_repository: CompetitionRepository,
     ):
         self._game_repository = game_repository
         self._club_provider = club_provider
         self._match_result_repository = match_result_repository
+        self._competition_repository = competition_repository
 
     def __call__(self, game_id, manager_club_id):
         game = self._game_repository.get_game(game_id)
@@ -109,19 +114,23 @@ class GameScreenGuiQueryHandler:
         context = game.get_context(manager_club_id)
         clubs = self._club_provider.get_clubs_for_game(game_id)
 
-        competition = game.cmp
+        competition = _get_current_competition(
+            game_id,
+            self._competition_repository,
+        )
+        competition_type = _get_competition_type(
+            competition,
+            context["competition_type"],
+        )
 
         match = _get_match(competition=competition, club_id=manager_club_id)
         upcoming_match = _make_upcoming_match(match, clubs, manager_club_id)
 
-        if context["competition_type"] == CompetitionType.CHAMPIONSHIP:
-            if self._match_result_repository is None:
-                raw_standings = context.get("standings", [])
-            else:
-                raw_standings = self._match_result_repository.get_regular_championship_standings(
-                    game_id,
-                    _get_competition_id(competition)
-                )
+        if competition_type == CompetitionType.CHAMPIONSHIP:
+            raw_standings = self._match_result_repository.get_regular_championship_standings(
+                game_id,
+                _get_competition_id(competition)
+            )
             res_standings = []
 
             for pos, standing in enumerate(raw_standings):
@@ -135,13 +144,13 @@ class GameScreenGuiQueryHandler:
                 ))
 
             standings = ChampionshipStandings(rows=res_standings)
-        elif context["competition_type"] == CompetitionType.PLAY_OFFS:
+        elif competition_type == CompetitionType.PLAY_OFFS:
             standings = _make_playoff_standings(
-                raw_standings=context.get("standings", []),
+                raw_standings=_get_standings(competition, context),
                 clubs=clubs,
                 manager_club_id=manager_club_id,
             )
-        elif context["competition_type"] is None:
+        elif competition_type is None:
             standings = ChampionshipStandings([])
         else:
             raise Exception("Unknown competition type")
@@ -151,9 +160,9 @@ class GameScreenGuiQueryHandler:
             season=game.season_index,
             balance=context["balance"],
             club_name=context["club_name"],
-            current_competition=context["competition"],
-            competition_type=context["competition_type"],
-            has_matches=context["has_matches"],
+            current_competition=_get_competition_title(competition, context),
+            competition_type=competition_type,
+            has_matches=_has_matches(competition, context),
             level_ups_count=_count_players_with_unspent_skill_points(
                 clubs,
                 manager_club_id,
@@ -161,7 +170,11 @@ class GameScreenGuiQueryHandler:
             upcoming_match=upcoming_match,
             standings=standings,
             upcoming_days=_make_upcoming_days(
-                raw_days=context["remaining_matches"],
+                raw_days=_get_remaining_matches(
+                    competition,
+                    manager_club_id,
+                    context,
+                ),
                 clubs=clubs,
                 manager_club_id=manager_club_id,
                 first_day=context["day"],
@@ -179,6 +192,62 @@ def _count_players_with_unspent_skill_points(clubs, manager_club_id) -> int:
         int(slot.player.skill_points > 0)
         for slot in club.players
     )
+
+
+def _get_current_competition(
+        game_id,
+        competition_repository: CompetitionRepository,
+) -> Optional[AbstractCompetition]:
+    competitions = competition_repository.get_ongoing_competitions(game_id)
+    if not competitions:
+        return None
+
+    return competitions[0]
+
+
+def _get_competition_type(
+        competition: Optional[AbstractCompetition],
+        fallback,
+):
+    if isinstance(competition, RegularChampionship):
+        return CompetitionType.CHAMPIONSHIP
+    if isinstance(competition, Playoff):
+        return CompetitionType.PLAY_OFFS
+    if competition is None:
+        return None
+    return fallback
+
+
+def _get_standings(competition: Optional[AbstractCompetition], context):
+    if competition is None or not hasattr(competition, "standings"):
+        return context.get("standings", [])
+
+    return competition.standings
+
+
+def _get_competition_title(competition: Optional[AbstractCompetition], context):
+    if competition is None or not hasattr(competition, "title"):
+        return context["competition"]
+
+    return competition.title
+
+
+def _has_matches(competition: Optional[AbstractCompetition], context):
+    if competition is None:
+        return context["has_matches"]
+
+    return bool(competition.current_matches)
+
+
+def _get_remaining_matches(
+        competition: Optional[AbstractCompetition],
+        manager_club_id,
+        context,
+):
+    if competition is None or not hasattr(competition, "get_club_schedule_days"):
+        return context["remaining_matches"]
+
+    return competition.get_club_schedule_days(manager_club_id)
 
 
 def _make_upcoming_days(

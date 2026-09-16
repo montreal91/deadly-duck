@@ -60,23 +60,23 @@ class MatchEngine:
             sets_played += 1
             self._res.AddSetResult(set_result)
 
-            home_player.AddReputation(
+            home_player.add_reputation(
                 self._reputation_function(set_result.home_games) * sets_played
             )
-            away_player.AddReputation(
+            away_player.add_reputation(
                 self._reputation_function(set_result.away_games) * sets_played
             )
 
         home_player.add_experience(self._res.home_exp)
         away_player.add_experience(self._res.away_exp)
 
-        home_player.RemoveStaminaLostInMatch(self._stamina_counter["home"])
-        away_player.RemoveStaminaLostInMatch(self._stamina_counter["away"])
+        home_player.remove_stamina_lost_in_match(self._stamina_counter["home"])
+        away_player.remove_stamina_lost_in_match(self._stamina_counter["away"])
 
         exhaustion = self._exhaustion_function(sets_played)
 
-        home_player.AddExhaustion(exhaustion)
-        away_player.AddExhaustion(exhaustion)
+        home_player.add_exhaustion(exhaustion)
+        away_player.add_exhaustion(exhaustion)
 
         self._update_stats(player=home_player, is_home=True)
         self._update_stats(player=away_player, is_home=False)

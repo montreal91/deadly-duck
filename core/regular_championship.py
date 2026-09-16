@@ -1,4 +1,3 @@
-
 """
 Created May 20, 2019
 
@@ -25,6 +24,7 @@ class ChampionshipParams(NamedTuple):
     rounds: int
     match_importance: int
 
+
 class DdStandingsRowStruct:
     """Passive class for a row in standings."""
 
@@ -33,6 +33,7 @@ class DdStandingsRowStruct:
         self.matches_played = 0
         self.sets_won = 0
         self.games_won = 0
+
 
 @dataclass(frozen=True)
 class RegularChampionshipStandingsRow:
@@ -52,7 +53,7 @@ class RegularChampionship(AbstractCompetition):
     """A class to encapsulate logic of a regular championship."""
 
     _params: ChampionshipParams
-    _results: List[List[MatchResult]]
+    _results: Dict[int, List[MatchResult]]
     _standings: Dict[int, List[DdStandingsRowStruct]]
 
     def __init__(self, club_ids, params):
@@ -125,8 +126,8 @@ class RegularChampionship(AbstractCompetition):
 
         day = -1
         done = 0
-        # schedule = []
         self._schedule = {}
+
         while done < len(days):
             day += 1
             if day % self._params.recovery_day == 0:
@@ -136,8 +137,7 @@ class RegularChampionship(AbstractCompetition):
             self._schedule[day] = self._make_new_day(matches=days[done], day=day)
             done += 1
 
-        # schedule.append([])
-        # return _flatten_matches(schedule)
+        self._schedule[day + 1] = []
 
     def get_full_schedule(self) -> List[ScheduledMatch]:
         return _flatten_matches(self._schedule)
@@ -147,9 +147,6 @@ class RegularChampionship(AbstractCompetition):
         # Do something else
 
     def _get_max_day(self) -> int:
-        if isinstance(self._schedule, list):
-            return len(self._schedule)
-
         return max(self._schedule.keys()) + 1
 
     def _make_match(self, home_id: str, away_id: str, schedule_day: int) -> ScheduledMatch:

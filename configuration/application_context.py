@@ -63,6 +63,8 @@ class ApplicationContext:
         CompetitionRepository.tmp_initialize(self._db_connection)
         ScheduledMatchRepository.tmp_init(self._db_connection)
         MatchResultRepository.tmp_init(self._db_connection)
+        PlayerRepository.tmp_init(self._db_connection)
+
         self._temporal_club_provider = TemporalClubProvider.get_instance()
         self._competition_repository = CompetitionRepository.tmp_get_instance()
         self._scheduled_match_repository = ScheduledMatchRepository.tmp_get_instance()
@@ -71,9 +73,7 @@ class ApplicationContext:
         self._game_repository = GameRepository(
             self._db_connection,
         )
-        self._player_repository = PlayerRepository(
-            self._db_connection,
-        )
+        self._player_repository = PlayerRepository.tmp_get_instance()
         self._params = _get_params()
 
         self._create_game_command_handler = CreateNewGameCommandHandler(
@@ -107,6 +107,7 @@ class ApplicationContext:
             self._game_repository,
             self._temporal_club_provider,
             self._match_result_repository,
+            self._competition_repository,
         )
 
         self._day_results_query_handler = DayResultsQueryHandler(
