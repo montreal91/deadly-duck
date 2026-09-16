@@ -277,14 +277,14 @@ class Game:
 
         cmp = self.cmp
 
-        # TODO: Replace this dict with a NamedTuple class
+        # TODO: get rid of this shite.
         return dict(
             balance=self._clubs[pk].account.balance,
             club_name=self._clubs[pk].name,
             day=self._formatted_current_date,
             clubs=[club.name for club in self._clubs.values()],
-            free_agents=self._get_free_agents(),
-            history=self._history,
+            # free_agents=self._get_free_agents(),
+            # history=self._history,
             # last_results=self._last_results,
             opponent=self._get_opponent(cmp, pk),
             practice_cost=self._calculate_club_practice_cost(club=self._clubs[pk]),
@@ -467,8 +467,9 @@ class Game:
     @property
     def _can_practice(self) -> bool:
         cmp = self.cmp
-        if cmp is None or cmp.current_matches is not None:
+        if cmp is None or cmp.current_matches:
             return False
+
         return _get_competition_type(cmp) == CompetitionType.CHAMPIONSHIP
 
     @property
@@ -519,9 +520,11 @@ class Game:
 
     @property
     def _training_check(self) -> bool:
-        if self.cmp.current_matches is not None:
+        cmp = self.cmp
+        if cmp is None or cmp.current_matches:
             return True
-        if self.cmp.title != "Championship":
+
+        if _get_competition_type(cmp) != CompetitionType.CHAMPIONSHIP:
             return True
 
         def check_club(c: Club) -> bool:
@@ -697,7 +700,10 @@ class Game:
             for match in current_matches:
                 match.set_played()
 
-            scheduled_matches_repository.save_matches(self._game_id, current_matches)
+            scheduled_matches_repository.save_matches(
+                self._game_id,
+                competition.get_full_schedule(),
+            )
             match_result_repository.save_match_results(self._game_id, results)
             repo.save_competition(self._game_id, competition, self._season_index)
 
@@ -787,6 +793,7 @@ class Game:
 
     def _start_playoff(self):
         repo = CompetitionRepository.tmp_get_instance()
+        scheduled_matches_repository = ScheduledMatchRepository.tmp_get_instance()
         regulars = self._get_regular_championships()
 
         playoffs = Playoff(
@@ -800,6 +807,10 @@ class Game:
             game_id=self._game_id,
             competition=playoffs,
             season_index=self._season_index,
+        )
+        scheduled_matches_repository.save_matches(
+            self._game_id,
+            playoffs.get_full_schedule(),
         )
 
     def _get_regular_championships(self) -> List[AbstractCompetition]:

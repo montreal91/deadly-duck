@@ -94,7 +94,7 @@ class GameScreenGuiQueryHandler:
             self,
             game_repository: GameRepository,
             club_provider: TemporalClubProvider,
-            match_result_repository: MatchResultRepository,
+            match_result_repository: Optional[MatchResultRepository] = None,
     ):
         self._game_repository = game_repository
         self._club_provider = club_provider
@@ -115,10 +115,13 @@ class GameScreenGuiQueryHandler:
         upcoming_match = _make_upcoming_match(match, clubs, manager_club_id)
 
         if context["competition_type"] == CompetitionType.CHAMPIONSHIP:
-            raw_standings = self._match_result_repository.get_regular_championship_standings(
-                game_id,
-                _get_competition_id(competition)
-            )
+            if self._match_result_repository is None:
+                raw_standings = context.get("standings", [])
+            else:
+                raw_standings = self._match_result_repository.get_regular_championship_standings(
+                    game_id,
+                    _get_competition_id(competition)
+                )
             res_standings = []
 
             for pos, standing in enumerate(raw_standings):
@@ -145,7 +148,7 @@ class GameScreenGuiQueryHandler:
 
         return QueryResult(
             day=context["day"],
-            season=len(context["history"]),
+            season=game.season_index,
             balance=context["balance"],
             club_name=context["club_name"],
             current_competition=context["competition"],

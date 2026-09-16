@@ -12,7 +12,6 @@ from typing import Union
 from uuid import uuid4
 
 from core.competition import AbstractCompetition
-from core.competition import ScheduleDay
 from core.match_engine import MatchParams
 from core.match_result import MatchResult
 from core.scheduled_match import ScheduledMatch
@@ -199,10 +198,8 @@ class Playoff(AbstractCompetition):
         self._make_new_round()
 
     @property
-    def current_matches(self) -> Optional[ScheduleDay]:
+    def current_matches(self) -> List[ScheduledMatch]:
         res = super().current_matches
-        if res is None:
-            return res
         return [match for match in res if not match.is_played]
 
     @property
@@ -277,7 +274,7 @@ class Playoff(AbstractCompetition):
         self._day += 1
 
         if results:
-            self._results.append(results)
+            self._results[self._day - 1] = results
 
         self._update_schedule()
         self._update_is_over()
@@ -287,7 +284,11 @@ class Playoff(AbstractCompetition):
 
     @property
     def _remaining_days(self):
-        for day in self._schedule[self._day:]:
+        for day_number in sorted(self._schedule):
+            if day_number < self._day:
+                continue
+
+            day = self._schedule[day_number]
             if day is not None:
                 yield day
 
@@ -303,8 +304,8 @@ class Playoff(AbstractCompetition):
         return self._seed_by_club_id[club_pk]
 
     def _insert_gap(self):
-        gaps = [None for _ in range(self._params.gap_days)]
-        self._schedule.extend(gaps)
+        for _ in range(self._params.gap_days):
+            self._schedule[self._next_schedule_day()] = []
 
     def _make_initial_round(self):
         if self._params.length == 12:
@@ -409,6 +410,7 @@ class Playoff(AbstractCompetition):
         self._insert_gap()
         for i in self._params.series_matches_pattern:
             day = []
+            schedule_day = self._next_schedule_day()
             for series in self._series:
                 if series.winner is not None:
                     continue
@@ -420,12 +422,23 @@ class Playoff(AbstractCompetition):
                     home_pk=pair[0],
                     away_pk=pair[1],
                     playoff_series_id=series.series_id,
-                    schedule_day=len(self._schedule),
+                    schedule_day=schedule_day,
                 )
                 day.append(scheduled_match)
             day.reverse()
-            self._schedule.append(day)
+            self._schedule[schedule_day] = day
             self._insert_gap()
+
+    def get_full_schedule(self) -> List[ScheduledMatch]:
+        result = []
+        for day_number in sorted(self._schedule):
+            result.extend(self._schedule[day_number])
+        return result
+
+    def _next_schedule_day(self) -> int:
+        if not self._schedule:
+            return 0
+        return max(self._schedule) + 1
 
     def _update_schedule(self):
         for day in self._remaining_days:

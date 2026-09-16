@@ -18,8 +18,6 @@ from uuid import uuid4
 from core.match_result import MatchResult
 from core.scheduled_match import ScheduledMatch
 
-ScheduleDay = List[ScheduledMatch]
-
 
 class CompetitionType(Enum):
     CHAMPIONSHIP = "championship"
@@ -65,8 +63,6 @@ class AbstractCompetition:
     def current_matches(self) -> List[ScheduledMatch]:
         """List of current matches."""
 
-        # if self._day < len(self._schedule):
-        #     return self._schedule[self._day]
         return self._schedule.get(self._day, [])
 
     @property
@@ -97,7 +93,12 @@ class AbstractCompetition:
         Actually, this method is present here for testing purposes and should
         not be used for production.
         """
-        for match in chain(*self._results):
+        if isinstance(self._results, dict):
+            result_days = self._results.values()
+        else:
+            result_days = self._results
+
+        for match in chain(*result_days):
             yield copy(match)
 
     def contains_club(self, club_pk: str) -> bool:
@@ -117,37 +118,37 @@ class AbstractCompetition:
         """List of matches scheduled for a club."""
 
         schedule = []
-        # for day in self._schedule:
-        #     if day is None:
-        #         continue
-        #     for match in day:
-        #         if match.is_played:
-        #             continue
-        #         if club_pk in (match.home_pk, match.away_pk):
-        #             schedule.append(match)
+        for day in _schedule_days(self._schedule, self._day):
+            if day is None:
+                continue
+            for match in day:
+                if match.is_played:
+                    continue
+                if club_pk in (match.home_pk, match.away_pk):
+                    schedule.append(match)
         return schedule
 
     def get_club_schedule_days(self, club_pk: str) -> List[Optional[ScheduledMatch]]:
         """List of upcoming competition days with optional club match."""
 
         schedule = []
-        # for day in self._schedule[self._day:]:
-        #     if day is None:
-        #         schedule.append(None)
-        #         continue
-        #
-        #     club_match = None
-        #     for match in day:
-        #         if match.is_played:
-        #             continue
-        #         if club_pk in (match.home_pk, match.away_pk):
-        #             club_match = match
-        #             break
-        #
-        #     schedule.append(club_match)
-        #
-        # while schedule and schedule[-1] is None:
-        #     schedule.pop()
+        for day in _schedule_days(self._schedule, self._day):
+            if day is None:
+                schedule.append(None)
+                continue
+
+            club_match = None
+            for match in day:
+                if match.is_played:
+                    continue
+                if club_pk in (match.home_pk, match.away_pk):
+                    club_match = match
+                    break
+
+            schedule.append(club_match)
+
+        while schedule and schedule[-1] is None:
+            schedule.pop()
 
         return schedule
 
@@ -184,3 +185,14 @@ class AbstractCompetition:
             assert result.away_pk == match.away_pk, (
                 "Result away club does not match scheduled match."
             )
+
+
+def _schedule_days(schedule, start_day):
+    if isinstance(schedule, list):
+        return schedule[start_day:]
+
+    return [
+        schedule[day_number]
+        for day_number in sorted(schedule)
+        if day_number >= start_day
+    ]

@@ -191,7 +191,7 @@ class CompetitionRepository:
             },
         )
 
-        for series in playoff.series:
+        for position, series in enumerate(playoff.series):
             top_club_id, bottom_club_id = series.pair
 
             self._conn.execute(
@@ -201,6 +201,7 @@ class CompetitionRepository:
                     competition_id,
                     series_id,
                     round_number,
+                    position,
                     top_club_id,
                     bottom_club_id
                 )
@@ -209,6 +210,7 @@ class CompetitionRepository:
                     :competition_id,
                     :series_id,
                     :round_number,
+                    :position,
                     :top_club_id,
                     :bottom_club_id
                 )
@@ -218,6 +220,7 @@ class CompetitionRepository:
                     "competition_id": playoff.competition_id,
                     "series_id": series.series_id,
                     "round_number": series.round_number,
+                    "position": position,
                     "top_club_id": top_club_id,
                     "bottom_club_id": bottom_club_id,
                 },
@@ -233,12 +236,13 @@ class CompetitionRepository:
             SELECT
                 series_id,
                 round_number,
+                position,
                 top_club_id,
                 bottom_club_id
             FROM playoff_series
             WHERE game_id = :game_id
               AND competition_id = :competition_id
-            ORDER BY round_number, series_id
+            ORDER BY round_number, position
             """,
             {
                 "game_id": game_id,

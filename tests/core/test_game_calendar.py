@@ -133,6 +133,7 @@ def _make_connection():
             competition_id TEXT NOT NULL,
             series_id TEXT NOT NULL,
             round_number INTEGER NOT NULL,
+            position INTEGER NOT NULL,
             top_club_id TEXT,
             bottom_club_id TEXT,
             PRIMARY KEY (game_id, series_id),

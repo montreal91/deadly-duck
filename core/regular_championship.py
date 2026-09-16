@@ -66,33 +66,33 @@ class RegularChampionship(AbstractCompetition):
 
     @property
     def standings(self) -> List[DdStandingsRowStruct]:
-        # if self._day in self._standings:
-        #     return self._standings[self._day]
-        #
-        # results = {}
-        # for club_id in self._club_ids:
-        #     results[club_id] = DdStandingsRowStruct(club_id=club_id)
-        #
-        # for day in self._results:
-        #     for match in day:
-        #         results[match.home_pk].sets_won += match.home_sets
-        #         results[match.home_pk].games_won += match.home_games
-        #
-        #         results[match.away_pk].sets_won += match.away_sets
-        #         results[match.away_pk].games_won += match.away_games
-        #
-        #         results[match.home_pk].matches_played += 1
-        #         results[match.away_pk].matches_played += 1
-        #
-        # results_list = [results[cid] for cid in results]
-        #
-        # self._standings[self._day] = sorted(
-        #     results_list,
-        #     key=lambda x: (x.sets_won, x.games_won),
-        #     reverse=True
-        # )
+        if self._day in self._standings:
+            return self._standings[self._day]
 
-        return []
+        results = {}
+        for club_id in self._club_ids:
+            results[club_id] = DdStandingsRowStruct(club_id=club_id)
+
+        for day in self._results.values():
+            for match in day:
+                results[match.home_pk].sets_won += match.home_sets
+                results[match.home_pk].games_won += match.home_games
+
+                results[match.away_pk].sets_won += match.away_sets
+                results[match.away_pk].games_won += match.away_games
+
+                results[match.home_pk].matches_played += 1
+                results[match.away_pk].matches_played += 1
+
+        results_list = [results[cid] for cid in results]
+
+        self._standings[self._day] = sorted(
+            results_list,
+            key=lambda x: (x.sets_won, x.games_won),
+            reverse=True
+        )
+
+        return self._standings[self._day]
 
     @property
     def title(self):
@@ -109,14 +109,11 @@ class RegularChampionship(AbstractCompetition):
         self._validate_current_results(results)
 
         self._results[self._day] = results
-        self._day += 1
+        for match in self.current_matches or []:
+            match.is_played = True
 
-        # for match in self.current_matches or []:
-        #     match.is_played = True
-        #
-        # self._day += 1
-        # if results:
-        #     self._results.append(results)
+        self._day += 1
+        self._standings = {}
 
         self._is_over = self._day >= self._get_max_day()
 
@@ -150,6 +147,9 @@ class RegularChampionship(AbstractCompetition):
         # Do something else
 
     def _get_max_day(self) -> int:
+        if isinstance(self._schedule, list):
+            return len(self._schedule)
+
         return max(self._schedule.keys()) + 1
 
     def _make_match(self, home_id: str, away_id: str, schedule_day: int) -> ScheduledMatch:

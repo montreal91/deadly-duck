@@ -21,6 +21,8 @@ from core.ports.outbound.game_repository import GameRepository
 from core.playoffs import Playoff
 from core.playoffs import PlayoffParams
 from core.playoffs import PlayoffSeed
+from core.ports.outbound.match_result_repository import MatchResultRepository
+from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import RegularChampionship
 from core.set_result import DdSetStatuses
@@ -199,6 +201,8 @@ def test_get_ongoing_playoff_competitions_preserves_series_results():
 def test_next_day_handler_saves_current_competition():
     conn = _make_connection()
     CompetitionRepository.tmp_initialize(conn)
+    ScheduledMatchRepository.tmp_init(conn)
+    MatchResultRepository.tmp_init(conn)
     competition_repository = CompetitionRepository.tmp_get_instance()
 
     game_repository = GameRepository(conn)
@@ -351,7 +355,72 @@ def _make_connection() -> sqlite3.Connection:
         CREATE TABLE club (
             game_id TEXT NOT NULL,
             club_id TEXT NOT NULL,
+            name TEXT,
+            balance INTEGER,
+            coach_power INTEGER,
+            selected_player_id TEXT,
             PRIMARY KEY (game_id, club_id)
+        );
+
+        CREATE TABLE player (
+            game_id TEXT NOT NULL,
+            player_id TEXT NOT NULL,
+            first_name TEXT NOT NULL,
+            second_name TEXT NOT NULL,
+            last_name TEXT NOT NULL,
+            age INTEGER NOT NULL,
+            technique INTEGER NOT NULL,
+            endurance INTEGER NOT NULL,
+            exhaustion INTEGER NOT NULL,
+            experience INTEGER NOT NULL,
+            skill_points INTEGER NOT NULL,
+            current_stamina INTEGER NOT NULL,
+            reputation INTEGER NOT NULL,
+            PRIMARY KEY (game_id, player_id)
+        );
+
+        CREATE TABLE roster_entry (
+            game_id TEXT NOT NULL,
+            club_id TEXT NOT NULL,
+            player_id TEXT NOT NULL,
+            coach_level INTEGER NOT NULL,
+            contract_cost INTEGER,
+            has_next_contract INTEGER NOT NULL,
+            PRIMARY KEY (game_id, player_id)
+        );
+
+        CREATE TABLE scheduled_match (
+            game_id TEXT NOT NULL,
+            competition_id TEXT NOT NULL,
+            match_id TEXT NOT NULL,
+            schedule_day INTEGER NOT NULL,
+            home_club_id TEXT NOT NULL,
+            away_club_id TEXT NOT NULL,
+            playoff_series_id TEXT,
+            is_played INTEGER NOT NULL,
+            PRIMARY KEY (game_id, match_id)
+        );
+
+        CREATE TABLE match_result (
+            game_id TEXT NOT NULL,
+            competition_id TEXT NOT NULL,
+            match_id TEXT NOT NULL,
+            home_club_id TEXT NOT NULL,
+            away_club_id TEXT NOT NULL,
+            home_player_id TEXT,
+            away_player_id TEXT,
+            home_player_snapshot TEXT,
+            away_player_snapshot TEXT,
+            home_sets INTEGER NOT NULL,
+            away_sets INTEGER NOT NULL,
+            home_games INTEGER NOT NULL,
+            away_games INTEGER NOT NULL,
+            full_score TEXT NOT NULL,
+            attendance INTEGER NOT NULL,
+            income INTEGER NOT NULL,
+            PRIMARY KEY (game_id, match_id),
+            FOREIGN KEY (game_id, match_id)
+                REFERENCES scheduled_match(game_id, match_id)
         );
 
         CREATE TABLE playoff_series (
@@ -359,6 +428,7 @@ def _make_connection() -> sqlite3.Connection:
             competition_id TEXT NOT NULL,
             series_id TEXT NOT NULL,
             round_number INTEGER NOT NULL,
+            position INTEGER NOT NULL,
             top_club_id TEXT,
             bottom_club_id TEXT,
             PRIMARY KEY (game_id, series_id),
