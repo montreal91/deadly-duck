@@ -7,6 +7,10 @@ from typing import NamedTuple
 from typing import Optional
 
 
+_CLUB_ID_ERROR = "Incorrect club id."
+_PLAYER_ID_ERROR = "Incorrect player index."
+
+
 class SelectPlayerForMatchCommand(NamedTuple):
     game_id: str
     club_id: str
@@ -41,8 +45,13 @@ class SelectPlayerForMatchCommandHandler:
                 message=f"Game with id=[{command.game_id} not found."
             )
 
-        game.select_player(club_id=command.club_id, player_id=command.player_id)
-        self._game_repository.save_game(game)
-        self._club_provider.save_clubs(game.clubs.values())
+        clubs = self._club_provider.get_clubs_for_game(command.game_id)
+        assert command.club_id in clubs, _CLUB_ID_ERROR
+
+        club = clubs[command.club_id]
+        assert club.has_player(command.player_id), _PLAYER_ID_ERROR
+
+        club.select_player(command.player_id)
+        self._club_provider.save_club(club)
 
         return SelectPlayerForMatchCommandResult(success=True, message="OK")

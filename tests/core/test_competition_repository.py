@@ -14,6 +14,7 @@ from core.match import ExhaustionCalculator
 from core.match_engine import MatchParams
 from core.match_result import MatchResult
 from core.player import PlayerReputationCalculator
+from core.ports.inbound.commands.create_new_game import init_clubs_for_game
 from core.ports.inbound.commands.next_day import NextDayCommand
 from core.ports.inbound.commands.next_day import NextDayCommandHandler
 from core.ports.outbound.competition_repository import CompetitionRepository
@@ -23,6 +24,7 @@ from core.playoffs import PlayoffParams
 from core.playoffs import PlayoffSeed
 from core.ports.outbound.match_result_repository import MatchResultRepository
 from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.regular_championship import ChampionshipParams
 from core.regular_championship import RegularChampionship
 from core.set_result import DdSetStatuses
@@ -203,15 +205,25 @@ def test_next_day_handler_saves_current_competition():
     CompetitionRepository.tmp_initialize(conn)
     ScheduledMatchRepository.tmp_init(conn)
     MatchResultRepository.tmp_init(conn)
-    competition_repository = CompetitionRepository.tmp_get_instance()
+    TemporalClubProvider.initialize(conn)
 
     game_repository = GameRepository(conn)
-    game = make_game("game")
+    TemporalClubProvider.get_instance().save_clubs(init_clubs_for_game("game").values())
+
+    game = make_game(game_id="game", conn=conn)
     game_repository.save_game(game)
 
+    competitions = CompetitionRepository.tmp_get_instance().get_ongoing_competitions("game")
+
+    assert competitions, "Competitions should exist"
+
+    cmp = competitions[0]
+    assert cmp.day == 0
+
+    competition_repository = CompetitionRepository.tmp_get_instance()
     handler = NextDayCommandHandler(
         game_repository=game_repository,
-        club_repository=_ClubRepository(),
+        club_repository=TemporalClubProvider.get_instance(),
         competition_repository=competition_repository,
     )
 
@@ -437,22 +449,6 @@ def _make_connection() -> sqlite3.Connection:
             FOREIGN KEY (game_id, bottom_club_id)
                 REFERENCES club(game_id, club_id)
         );
-
-        INSERT INTO game (game_id)
-        VALUES ('game');
-
-        INSERT INTO club (game_id, club_id)
-        VALUES
-            ('game', '0'),
-            ('game', '1'),
-            ('game', '2'),
-            ('game', '3'),
-            ('game', '4'),
-            ('game', '5'),
-            ('game', '6'),
-            ('game', '7'),
-            ('game', 'home'),
-            ('game', 'away');
         """
     )
     return conn

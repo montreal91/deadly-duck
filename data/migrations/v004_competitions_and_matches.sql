@@ -51,19 +51,19 @@ CREATE TABLE IF NOT EXISTS match_result (
     full_score TEXT NOT NULL,
     attendance INTEGER NOT NULL,
     income INTEGER NOT NULL,
-    PRIMARY KEY (game_id, match_id),
-    FOREIGN KEY (game_id, competition_id)
-        REFERENCES competition(game_id, competition_id),
-    FOREIGN KEY (game_id, match_id)
-        REFERENCES scheduled_match(game_id, match_id),
-    FOREIGN KEY (game_id, home_club_id)
-        REFERENCES club(game_id, club_id),
-    FOREIGN KEY (game_id, away_club_id)
-        REFERENCES club(game_id, club_id),
-    FOREIGN KEY (game_id, home_player_id)
-        REFERENCES player(game_id, player_id),
-    FOREIGN KEY (game_id, away_player_id)
-        REFERENCES player(game_id, player_id)
+    PRIMARY KEY (game_id, match_id)
+--    FOREIGN KEY (game_id, competition_id)
+--        REFERENCES competition(game_id, competition_id),
+--    FOREIGN KEY (game_id, match_id)
+--        REFERENCES scheduled_match(game_id, match_id),
+--    FOREIGN KEY (game_id, home_club_id)
+--        REFERENCES club(game_id, club_id),
+--    FOREIGN KEY (game_id, away_club_id)
+--        REFERENCES club(game_id, club_id),
+--    FOREIGN KEY (game_id, home_player_id)
+--        REFERENCES player(game_id, player_id),
+--    FOREIGN KEY (game_id, away_player_id)
+--        REFERENCES player(game_id, player_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_competition_game_id

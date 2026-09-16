@@ -39,7 +39,6 @@ from core.playoffs import PlayoffParams
 from core.playoffs import PlayoffSeed
 from core.ports.outbound.competition_repository import CompetitionRepository
 from core.ports.outbound.match_result_repository import MatchResultRepository
-from core.ports.outbound.player_repository import PlayerRepository
 from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.regular_championship import ChampionshipParams
@@ -118,6 +117,7 @@ def _get_competition_title(competition: Optional[AbstractCompetition]) -> str:
 
     return competition.title
 
+
 class Game:
     """
     A class that encapsulates the game logic.
@@ -129,7 +129,7 @@ class Game:
     _game_id: str
     _attendance_calculator: Callable
     _contract_calculator: Callable[[int], int]
-    _clubs: Dict[str, Club]
+    # _clubs: Dict[str, Club]
     _current_date: date
     _free_agents: List[Player]
     _params: GameParams
@@ -166,9 +166,9 @@ class Game:
         self._created_ts = created_ts
         self._updated_ts = updated_ts
 
-        tcp = TemporalClubProvider.get_instance()
-        clubs = tcp.init_clubs_for_game(self._game_id)
-        self._clubs = clubs
+        # tcp = TemporalClubProvider
+        # tcp.init_clubs_for_game(self._game_id)
+        # self._clubs = clubs
         self._season_index = 0
 
         self._start_regular_championship(list(self._clubs.keys()))
@@ -238,6 +238,9 @@ class Game:
     def updated_ts(self):
         return self._updated_ts
 
+    def tmp_init(self):
+        self._start_regular_championship(list(self._clubs.keys()))
+
     def fire_player(self, player_id: str, club_id: str):
         """Fires the selected player from user's club."""
 
@@ -255,22 +258,23 @@ class Game:
 
     def get_context(self, pk: str) -> Dict[str, Any]:
         """A dictionary with information available for user."""
+        clubs = self._clubs
 
-        assert pk in self._clubs, _CLUB_ID_ERROR
+        assert pk in clubs, _CLUB_ID_ERROR
 
         cmp = self.cmp
 
         # TODO: get rid of this shite.
         return dict(
-            balance=self._clubs[pk].account.balance,
-            club_name=self._clubs[pk].name,
+            balance=clubs[pk].account.balance,
+            club_name=clubs[pk].name,
             day=self._formatted_current_date,
-            clubs=[club.name for club in self._clubs.values()],
+            clubs=[club.name for club in clubs.values()],
             # free_agents=self._get_free_agents(),
             # history=self._history,
             # last_results=self._last_results,
             opponent=self._get_opponent(cmp, pk),
-            practice_cost=self._calculate_club_practice_cost(club=self._clubs[pk]),
+            practice_cost=self._calculate_club_practice_cost(club=clubs[pk]),
             remaining_matches=_get_remaining_matches(cmp, pk),
             # standings=self._get_standings(cmp=cmp),
             title=_get_competition_title(cmp),
@@ -291,24 +295,8 @@ class Game:
         self._process_player_hire(club_pk=club_pk, player=player)
         self._free_agents.pop(player_pk)
 
-    def hire_new_player(self, club_id: str):
-        """Hires a new player for the given club."""
-
-        player = self._player_factory.create_player(
-            level=0,
-            age=GameplayConstants.STARTING_AGE.value,
-        )
-        self._process_player_hire(club_pk=club_id, player=player)
-
     def proceed_to_next_competition(self):
         """Updates game while player action is not required."""
-
-        step = True
-        while step and (
-                self.cmp.day != 0
-                or not self._manager_club_in_current_competition
-        ):
-            step, _ = self.update()
 
     def select_coach_for_player(
             self, coach_index: int, player_id: str, club_index: str
@@ -328,15 +316,6 @@ class Game:
         self._clubs[club_index].select_coach(
             coach_index=coach_index, player_id=player_id
         )
-
-    def select_player(self, player_id: str, club_id: str):
-        """Sets selected player for user."""
-
-        assert club_id in self._clubs, _CLUB_ID_ERROR
-        assert self._clubs[club_id].has_player(player_id), (
-            "Incorrect player index."
-        )
-        self._clubs[club_id].select_player(player_id)
 
     def set_managed(self, club_id, is_controlled):
         """Sets flag whether club is controlled by a user or not."""
@@ -377,7 +356,7 @@ class Game:
 
         return True, "Ok"
 
-    def update(self):
+    def update(self, clubs: Dict[str, Club]):
         """
         Updates game state.
 
@@ -391,10 +370,9 @@ class Game:
         else:
             cmp = cmps[0]
 
-
-        for club_pk in self._clubs:
-            if not self._is_club_valid(club_pk, cmp):
-                self._clubs[club_pk].set_controlled(False)
+        for club_pk in clubs:
+            if not self._is_club_valid(club_pk, clubs[club_pk], cmp):
+                clubs[club_pk].set_controlled(False)
 
         if self.is_over:
             return False, "The game is over"
@@ -402,24 +380,25 @@ class Game:
         if self.season_over and not self._contract_check:
             return False, _UNCONTRACTED_PLAYERS_ERROR
 
-        if self._decision_required:
+        if cmp is not None and self._decision_required(cmp, clubs):
             return False, "You have to select player for the next match."
 
         if not self._training_check:
             return False, "You have insufficient funds to perform such kind of training."
 
-        self._perform_practice()
-        self._play_one_day()
+        self._hire_players_if_needed(clubs)
+        self._perform_practice(clubs)
+        self._play_one_day(clubs)
 
         upgrade_skills(
-            clubs=self._clubs,
+            clubs=clubs,
             manager_club_id=self._manager_club_id,
         )
 
-        self._unselect()
+        _unselect(clubs)
 
         if self.season_over:
-            self._next_season()
+            self._next_season(clubs)
         elif self._is_regular_season_over():
             self._update_season_fame()
             self._save_competition_results()
@@ -471,9 +450,8 @@ class Game:
 
         return True
 
-    @property
-    def _decision_required(self) -> bool:
-        cmp = self.cmp
+    def _decision_required(self, cmp: AbstractCompetition, clubs: Dict[str, Club]) -> bool:
+        # cmp = self.cmp
 
         if cmp is None or not cmp.current_matches:
             return False
@@ -481,10 +459,15 @@ class Game:
         for match in cmp.current_matches:
             if self._manager_club_id not in (match.home_pk, match.away_pk):
                 continue
-            if not self._clubs[self._manager_club_id].has_selected_player:
+            if not clubs[self._manager_club_id].has_selected_player:
                 return True
 
         return False
+
+    @property
+    def _clubs(self) -> Dict[str, Club]:
+        repo = TemporalClubProvider.get_instance()
+        return repo.get_clubs_for_game(self._game_id)
 
     @property
     def _training_check(self) -> bool:
@@ -506,7 +489,7 @@ class Game:
         return True
 
     def _calculate_club_practice_cost(self, club: Club) -> int:
-        slots = [(s.player.level, s.coach_level) for s in club.players]
+        slots = [(s.player.level, s.coach_level) for s in club.players if s.player is not None]
         return sum(self._practice_calculator(*slot) for slot in slots)
 
     def _calculate_match_income(self):
@@ -515,11 +498,6 @@ class Game:
                 value=250_000,
                 comment="Income"
             ))
-
-    # def _drop_stats(self):
-    #     for club in self._clubs.values():
-    #         for data in club.players:
-    #             data.player.DropStats()
 
     def _generate_free_agents(self):
         new_agents = []
@@ -586,8 +564,8 @@ class Game:
 
         return [set_contract_prices(slot) for slot in self._clubs[pk].players]
 
-    def _hire_players_if_needed(self):
-        for club in self._clubs.values():
+    def _hire_players_if_needed(self, clubs: Dict[str, Club]):
+        for club in clubs.values():
             if self._is_manager_club(club.club_id):
                 continue
             techs = [slot.player.actual_technique < 5 for slot in club.players]
@@ -598,12 +576,12 @@ class Game:
                 )
                 club.add_player(new_player)
 
-    def _is_club_valid(self, pk: str, cmp: Optional[AbstractCompetition]) -> bool:
+    def _is_club_valid(self, pk: str, club: Club, cmp: Optional[AbstractCompetition]) -> bool:
         if cmp is None:
             return True
 
         opponent = self._get_opponent(cmp, pk)
-        club: Club = self._clubs[pk]
+        # club: Club = self._clubs[pk]
         if opponent is None or not self._is_manager_club(pk):
             return True
 
@@ -621,21 +599,20 @@ class Game:
 
         return True
 
-    def _next_season(self):
+    def _next_season(self, clubs: Dict[str, Club]):
         # TODO: Fix fame calculation
-        self._generate_free_agents()
 
-        self._shuffle_coach_powers()
+        self._shuffle_coach_powers(clubs)
         self._reset_current_date_to_next_season_start()
         self._season_index += 1
-        self._process_season_end_players()
-        self._start_regular_championship(list(self._clubs))
+        _process_season_end_players(clubs)
+        self._start_regular_championship(list(clubs))
 
-    def _perform_practice(self):
+    def _perform_practice(self, clubs: Dict[str, Club]):
         if not self._can_practice:
             return
 
-        for club in self._clubs.values():
+        for club in clubs.values():
             if self._is_manager_club(club.club_id):
                 club.account.ProcessTransaction(DdTransaction(
                     -self._calculate_club_practice_cost(club),
@@ -643,7 +620,7 @@ class Game:
                 ))
             club.perform_practice()
 
-    def _play_one_day(self):
+    def _play_one_day(self, clubs: Dict[str, Club]):
         repo = CompetitionRepository.tmp_get_instance()
         scheduled_matches_repository = ScheduledMatchRepository.tmp_get_instance()
         match_result_repository = MatchResultRepository.tmp_get_instance()
@@ -661,7 +638,7 @@ class Game:
 
             playing_player_ids.extend(self._get_playing_player_ids(current_matches))
             results = process_matches(
-                current_matches, self._clubs, competition.match_params
+                current_matches, clubs, competition.match_params
             )
 
             competition.apply_results(results)
@@ -676,10 +653,9 @@ class Game:
             match_result_repository.save_match_results(self._game_id, results)
             repo.save_competition(self._game_id, competition, self._season_index)
 
-        #TODO: Remove these from here
+        # TODO: Remove these from here
         self._calculate_match_income()
-        self._recover(excluded_player_ids=set(playing_player_ids))
-        self._hire_players_if_needed()
+        self._recover(clubs=clubs, excluded_player_ids=set(playing_player_ids))
 
     def _process_player_hire(self, club_pk: str, player: Player):
         assert club_pk in self._clubs, _CLUB_ID_ERROR
@@ -701,11 +677,11 @@ class Game:
             f"New player contract with {player.initials}."
         ))
 
-    def _recover(self, excluded_player_ids: Set[str]):
+    def _recover(self, clubs: Dict[str, Club], excluded_player_ids: Set[str]):
         recovery_function = ExhaustedLinearRecovery(
             self._params.exhaustion_factor
         )
-        for club in self._clubs.values():
+        for club in clubs.values():
             for slot in club.players:
                 if slot.player is None or slot.player.player_id in excluded_player_ids:
                     continue
@@ -753,10 +729,6 @@ class Game:
             _SEASON_START_DAY,
         ) - timedelta(days=1)
 
-    def _simulate(self, years):
-        while len(self._history) < years:
-            self.update()
-
     def _save_competition_results(self):
         pass
 
@@ -803,34 +775,18 @@ class Game:
 
         return [c for c in cmps if isinstance(c, RegularChampionship)]
 
-    def _process_season_end_players(self):
-        repo = PlayerRepository.tmp_get_instance()
-        players = repo.get_all_active_players(
-            game_id=self._game_id,
-            max_age=GameplayConstants.RETIREMENT_AGE.value,
-        )
-
-        for player in players:
-            player.age_up()
-            player.after_season_rest()
-            repo.save_player(player)
-
-    def _unselect(self):
-        for club in self._clubs.values():
-            club.select_player(None)
-
     def _update_season_fame(self):
         # TODO: Fix fame calculation
         pass
 
     # This whole method is a temporary hack before I'll implement a proper AI
-    def _shuffle_coach_powers(self):
+    def _shuffle_coach_powers(self, clubs: Dict[str, Club]):
         from random import shuffle
-        strong_clubs = [pk for pk, club in self._clubs.items() if
+        strong_clubs = [pk for pk, club in clubs.items() if
                         club.coach_power == 3 and not self._is_manager_club(pk)]
-        medium_clubs = [pk for pk, club in self._clubs.items() if
+        medium_clubs = [pk for pk, club in clubs.items() if
                         club.coach_power == 2 and not self._is_manager_club(pk)]
-        weaksy_clubs = [pk for pk, club in self._clubs.items() if
+        weaksy_clubs = [pk for pk, club in clubs.items() if
                         club.coach_power == 1 and not self._is_manager_club(pk)]
 
         shuffle(strong_clubs)
@@ -846,17 +802,17 @@ class Game:
         s, m, w = strong_clubs.pop(), medium_clubs.pop(), weaksy_clubs.pop()
         s, m, w = m, w, s  # cycle
 
-        logging.debug(f"Strong club going weak:   {self._clubs[s].name}")
-        logging.debug(f"Medium club going strong: {self._clubs[m].name}")
-        logging.debug(f"Weak club going medium:   {self._clubs[w].name}")
+        logging.debug(f"Strong club going weak:   {clubs[s].name}")
+        logging.debug(f"Medium club going strong: {clubs[m].name}")
+        logging.debug(f"Weak club going medium:   {clubs[w].name}")
 
         strong_clubs.append(s)
         medium_clubs.append(m)
         weaksy_clubs.append(w)
 
-        [self._clubs[pk].set_coach_power(3) for pk in strong_clubs]
-        [self._clubs[pk].set_coach_power(2) for pk in medium_clubs]
-        [self._clubs[pk].set_coach_power(1) for pk in weaksy_clubs]
+        [clubs[pk].set_coach_power(3) for pk in strong_clubs]
+        [clubs[pk].set_coach_power(2) for pk in medium_clubs]
+        [clubs[pk].set_coach_power(1) for pk in weaksy_clubs]
 
 
 def _make_playoff_seeds(
@@ -867,3 +823,19 @@ def _make_playoff_seeds(
         PlayoffSeed(club_id=row.club_id, seed=seed)
         for seed, row in enumerate(standings[:playoff_length], start=1)
     ]
+
+
+def _process_season_end_players(clubs: Dict[str, Club]):
+        for club in clubs.values():
+            for slot in club.players:
+                player = slot.player
+                if player is None:
+                    continue
+                player.age_up()
+                player.after_season_rest()
+
+
+def _unselect(clubs: Dict[str, Club]):
+    for club in clubs.values():
+        club.select_player(None)
+

@@ -136,6 +136,7 @@ class ApplicationContext:
         self._hire_new_player_command_handler = HireNewPlayerCommandHandler(
             self._game_repository,
             self._temporal_club_provider,
+            self._params,
         )
 
         self._sign_player_command_handler = SignPlayerCommandHandler(

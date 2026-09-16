@@ -56,7 +56,7 @@ class DdFinancialAccount:
         Processes one transaction.
 
         If transaction could not be processed, returns False.
-        Otherwise returns True.
+        Otherwise, returns True.
         """
 
         if transaction.value < 0 and abs(transaction.value) > self.balance:

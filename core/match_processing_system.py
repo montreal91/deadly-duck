@@ -28,10 +28,10 @@ def process_matches(
 
         home_selected_player = clubs[match.home_pk].selected_player
         if home_selected_player is None:
-            raise Exception("Bad home player")
+            raise Exception(f"Bad home player {match.home_pk}")
         away_selected_player = clubs[match.away_pk].selected_player
         if away_selected_player is None:
-            raise Exception("Bad away player")
+            raise Exception(f"Bad away player {match.away_pk}")
 
         result = processor.process_match(
             home_selected_player,
