@@ -87,37 +87,6 @@ logging.basicConfig(
 )
 
 
-def _get_competition_type(cmp: Optional[AbstractCompetition]) -> Optional[CompetitionType]:
-    if isinstance(cmp, RegularChampionship):
-        return CompetitionType.CHAMPIONSHIP
-    elif isinstance(cmp, Playoff):
-        return CompetitionType.PLAY_OFFS
-    elif cmp is None:
-        return None
-    raise Exception(f"Unknown competition type. {type(cmp)}")
-
-
-def _has_matches(cmp: Optional[AbstractCompetition]) -> bool:
-    if cmp is None:
-        return False
-
-    return len(cmp.current_matches) > 0
-
-
-def _get_remaining_matches(competition: Optional[AbstractCompetition], club_id: str) -> List[Optional[ScheduledMatch]]:
-    if competition is None:
-        return []
-
-    return competition.get_club_schedule_days(club_id)
-
-
-def _get_competition_title(competition: Optional[AbstractCompetition]) -> str:
-    if competition is None:
-        return ""
-
-    return competition.title
-
-
 class Game:
     """
     A class that encapsulates the game logic.
@@ -426,13 +395,6 @@ class Game:
         slots = [(s.player.level, s.coach_level) for s in club.players if s.player is not None]
         return sum(self._practice_calculator(*slot) for slot in slots)
 
-    def _calculate_match_income(self):
-        for club in self._clubs.values():
-            club.account.ProcessTransaction(DdTransaction(
-                value=250_000,
-                comment="Income"
-            ))
-
     def _generate_free_agents(self):
         new_agents = []
         for _ in range(randint(3, 10)):
@@ -588,7 +550,7 @@ class Game:
             repo.save_competition(self._game_id, competition, self._season_index)
 
         # TODO: Remove these from here
-        self._calculate_match_income()
+        _calculate_match_income(clubs)
         self._recover(clubs=clubs, excluded_player_ids=set(playing_player_ids))
 
     def _process_player_hire(self, club_pk: str, player: Player):
@@ -760,15 +722,54 @@ def _make_playoff_seeds(
 
 
 def _process_season_end_players(clubs: Dict[str, Club]):
-        for club in clubs.values():
-            for slot in club.players:
-                player = slot.player
-                if player is None:
-                    continue
-                player.age_up()
-                player.after_season_rest()
+    for club in clubs.values():
+        for slot in club.players:
+            player = slot.player
+            if player is None:
+                continue
+            player.age_up()
+            player.after_season_rest()
 
 
 def _unselect(clubs: Dict[str, Club]):
     for club in clubs.values():
         club.select_player(None)
+
+
+def _get_competition_type(cmp: Optional[AbstractCompetition]) -> Optional[CompetitionType]:
+    if isinstance(cmp, RegularChampionship):
+        return CompetitionType.CHAMPIONSHIP
+    elif isinstance(cmp, Playoff):
+        return CompetitionType.PLAY_OFFS
+    elif cmp is None:
+        return None
+    raise Exception(f"Unknown competition type. {type(cmp)}")
+
+
+def _has_matches(cmp: Optional[AbstractCompetition]) -> bool:
+    if cmp is None:
+        return False
+
+    return len(cmp.current_matches) > 0
+
+
+def _get_remaining_matches(competition: Optional[AbstractCompetition], club_id: str) -> List[Optional[ScheduledMatch]]:
+    if competition is None:
+        return []
+
+    return competition.get_club_schedule_days(club_id)
+
+
+def _get_competition_title(competition: Optional[AbstractCompetition]) -> str:
+    if competition is None:
+        return ""
+
+    return competition.title
+
+
+def _calculate_match_income(clubs: Dict[str, Club]):
+    for club in clubs.values():
+        club.account.ProcessTransaction(DdTransaction(
+            value=250_000,
+            comment="Income"
+        ))

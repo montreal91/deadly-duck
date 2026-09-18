@@ -85,6 +85,44 @@ def test_regular_season_practice_day_persists_player_experience(tmp_path):
     assert persisted_experience == initial_experience + current_stamina
 
 
+def test_regular_season_match_day_persists_club_income(tmp_path):
+    game, clubs, conn = make_persisted_game(
+        "income-test",
+        tmp_path / "income.sqlite",
+    )
+    game_repository = GameRepository(conn)
+    game_repository.save_game(game)
+    club_id = next(iter(clubs))
+    handler = NextDayCommandHandler(
+        game_repository=game_repository,
+        club_repository=TemporalClubProvider.get_instance(),
+        competition_repository=CompetitionRepository.tmp_get_instance(),
+    )
+    practice_day_result = handler(NextDayCommand("income-test"))
+    balance_before_match = conn.execute(
+        """
+        SELECT balance
+        FROM club
+        WHERE game_id = ? AND club_id = ?
+        """,
+        ("income-test", club_id),
+    ).fetchone()[0]
+
+    match_day_result = handler(NextDayCommand("income-test"))
+
+    persisted_balance = conn.execute(
+        """
+        SELECT balance
+        FROM club
+        WHERE game_id = ? AND club_id = ?
+        """,
+        ("income-test", club_id),
+    ).fetchone()[0]
+    assert practice_day_result.success
+    assert match_day_result.success
+    assert persisted_balance == balance_before_match + 250_000
+
+
 def test_next_season_starts_on_next_year_february_21(tmp_path):
     game, clubs, _ = make_persisted_game("calendar-test", tmp_path / "game.sqlite")
     game._history[-1][CompetitionType.CHAMPIONSHIP] = game.cmp.standings
