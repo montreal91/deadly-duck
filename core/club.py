@@ -190,6 +190,17 @@ class Club:
         if player_slot is not None:
             player_slot.has_next_contract = True
 
+    def process_end_of_season_contracts(self):
+        """Expires current contracts and activates signed next contracts."""
+
+        self._players = {
+            player_id: player_slot
+            for player_id, player_slot in self._players.items()
+            if player_slot.has_next_contract
+        }
+        for player_slot in self._players.values():
+            player_slot.has_next_contract = False
+
     def expel_retired_players(self):
         """Removes players from the club which are too old to play."""
 

@@ -149,6 +149,36 @@ def test_next_season_ages_and_rests_roster_players(tmp_path):
     assert player.exhaustion == 0
 
 
+def test_next_season_consumes_players_next_contract(tmp_path):
+    game, clubs, _ = make_persisted_game(
+        "contract-test",
+        tmp_path / "contract.sqlite",
+    )
+    club = next(iter(clubs.values()))
+    player_slot = club.players[0]
+    player_slot.has_next_contract = True
+
+    game._next_season(clubs)
+
+    renewed_slot = club.get_player_slot(player_slot.player.player_id)
+    assert renewed_slot is not None
+    assert not renewed_slot.has_next_contract
+
+
+def test_next_season_releases_player_without_next_contract(tmp_path):
+    game, clubs, _ = make_persisted_game(
+        "expired-contract-test",
+        tmp_path / "expired-contract.sqlite",
+    )
+    club = next(iter(clubs.values()))
+    player_slot = club.players[0]
+    player_slot.has_next_contract = False
+
+    game._next_season(clubs)
+
+    assert not club.has_player(player_slot.player.player_id)
+
+
 def test_regular_season_end_starts_playoffs(tmp_path):
     game, clubs, _ = make_persisted_game(
         "calendar-test",

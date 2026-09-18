@@ -729,6 +729,8 @@ def _process_season_end_players(clubs: Dict[str, Club]):
                 continue
             player.age_up()
             player.after_season_rest()
+        club.process_end_of_season_contracts()
+        club.expel_retired_players()
 
 
 def _unselect(clubs: Dict[str, Club]):
