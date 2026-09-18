@@ -324,38 +324,6 @@ class Game:
         self._manager_club_id = club_id
         self._clubs[club_id].set_controlled(is_controlled)
 
-    def sign_player(self, club_id: str, player_id: str):
-        """Signs a new contract with a player for the next season."""
-
-        if club_id not in self._clubs:
-            return False, _CLUB_ID_ERROR
-
-        club = self._clubs[club_id]
-        player_slot = club.get_player_slot(player_id)
-
-        if player_slot is None:
-            return False, "Incorrect player id."
-
-        if player_slot.has_next_contract:
-            return False, "This player already has a contract for the next season."
-
-        next_age = player_slot.player.age + 1
-        if next_age >= GameplayConstants.RETIREMENT_AGE.value:
-            return False, f"{player_slot.player.initials} is too old to play next season."
-
-        cost = self._contract_calculator(player_slot.player.level)
-
-        if self._clubs[club_id].account.balance < cost:
-            return False, f"Insufficient funds.\nYou need at least ${cost}."
-
-        club.contract_player(player_id)
-        club.account.ProcessTransaction(DdTransaction(
-            -cost,
-            f"Renewed player contract with {player_slot.player.initials} "
-        ))
-
-        return True, "Ok"
-
     def update(self, clubs: Dict[str, Club]):
         """
         Updates game state.

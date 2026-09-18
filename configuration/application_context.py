@@ -142,6 +142,7 @@ class ApplicationContext:
         self._sign_player_command_handler = SignPlayerCommandHandler(
             self._game_repository,
             self._temporal_club_provider,
+            self._params,
         )
 
         self._fire_player_command_handler = FirePlayerCommandHandler(
