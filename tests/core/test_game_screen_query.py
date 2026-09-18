@@ -10,13 +10,10 @@ from core.competition import CompetitionType
 from core.playoffs import Playoff
 from core.ports.outbound.competition_repository import CompetitionRepository
 from core.ports.outbound.match_result_repository import MatchResultRepository
-from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
 from core.queries.game_screen_query import GameScreenGuiQueryHandler
 from core.queries.game_screen_query import PlayoffStandings
 from core.scheduled_match import ScheduledMatch
-from tests.core.fixtures.game import make_game
-from tests.core.test_game_calendar import _insert_clubs
-from tests.core.test_game_calendar import _make_connection
+from tests.core.fixtures.game import make_persisted_game
 
 
 def test_game_screen_query_converts_remaining_matches_to_upcoming_days():
@@ -167,14 +164,11 @@ def test_game_screen_query_supports_twelve_club_preliminary_round():
     assert result.standings.rows[0].bottom_seed == ""
 
 
-def test_game_screen_query_after_playoff_end_does_not_crash():
-    conn = _make_connection()
-    _create_schedule_result_tables(conn)
-    CompetitionRepository.tmp_initialize(conn)
-    ScheduledMatchRepository.tmp_init(conn)
-    MatchResultRepository.tmp_init(conn)
-    game = make_game("calendar-test")
-    _insert_clubs(conn, game)
+def test_game_screen_query_after_playoff_end_does_not_crash(tmp_path):
+    game, clubs, _ = make_persisted_game(
+        "calendar-test",
+        tmp_path / "game.sqlite",
+    )
     cmp = game.cmp
 
     if cmp is None:
@@ -183,7 +177,7 @@ def test_game_screen_query_after_playoff_end_does_not_crash():
     regular_season_length = len(cmp._schedule or [])
 
     for _ in range(regular_season_length + 9):
-        success, reason = game.update()
+        success, reason = game.update(clubs)
         assert success, reason
 
     handler = GameScreenGuiQueryHandler(
@@ -196,26 +190,22 @@ def test_game_screen_query_after_playoff_end_does_not_crash():
     handler("calendar-test", _first_club_id(game))
 
 
-def test_game_screen_query_shows_bracket_when_playoffs_start():
-    conn = _make_connection()
-    _create_schedule_result_tables(conn)
-    CompetitionRepository.tmp_initialize(conn)
-    ScheduledMatchRepository.tmp_init(conn)
-    MatchResultRepository.tmp_init(conn)
-
-    game = make_game("playoff-bracket-test")
-    _insert_clubs(conn, game)
+def test_game_screen_query_shows_bracket_when_playoffs_start(tmp_path):
+    game, clubs, _ = make_persisted_game(
+        "playoff-bracket-test",
+        tmp_path / "game.sqlite",
+    )
 
     regular_season_length = len(game.cmp._schedule)
     for _ in range(regular_season_length):
-        success, reason = game.update()
+        success, reason = game.update(clubs)
         assert success, reason
 
     assert isinstance(game.cmp, Playoff)
 
     handler = GameScreenGuiQueryHandler(
         game_repository=_game_repository(game),
-        club_provider=_club_provider(game.clubs),
+        club_provider=_club_provider(clubs),
         match_result_repository=MatchResultRepository.tmp_get_instance(),
         competition_repository=CompetitionRepository.tmp_get_instance(),
     )

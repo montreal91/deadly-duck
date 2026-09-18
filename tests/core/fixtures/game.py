@@ -3,6 +3,7 @@ Created September 14, 2026
 
 @author montreal91
 """
+import sqlite3
 import time
 
 from core.game import Game
@@ -12,8 +13,14 @@ from core.match import ExhaustionCalculator
 from core.match_engine import MatchParams
 from core.player import PlayerReputationCalculator
 from core.playoffs import PlayoffParams
+from core.ports.inbound.commands.create_new_game import init_clubs_for_game
+from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.match_result_repository import MatchResultRepository
+from core.ports.outbound.player_repository import PlayerRepository
+from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from core.regular_championship import ChampionshipParams
+from persistence.migration_history import init_db
 
 
 def make_game(game_id: str, conn=None) -> Game:
@@ -25,6 +32,26 @@ def make_game(game_id: str, conn=None) -> Game:
         created_ts=now,
         updated_ts=now,
     )
+
+
+def make_persisted_game(game_id, db_path):
+    init_db(db_path)
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    CompetitionRepository.tmp_initialize(conn)
+    ScheduledMatchRepository.tmp_init(conn)
+    MatchResultRepository.tmp_init(conn)
+    PlayerRepository.tmp_init(conn)
+    TemporalClubProvider.initialize(conn)
+    conn.execute("INSERT INTO game (game_id) VALUES (?)", (game_id,))
+    conn.commit()
+    TemporalClubProvider.get_instance().save_clubs(
+        init_clubs_for_game(game_id).values()
+    )
+
+    game = make_game(game_id=game_id, conn=conn)
+    clubs = TemporalClubProvider.get_instance().get_clubs_for_game(game_id)
+    return game, clubs, conn
 
 def make_game_params() -> GameParams:
     match_params = MatchParams(

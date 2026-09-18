@@ -126,6 +126,7 @@ def test_get_season_competitions_returns_competitions_for_requested_season():
 
 def test_save_playoff_competition_inserts_playoff_series():
     conn = _make_connection()
+    _insert_playoff_clubs(conn)
     repository = CompetitionRepository(conn)
     playoff = _playoff("playoff")
 
@@ -157,6 +158,7 @@ def test_save_playoff_competition_inserts_playoff_series():
 
 def test_get_ongoing_playoff_competitions_loads_series_from_table():
     conn = _make_connection()
+    _insert_playoff_clubs(conn)
     repository = CompetitionRepository(conn)
     playoff = _playoff("playoff")
     first_series = playoff._series[0]
@@ -180,6 +182,7 @@ def test_get_ongoing_playoff_competitions_loads_series_from_table():
 
 def test_get_ongoing_playoff_competitions_preserves_series_results():
     conn = _make_connection()
+    _insert_playoff_clubs(conn)
     repository = CompetitionRepository(conn)
     playoff = _playoff("playoff")
     playoff.apply_results([
@@ -452,6 +455,14 @@ def _make_connection() -> sqlite3.Connection:
         """
     )
     return conn
+
+
+def _insert_playoff_clubs(conn):
+    with conn:
+        conn.executemany(
+            "INSERT INTO club (game_id, club_id) VALUES ('game', ?)",
+            [(str(club_id),) for club_id in range(8)],
+        )
 
 
 class _Game:
