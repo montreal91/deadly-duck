@@ -87,6 +87,7 @@ logging.basicConfig(
 )
 
 
+
 class Game:
     """
     A class that encapsulates the game logic.
@@ -98,7 +99,6 @@ class Game:
     _game_id: str
     _attendance_calculator: Callable
     _contract_calculator: Callable[[int], int]
-    # _clubs: Dict[str, Club]
     _current_date: date
     _free_agents: List[Player]
     _params: GameParams
@@ -134,10 +134,6 @@ class Game:
 
         self._created_ts = created_ts
         self._updated_ts = updated_ts
-
-        # tcp = TemporalClubProvider
-        # tcp.init_clubs_for_game(self._game_id)
-        # self._clubs = clubs
         self._season_index = 0
 
         self._start_regular_championship(list(self._clubs.keys()))
@@ -224,30 +220,15 @@ class Game:
             club_name=clubs[pk].name,
             day=self._formatted_current_date,
             clubs=[club.name for club in clubs.values()],
-            # free_agents=self._get_free_agents(),
-            # history=self._history,
-            # last_results=self._last_results,
             opponent=self._get_opponent(cmp, pk),
             practice_cost=self._calculate_club_practice_cost(club=clubs[pk]),
             remaining_matches=_get_remaining_matches(cmp, pk),
-            # standings=self._get_standings(cmp=cmp),
             title=_get_competition_title(cmp),
             user_players=self._get_user_players(pk),
             competition=_get_competition_title(cmp),
             competition_type=_get_competition_type(cmp=cmp),
             has_matches=_has_matches(cmp=cmp),
         )
-
-    def hire_free_agent(self, club_pk: str, player_pk: int):
-        """Hires a free agent for the given club."""
-
-        assert player_pk in range(len(self._free_agents)), (
-            "There is no free agent with such pk."
-        )
-
-        player = self._free_agents[player_pk]
-        self._process_player_hire(club_pk=club_pk, player=player)
-        self._free_agents.pop(player_pk)
 
     def proceed_to_next_competition(self):
         """Updates game while player action is not required."""
@@ -354,8 +335,6 @@ class Game:
         return True
 
     def _decision_required(self, cmp: AbstractCompetition, clubs: Dict[str, Club]) -> bool:
-        # cmp = self.cmp
-
         if cmp is None or not cmp.current_matches:
             return False
 
@@ -464,7 +443,7 @@ class Game:
         for club in clubs.values():
             if self._is_manager_club(club.club_id):
                 continue
-            techs = [slot.player.actual_technique < 5 for slot in club.players]
+            techs = [slot.player.actual_technique < 5 for slot in club.players if slot.player is not None]
             if all(techs):
                 new_player = self._player_factory.create_player(
                     level=0,
@@ -477,12 +456,11 @@ class Game:
             return True
 
         opponent = self._get_opponent(cmp, pk)
-        # club: Club = self._clubs[pk]
         if opponent is None or not self._is_manager_club(pk):
             return True
 
         best_player = max(
-            [slot.player.actual_technique for slot in club.players],
+            [slot.player.actual_technique for slot in club.players if slot.player is not None],
             default=0,
         )
 
@@ -532,7 +510,7 @@ class Game:
                 competition.day,
             )
 
-            playing_player_ids.extend(self._get_playing_player_ids(current_matches))
+            playing_player_ids.extend(_get_playing_player_ids(current_matches, clubs))
             results = process_matches(
                 current_matches, clubs, competition.match_params
             )
@@ -553,26 +531,6 @@ class Game:
         _calculate_match_income(clubs)
         self._recover(clubs=clubs, excluded_player_ids=set(playing_player_ids))
 
-    def _process_player_hire(self, club_pk: str, player: Player):
-        assert club_pk in self._clubs, _CLUB_ID_ERROR
-
-        cost = self._contract_calculator(player.level)
-
-        assert self._clubs[club_pk].account.balance >= cost, (
-            "Insufficient funds.\n"
-            f"You need at least ${cost}."
-        )
-        self._clubs[club_pk].add_player(player)
-        if self._is_manager_club(club_pk):
-            self._clubs[club_pk].select_coach(
-                coach_index=0,
-                player_id=player.player_id,
-            )
-        self._clubs[club_pk].account.ProcessTransaction(DdTransaction(
-            -cost,
-            f"New player contract with {player.initials}."
-        ))
-
     def _recover(self, clubs: Dict[str, Club], excluded_player_ids: Set[str]):
         recovery_function = ExhaustedLinearRecovery(
             self._params.exhaustion_factor
@@ -584,19 +542,6 @@ class Game:
                 slot.player.recover_stamina(
                     recovery_function(slot.player)
                 )
-
-    def _get_playing_player_ids(self, matches) -> Set[str]:
-        if matches is None:
-            return set()
-
-        player_ids = set()
-        for match in matches:
-            for club_id in (match.home_pk, match.away_pk):
-                player = self._clubs[club_id].selected_player
-                if player is not None:
-                    player_ids.add(player.player_id)
-
-        return player_ids
 
     def _is_manager_club(self, club_id: str) -> bool:
         return self._manager_club_id == club_id
@@ -775,3 +720,14 @@ def _calculate_match_income(clubs: Dict[str, Club]):
             value=250_000,
             comment="Income"
         ))
+
+
+def _get_playing_player_ids(matches: List[ScheduledMatch], clubs: Dict[str, Club]) -> Set[str]:
+    player_ids = set()
+    for match in matches:
+        for club_id in (match.home_pk, match.away_pk):
+            player = clubs[club_id].selected_player
+            if player is not None:
+                player_ids.add(player.player_id)
+
+    return player_ids

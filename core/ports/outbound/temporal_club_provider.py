@@ -54,14 +54,10 @@ class TemporalClubProvider:
         if self._conn is None:
             raise RuntimeError("TemporalClubProvider has no SQLite connection.")
 
-        # self._game_clubs_cache = {}
         with self._conn:
             self._save_club(club, delete_existing_roster=True)
 
     def get_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
-        # if game_id in self._game_clubs_cache:
-        #     return self._game_clubs_cache[game_id]
-
         clubs = self._load_clubs_for_game(game_id)
         self._game_clubs_cache[game_id] = clubs
 
@@ -261,7 +257,7 @@ class TemporalClubProvider:
                 "name": club.name,
                 "balance": club.account.balance,
                 "coach_power": club.coach_power,
-                "selected_player_id": club._selected_player,
+                "selected_player_id": club.get_selected_player_id(),
             },
         )
 

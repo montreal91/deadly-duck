@@ -256,6 +256,9 @@ class Club:
     def get_player_slot(self, player_id: str) -> Optional[ClubPlayerSlot]:
         return self._players.get(_normalize_player_id(player_id))
 
+    def get_selected_player_id(self):
+        return self._selected_player
+
     def has_player(self, player_id: str) -> bool:
         return self.get_player_slot(player_id) is not None
 

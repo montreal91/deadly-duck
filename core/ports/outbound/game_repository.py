@@ -6,7 +6,6 @@ Created December 26, 2025
 import pickle
 from sqlite3 import Binary
 from sqlite3 import Connection
-from typing import Dict
 from typing import Optional
 
 from core.game import Game
@@ -14,10 +13,8 @@ from persistence.sql import read_sql_file
 
 
 class GameRepository:
-    _games: Dict[str, Game]
 
     def __init__(self, conn: Connection):
-        self._games = {}
         self._conn = conn
 
         self._save_game_sql = read_sql_file("data/sql/save_game.sql")
@@ -25,12 +22,7 @@ class GameRepository:
         self._get_game_ids_sql = read_sql_file("data/sql/get_game_ids.sql")
 
     def get_game(self, game_id) -> Optional[Game]:
-        if game_id in self._games:
-            return self._games[game_id]
-
         game = self._load_game(game_id)
-        self._games[game_id] = game
-
         return game
 
     def does_game_exist(self, game_id: str) -> bool:
@@ -50,7 +42,6 @@ class GameRepository:
         return [row[0] for row in query_res]
 
     def save_game(self, game: Game):
-        self._games = {} # invalidate cache
         self._save_game_to_file(game)
 
     def _load_game(self, game_id: str) -> Game:
