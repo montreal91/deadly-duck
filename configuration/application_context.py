@@ -161,7 +161,7 @@ class ApplicationContext:
 
         self._improve_player_skill_command_handler = ImprovePlayerSkillCommandHandler(
             self._game_repository,
-            self._temporal_club_provider,
+            self._player_repository,
         )
 
     @property

@@ -33,6 +33,18 @@ class GameRepository:
 
         return game
 
+    def does_game_exist(self, game_id: str) -> bool:
+        row = self._conn.execute(
+            """
+            SELECT 1
+            FROM game
+            WHERE game_id = :game_id
+            LIMIT 1
+            """,
+            {"game_id": game_id},
+        ).fetchone()
+        return row is not None
+
     def get_game_ids(self):
         query_res = self._conn.execute(self._get_game_ids_sql).fetchall()
         return [row[0] for row in query_res]
