@@ -12,7 +12,11 @@ import pytest
 from core.competition import CompetitionType
 from core.game import Game
 from core.playoffs import Playoff
+from core.ports.inbound.commands.next_day import NextDayCommand
+from core.ports.inbound.commands.next_day import NextDayCommandHandler
 from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.game_repository import GameRepository
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from tests.core.fixtures.game import make_game
 from tests.core.fixtures.game import make_persisted_game
 
@@ -32,6 +36,53 @@ def test_successful_game_update_advances_calendar_date(tmp_path):
     assert success
     assert game.current_date == date(2082, 2, 22)
     assert game.get_context(_first_club_id(game))["day"] == "2082-Feb-22"
+
+
+def test_regular_season_practice_day_persists_player_experience(tmp_path):
+    game, clubs, conn = make_persisted_game(
+        "practice-test",
+        tmp_path / "practice.sqlite",
+    )
+    game_repository = GameRepository(conn)
+    game_repository.save_game(game)
+    club_id = next(iter(clubs))
+    player = clubs[club_id].players[0].player
+    conn.execute(
+        """
+        UPDATE roster_entry
+        SET coach_level = 1
+        WHERE game_id = ? AND player_id = ?
+        """,
+        ("practice-test", player.player_id),
+    )
+    conn.commit()
+    initial_experience, current_stamina = conn.execute(
+        """
+        SELECT experience, current_stamina
+        FROM player
+        WHERE game_id = ? AND player_id = ?
+        """,
+        ("practice-test", player.player_id),
+    ).fetchone()
+    assert game.cmp.current_matches == []
+    handler = NextDayCommandHandler(
+        game_repository=game_repository,
+        club_repository=TemporalClubProvider.get_instance(),
+        competition_repository=CompetitionRepository.tmp_get_instance(),
+    )
+
+    result = handler(NextDayCommand("practice-test"))
+
+    persisted_experience = conn.execute(
+        """
+        SELECT experience
+        FROM player
+        WHERE game_id = ? AND player_id = ?
+        """,
+        ("practice-test", player.player_id),
+    ).fetchone()[0]
+    assert result.success
+    assert persisted_experience == initial_experience + current_stamina
 
 
 def test_next_season_starts_on_next_year_february_21(tmp_path):

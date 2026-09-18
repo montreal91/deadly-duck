@@ -283,25 +283,6 @@ class Game:
     def proceed_to_next_competition(self):
         """Updates game while player action is not required."""
 
-    def select_coach_for_player(
-            self, coach_index: int, player_id: str, club_index: str
-    ):
-        """
-        Selects a coach (bad, normal, or good) for the player in the club.
-        """
-
-        assert club_index in self._clubs, _CLUB_ID_ERROR
-        assert self._clubs[club_index].has_player(player_id), (
-            "Incorrect player index."
-        )
-        assert 0 <= coach_index < len(Club.COACH_LEVELS), (
-            "Incorrect coach index."
-        )
-
-        self._clubs[club_index].select_coach(
-            coach_index=coach_index, player_id=player_id
-        )
-
     def set_managed(self, club_id, is_controlled):
         """Sets flag whether club is controlled by a user or not."""
 
@@ -791,4 +772,3 @@ def _process_season_end_players(clubs: Dict[str, Club]):
 def _unselect(clubs: Dict[str, Club]):
     for club in clubs.values():
         club.select_player(None)
-
