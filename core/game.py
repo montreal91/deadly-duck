@@ -241,21 +241,6 @@ class Game:
     def tmp_init(self):
         self._start_regular_championship(list(self._clubs.keys()))
 
-    def fire_player(self, player_id: str, club_id: str):
-        """Fires the selected player from user's club."""
-
-        assert club_id in self._clubs, _CLUB_ID_ERROR
-
-        assert self._clubs[club_id].has_player(player_id), (
-            "There is no player with such index in your club."
-        )
-
-        player = self._clubs[club_id].pop_player(player_id)
-        player.has_next_contract = False
-        player.recover_stamina(player.max_stamina)
-
-        self._free_agents.append(player)
-
     def get_context(self, pk: str) -> Dict[str, Any]:
         """A dictionary with information available for user."""
         clubs = self._clubs

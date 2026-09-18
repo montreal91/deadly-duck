@@ -28,13 +28,25 @@ class FirePlayerCommandHandler:
         self._club_provider = club_provider
 
     def __call__(self, command: FirePlayerCommand) -> FirePlayerCommandResult:
-        game = self._game_repository.get_game(command.game_id)
-
-        if game is None:
+        if not self._game_repository.does_game_exist(command.game_id):
             return FirePlayerCommandResult(success=False, message="Game not found")
 
-        game.fire_player(club_id=command.club_id, player_id=command.player_id)
-        self._game_repository.save_game(game)
-        self._club_provider.save_clubs(game.clubs.values())
+        clubs = self._club_provider.get_clubs_for_game(command.game_id)
+        club = clubs.get(command.club_id)
+        if club is None:
+            return FirePlayerCommandResult(
+                success=False,
+                message="Incorrect club id.",
+            )
+
+        if not club.has_player(command.player_id):
+            return FirePlayerCommandResult(
+                success=False,
+                message="There is no player with such id in your club.",
+            )
+
+        player = club.pop_player(command.player_id)
+        player.recover_stamina(player.max_stamina)
+        self._club_provider.save_club(club)
 
         return FirePlayerCommandResult(success=True, message="")
