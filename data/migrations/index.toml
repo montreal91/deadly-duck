@@ -48,3 +48,8 @@ name = "Playoff Series"
 id = 9
 file = "v009_club_league.sql"
 name = "Club League"
+
+[[migration]]
+id = 10
+file = "v010_contracts_and_player_assignments.sql"
+name = "Contracts And Player Assignments"
