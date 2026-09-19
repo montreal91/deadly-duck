@@ -106,5 +106,17 @@
         "country":  "New Zealand",
         "city":  "Wellington",
         "motto":  "The motto of Wellington Wardens"
+    },
+    {
+        "club_id": "hume_tech",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Build the next point."
+    },
+    {
+        "club_id": "manningham_rockets",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Ready for launch."
     }
 ]

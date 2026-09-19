@@ -43,3 +43,8 @@ name = "Drop Competition Game Foreign Key"
 id = 8
 file = "v008_playoff_series.sql"
 name = "Playoff Series"
+
+[[migration]]
+id = 9
+file = "v009_club_league.sql"
+name = "Club League"

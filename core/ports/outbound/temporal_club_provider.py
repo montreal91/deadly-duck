@@ -85,6 +85,7 @@ class TemporalClubProvider:
                 game_id=club_row["game_id"],
                 name=club_row["name"],
                 coach_power=club_row["coach_power"],
+                league_id=club_row["league_id"],
             )
             club.account.ProcessTransaction(DdTransaction(
                 club_row["balance"],
@@ -235,6 +236,7 @@ class TemporalClubProvider:
                 name,
                 balance,
                 coach_power,
+                league_id,
                 selected_player_id
             )
             VALUES (
@@ -243,12 +245,14 @@ class TemporalClubProvider:
                 :name,
                 :balance,
                 :coach_power,
+                :league_id,
                 :selected_player_id
             )
             ON CONFLICT(game_id, club_id) DO UPDATE SET
                 name = excluded.name,
                 balance = excluded.balance,
                 coach_power = excluded.coach_power,
+                league_id = excluded.league_id,
                 selected_player_id = excluded.selected_player_id
             """,
             {
@@ -257,6 +261,7 @@ class TemporalClubProvider:
                 "name": club.name,
                 "balance": club.account.balance,
                 "coach_power": club.coach_power,
+                "league_id": club.league_id,
                 "selected_player_id": club.get_selected_player_id(),
             },
         )

@@ -38,4 +38,6 @@ INITIAL_CLUBS = (
     ExpectedInitialClub("western_furies", "Western Furies", 1, 3_250_000, 2, 2),
     ExpectedInitialClub("selangor_royals", "Selangor Royals", 3, 5_000_000, 0, 0),
     ExpectedInitialClub("wellington_wardens", "Wellington Wardens", 3, 5_000_000, 0, 0),
+    ExpectedInitialClub("hume_tech", "Hume Tech", 0, 0, 0, 0),
+    ExpectedInitialClub("manningham_rockets", "Manningham Rockets", 0, 0, 0, 0),
 )
