@@ -1,6 +1,7 @@
 """Persistence for a player's current club assignment."""
 
 from sqlite3 import Connection
+from typing import Optional
 
 
 class PlayerAssignmentRepository:
@@ -30,3 +31,18 @@ class PlayerAssignmentRepository:
                 """,
                 (game_id, club_id, player_id, coach_level),
             )
+
+    def get_assigned_club_id(
+            self,
+            game_id: str,
+            player_id: str,
+    ) -> Optional[str]:
+        row = self._conn.execute(
+            """
+            SELECT club_id
+            FROM player_assignment
+            WHERE game_id = ? AND player_id = ?
+            """,
+            (game_id, player_id),
+        ).fetchone()
+        return None if row is None else row[0]

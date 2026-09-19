@@ -60,6 +60,7 @@ def _add_club(clubs: Dict[str, Club], game_id: str, club_data: Dict[str, str]):
         name=club_data["name"],
         coach_power=int(club_data["coach_power"]),
         league_id=club_data["league_id"] or None,
+        farm_club_id=club_data["farm_club_id"] or None,
     )
 
     for index in range(1, 6):
@@ -112,4 +113,3 @@ def init_clubs_for_game(game_id: str) -> Dict[str, Club]:
                 club.contract_player(player.player_id)
 
     return clubs
-

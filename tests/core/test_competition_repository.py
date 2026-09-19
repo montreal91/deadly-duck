@@ -375,6 +375,7 @@ def _make_connection() -> sqlite3.Connection:
             coach_power INTEGER,
             league_id TEXT,
             selected_player_id TEXT,
+            farm_club_id TEXT,
             PRIMARY KEY (game_id, club_id)
         );
 

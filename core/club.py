@@ -81,6 +81,7 @@ class Club:
 
     _club_id: str
     _account: DdFinancialAccount
+    _farm_club_id: Optional[str]
     _fame_tracker: DdFameTracker
     _is_controlled: bool
     _league_id: Optional[str]
@@ -95,6 +96,7 @@ class Club:
             name: str,
             coach_power: int,
             league_id: Optional[str] = None,
+            farm_club_id: Optional[str] = None,
     ):
         self._club_id = club_id
         self._game_id = game_id
@@ -102,6 +104,7 @@ class Club:
         self._fame_tracker = DdFameTracker()
         self._is_controlled = False
         self._league_id = league_id
+        self._farm_club_id = farm_club_id
         self._name = name
         self._players = {}
         self._selected_player = None
@@ -124,6 +127,10 @@ class Club:
     @property
     def league_id(self) -> Optional[str]:
         return self._league_id
+
+    @property
+    def farm_club_id(self) -> Optional[str]:
+        return self._farm_club_id
 
     @property
     def coach_power(self):

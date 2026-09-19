@@ -53,3 +53,8 @@ name = "Club League"
 id = 10
 file = "v010_contracts_and_player_assignments.sql"
 name = "Contracts And Player Assignments"
+
+[[migration]]
+id = 11
+file = "v011_club_farm_club.sql"
+name = "Club Farm Club"
