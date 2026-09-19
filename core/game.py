@@ -55,6 +55,12 @@ _UNCONTRACTED_PLAYERS_ERROR = (
 _FIRST_SEASON_START_DATE = date(2082, 2, 21)
 _SEASON_START_MONTH = 2
 _SEASON_START_DAY = 21
+_MASTER_LEAGUE_ID = "master_league"
+_APPRENTICE_LEAGUE_ID = "apprentice_league"
+_COMPETITION_LEAGUE_IDS = frozenset({
+    _MASTER_LEAGUE_ID,
+    _APPRENTICE_LEAGUE_ID,
+})
 
 
 class GameParams(NamedTuple):
@@ -136,7 +142,7 @@ class Game:
         self._updated_ts = updated_ts
         self._season_index = 0
 
-        self._start_regular_championship(list(self._clubs.keys()))
+        self._start_regular_championship(self._clubs)
         self._generate_free_agents()
 
     @property
@@ -204,7 +210,7 @@ class Game:
         return self._updated_ts
 
     def tmp_init(self):
-        self._start_regular_championship(list(self._clubs.keys()))
+        self._start_regular_championship(self._clubs)
 
     def get_context(self, pk: str) -> Dict[str, Any]:
         """A dictionary with information available for user."""
@@ -318,6 +324,8 @@ class Game:
     def _contract_check(self) -> bool:
         def check_club(c: Club) -> bool:
             for slot in c.players:
+                if slot.player is None:
+                    continue
                 next_age = slot.player.age + 1
                 if next_age >= GameplayConstants.RETIREMENT_AGE.value:
                     continue
@@ -433,10 +441,12 @@ class Game:
 
     def _get_user_players(self, pk: str):
         def set_contract_prices(slot: ClubPlayerSlot) -> ClubPlayerSlot:
+            if slot.player is None:
+                raise RuntimeError("")
             slot.contract_cost = self._contract_calculator(slot.player.level)
             return slot
 
-        return [set_contract_prices(slot) for slot in self._clubs[pk].players]
+        return [set_contract_prices(slot) for slot in self._clubs[pk].players if slot.player is not None]
 
     def _hire_players_if_needed(self, clubs: Dict[str, Club]):
         for club in clubs.values():
@@ -479,7 +489,7 @@ class Game:
         self._reset_current_date_to_next_season_start()
         self._season_index += 1
         _process_season_end_players(clubs)
-        self._start_regular_championship(list(clubs))
+        self._start_regular_championship(clubs)
 
     def _perform_practice(self, clubs: Dict[str, Club]):
         if not self._can_practice:
@@ -594,20 +604,32 @@ class Game:
             playoffs.get_full_schedule(),
         )
 
-    def _start_regular_championship(self, clubs: List[str]):
+    def _start_regular_championship(self, clubs: Dict[str, Club]):
         competition_repository = CompetitionRepository.tmp_get_instance()
-        initial_competition = RegularChampionship(list(clubs), self._params.championship_params)
-
         match_repository = ScheduledMatchRepository.tmp_get_instance()
-        initial_competition.make_schedule()
-        matches = initial_competition.get_full_schedule()
 
-        competition_repository.save_competition(
-            game_id=self._game_id,
-            competition=initial_competition,
-            season_index=self._season_index
-        )
-        match_repository.save_matches(self._game_id, matches)
+        clubs_by_league = {}
+        for club in clubs.values():
+            clubs_by_league.setdefault(club.league_id, []).append(club.club_id)
+
+        for league_id, club_ids in clubs_by_league.items():
+            if league_id not in _COMPETITION_LEAGUE_IDS:
+                continue
+
+            competition = RegularChampionship(
+                club_ids,
+                self._params.championship_params,
+            )
+            competition.make_schedule()
+            competition_repository.save_competition(
+                game_id=self._game_id,
+                competition=competition,
+                season_index=self._season_index,
+            )
+            match_repository.save_matches(
+                self._game_id,
+                competition.get_full_schedule(),
+            )
 
     def _get_regular_championships(self) -> List[AbstractCompetition]:
         repo = CompetitionRepository.tmp_get_instance()
@@ -689,7 +711,7 @@ def _get_competition_type(cmp: Optional[AbstractCompetition]) -> Optional[Compet
         return CompetitionType.PLAY_OFFS
     elif cmp is None:
         return None
-    raise Exception(f"Unknown competition type. {type(cmp)}")
+    raise RuntimeError(f"Unknown competition type. {type(cmp).__name__}")
 
 
 def _has_matches(cmp: Optional[AbstractCompetition]) -> bool:

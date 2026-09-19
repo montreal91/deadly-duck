@@ -7,7 +7,10 @@ Tests for creating a game and selecting its managed club.
 """
 
 import sqlite3
+from unittest.mock import Mock
 
+from core.club import Club
+from core.game import Game
 from core.ports.inbound.commands.create_new_game import CreateNewGameCommand
 from core.ports.inbound.commands.create_new_game import CreateNewGameCommandHandler
 from core.ports.inbound.commands.select_club import SelectClubCommand
@@ -21,6 +24,48 @@ from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from persistence.migration_history import init_db
 from tests.core.fixtures.clubs import INITIAL_CLUBS
 from tests.core.fixtures.game import make_game_params
+
+
+def test_regular_championships_are_created_for_master_and_apprentice_leagues(
+        monkeypatch,
+):
+    competition_repository = Mock()
+    match_repository = Mock()
+    monkeypatch.setattr(
+        CompetitionRepository,
+        "tmp_get_instance",
+        staticmethod(lambda: competition_repository),
+    )
+    monkeypatch.setattr(
+        ScheduledMatchRepository,
+        "tmp_get_instance",
+        staticmethod(lambda: match_repository),
+    )
+    game = Game.__new__(Game)
+    game._game_id = "game"
+    game._params = make_game_params()
+    game._season_index = 0
+    clubs = {
+        club.club_id: club
+        for club in (
+            Club("master-one", "game", "Master One", 1, "master_league"),
+            Club("master-two", "game", "Master Two", 1, "master_league"),
+            Club("apprentice-one", "game", "Apprentice One", 1, "apprentice_league"),
+            Club("apprentice-two", "game", "Apprentice Two", 1, "apprentice_league"),
+        )
+    }
+
+    game._start_regular_championship(clubs)
+
+    competitions = [
+        call.kwargs["competition"]
+        for call in competition_repository.save_competition.call_args_list
+    ]
+    assert len(competitions) == 2
+    assert {frozenset(competition._club_ids) for competition in competitions} == {
+        frozenset({"master-one", "master-two"}),
+        frozenset({"apprentice-one", "apprentice-two"}),
+    }
 
 
 def test_create_game_then_select_club_persists_all_initial_clubs(tmp_path):
@@ -45,6 +90,9 @@ def test_create_game_then_select_club_persists_all_initial_clubs(tmp_path):
 
     create_result = create_game(CreateNewGameCommand(game_id))
     clubs = club_provider.get_clubs_for_game(game_id)
+    competitions = CompetitionRepository.tmp_get_instance().get_ongoing_competitions(
+        game_id,
+    )
     managed_club_id = next(iter(clubs))
     select_club = SelectClubCommandHandler(game_repository, club_provider)
 
@@ -62,6 +110,33 @@ def test_create_game_then_select_club_persists_all_initial_clubs(tmp_path):
     assert create_result.game_id == game_id
     assert select_result.success
     assert persisted_game.manager_club_id == managed_club_id
+    master_competition = next(
+        competition
+        for competition in competitions
+        if competition.contains_club("auckland_aces")
+    )
+    apprentice_competition = next(
+        competition
+        for competition in competitions
+        if competition.contains_club("farm_club_0")
+    )
+
+    assert len(competitions) == 2
+    assert all(
+        master_competition.contains_club(club.club_id)
+        for club in clubs.values()
+        if club.league_id == "master_league"
+    )
+    assert not any(
+        master_competition.contains_club(club.club_id)
+        for club in clubs.values()
+        if club.league_id == "apprentice_league"
+    )
+    assert all(
+        apprentice_competition.contains_club(club.club_id)
+        for club in clubs.values()
+        if club.league_id == "apprentice_league"
+    )
     assert set(persisted_clubs) == {
         club.club_id for club in INITIAL_CLUBS
     }

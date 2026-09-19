@@ -108,15 +108,111 @@
         "motto":  "The motto of Wellington Wardens"
     },
     {
-        "club_id": "hume_tech",
+        "club_id": "farm_club_0",
         "country": "Australia",
         "city": "Melbourne",
-        "motto": "Build the next point."
+        "motto": "Learn. Compete. Progress."
     },
     {
-        "club_id": "manningham_rockets",
+        "club_id": "farm_club_1",
         "country": "Australia",
         "city": "Melbourne",
-        "motto": "Ready for launch."
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_2",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_3",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_4",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_5",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_6",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_7",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_8",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_9",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_10",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_11",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_12",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_13",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_14",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_15",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_16",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_17",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
     }
 ]
