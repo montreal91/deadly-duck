@@ -117,6 +117,7 @@ class GameScreenGuiQueryHandler:
         competition = _get_current_competition(
             game_id,
             self._competition_repository,
+            manager_club_id,
         )
         competition_type = _get_competition_type(
             competition,
@@ -197,9 +198,22 @@ def _count_players_with_unspent_skill_points(clubs, manager_club_id) -> int:
 def _get_current_competition(
         game_id,
         competition_repository: CompetitionRepository,
+        manager_club_id,
 ) -> Optional[AbstractCompetition]:
     competitions = competition_repository.get_ongoing_competitions(game_id)
     if not competitions:
+        return None
+
+    membership_aware_competitions = [
+        competition
+        for competition in competitions
+        if hasattr(competition, "contains_club")
+    ]
+    for competition in membership_aware_competitions:
+        if competition.contains_club(manager_club_id):
+            return competition
+
+    if membership_aware_competitions:
         return None
 
     return competitions[0]

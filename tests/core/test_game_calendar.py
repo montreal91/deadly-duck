@@ -193,6 +193,58 @@ def test_regular_season_end_starts_playoffs(tmp_path):
     assert isinstance(game.cmp, Playoff)
 
 
+def test_regular_seasons_start_separate_playoffs_for_each_league(tmp_path):
+    game, clubs, _ = make_persisted_game(
+        "league-playoffs-test",
+        tmp_path / "game.sqlite",
+    )
+    competition_repository = CompetitionRepository.tmp_get_instance()
+    regular_seasons = competition_repository.get_ongoing_competitions(game.game_id)
+    regular_season_length = max(
+        len(competition._schedule)
+        for competition in regular_seasons
+    )
+
+    for _ in range(regular_season_length):
+        success, reason = game.update(clubs)
+        assert success, reason
+
+    playoffs = [
+        competition
+        for competition in competition_repository.get_ongoing_competitions(
+            game.game_id,
+        )
+        if isinstance(competition, Playoff)
+    ]
+    master_club_ids = {
+        club_id
+        for club_id, club in clubs.items()
+        if club.league_id == "master_league"
+    }
+    apprentice_club_ids = {
+        club_id
+        for club_id, club in clubs.items()
+        if club.league_id == "apprentice_league"
+    }
+
+    assert len(playoffs) == 2
+    assert any(
+        set(playoff._club_ids) <= master_club_ids
+        for playoff in playoffs
+    )
+    assert any(
+        set(playoff._club_ids) <= apprentice_club_ids
+        for playoff in playoffs
+    )
+    assert all(
+        not (
+            set(playoff._club_ids) & master_club_ids
+            and set(playoff._club_ids) & apprentice_club_ids
+        )
+        for playoff in playoffs
+    )
+
+
 @pytest.mark.skip
 def test_game_starts_playoff_with_top_regular_season_clubs():
     # TODO: fix this test

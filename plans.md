@@ -10,7 +10,7 @@ Plans for upcoming versions
   * Top 4 seeds get a Bye in the first round
 * [x] Persistence for matches and competitions
 * [ ] Farm clubs
-  * [ ] Farm clubs core (leagues, competitions, playoffs)
+  * [x] Farm clubs core (leagues, competitions, playoffs)
   * [ ] Moving players to and from farm clubs
   * [ ] Ui support
 * [ ] Press

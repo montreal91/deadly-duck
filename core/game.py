@@ -587,22 +587,23 @@ class Game:
         scheduled_matches_repository = ScheduledMatchRepository.tmp_get_instance()
         regulars = self._get_regular_championships()
 
-        playoffs = Playoff(
-            self._params.playoff_params,
-            _make_playoff_seeds(
-                regulars[-1].standings,
-                self._params.playoff_params.length,
-            ),
-        )
-        repo.save_competition(
-            game_id=self._game_id,
-            competition=playoffs,
-            season_index=self._season_index,
-        )
-        scheduled_matches_repository.save_matches(
-            self._game_id,
-            playoffs.get_full_schedule(),
-        )
+        for regular in regulars:
+            playoffs = Playoff(
+                self._params.playoff_params,
+                _make_playoff_seeds(
+                    regular.standings,
+                    self._params.playoff_params.length,
+                ),
+            )
+            repo.save_competition(
+                game_id=self._game_id,
+                competition=playoffs,
+                season_index=self._season_index,
+            )
+            scheduled_matches_repository.save_matches(
+                self._game_id,
+                playoffs.get_full_schedule(),
+            )
 
     def _start_regular_championship(self, clubs: Dict[str, Club]):
         competition_repository = CompetitionRepository.tmp_get_instance()
