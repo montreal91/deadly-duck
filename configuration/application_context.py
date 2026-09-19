@@ -31,8 +31,10 @@ from core.ports.inbound.commands.create_new_game import CreateNewGameCommandHand
 from core.ports.inbound.commands.select_club import SelectClubCommandHandler
 from core.ports.outbound.game_repository import GameRepository
 from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.contract_repository import ContractRepository
 from core.ports.outbound.match_result_repository import MatchResultRepository
 from core.ports.outbound.player_repository import PlayerRepository
+from core.ports.outbound.player_assignment_repository import PlayerAssignmentRepository
 from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
 from core.queries.club_selection_screen_query import ClubSelectionScreenQueryHandler
 from core.queries.day_results_query import DayResultsQueryHandler
@@ -74,6 +76,10 @@ class ApplicationContext:
             self._db_connection,
         )
         self._player_repository = PlayerRepository.tmp_get_instance()
+        self._contract_repository = ContractRepository(self._db_connection)
+        self._player_assignment_repository = PlayerAssignmentRepository(
+            self._db_connection,
+        )
         self._params = _get_params()
 
         self._create_game_command_handler = CreateNewGameCommandHandler(
@@ -137,6 +143,8 @@ class ApplicationContext:
             self._game_repository,
             self._temporal_club_provider,
             self._params,
+            self._contract_repository,
+            self._player_assignment_repository,
         )
 
         self._sign_player_command_handler = SignPlayerCommandHandler(
