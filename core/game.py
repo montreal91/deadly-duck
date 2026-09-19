@@ -219,7 +219,6 @@ class Game:
             balance=clubs[pk].account.balance,
             club_name=clubs[pk].name,
             day=self._formatted_current_date,
-            clubs=[club.name for club in clubs.values()],
             opponent=self._get_opponent(cmp, pk),
             practice_cost=self._calculate_club_practice_cost(club=clubs[pk]),
             remaining_matches=_get_remaining_matches(cmp, pk),
