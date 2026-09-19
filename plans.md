@@ -8,11 +8,21 @@ Plans for upcoming versions
 * [x] Regular Championship → Playoffs transition system
 * [x] 12 clubs in playoffs
   * Top 4 seeds get a Bye in the first round
-* [ ] Persistence for matches and competitions
+* [x] Persistence for matches and competitions
 * [ ] Farm clubs
+  * [ ] Farm clubs core (leagues, competitions, playoffs)
+  * [ ] Moving players to and from farm clubs
+  * [ ] Ui support
 * [ ] Player temperaments (Melancholic, Choleric, Phlegmatic, Sanguine)
   * They do nothing for now, but give a little bit of personality to the players.
 * [ ] Juice as long-term player resource
+  * [ ] The Juice is not restored and spent for every match
+  * [ ] _(maybe)_ If match is won, it takes less juice
+  * [ ] _(maybe)_ Under exhaustion players spend more juice in matches `// I like that`
+* [ ] Practice rework
+  * [ ] Limited number of practice sessions per season (separate for main and farm clubs)
+  * [ ] Some limitation for farm clubs
+  * [ ] Different Practices with different advantages
 * [ ] Offseason rehab/practice
 * [ ] The history of The Kaitlyn Cup (the history of the previous seasons)
 
@@ -40,10 +50,16 @@ Plans for upcoming versions
 * [ ] Pre-match and post-match dialogues with players
 * [ ] Player portraits generation
 * [ ] Better support of high-res screens
+* [ ] Changing managed clubs
+* [ ] Managing farm-club
+* [ ] Emotional burnout of players
+* [ ] (Tech) get rid of `game.context`
+* [ ] (Tech) make update a system in the sense of ECS
+* [ ] (Client) Playoff Brackets widget optimization
 
 ### Achievements
 * Leader Leads - Win Playoffs as a top seed
-* The Triumph of the Underdog - Win Playoffs as 8th seed
+* The Triumph of the Underdog - Win Playoffs as 12th seed
 
 ## 0.2 (released)
 

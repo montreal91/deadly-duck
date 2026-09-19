@@ -3,14 +3,14 @@ Created Aug 20, 2026
 
 @author montreal91
 """
-from types import SimpleNamespace
+from unittest.mock import Mock
 
 from core.queries.level_up_screen_query import LevelUpScreenQuery
 from core.queries.level_up_screen_query import LevelUpScreenQueryHandler
 
 
 def test_level_up_screen_query_returns_players_with_unspent_skill_points():
-    player_without_points = _Player(
+    player_without_points = _player(
         player_id="player-1",
         full_name="No Points",
         level=1,
@@ -18,7 +18,7 @@ def test_level_up_screen_query_returns_players_with_unspent_skill_points():
         endurance=40,
         skill_points=0,
     )
-    player_with_points = _Player(
+    player_with_points = _player(
         player_id="player-2",
         full_name="Has Points",
         level=2,
@@ -26,10 +26,10 @@ def test_level_up_screen_query_returns_players_with_unspent_skill_points():
         endurance=45,
         skill_points=2,
     )
-    provider = _ClubProvider({
-        "club": _Club([
-            _Slot(player_without_points),
-            _Slot(player_with_points),
+    provider = _club_provider({
+        "club": _club([
+            _slot(player_without_points),
+            _slot(player_with_points),
         ]),
     })
     handler = LevelUpScreenQueryHandler(provider)
@@ -49,7 +49,7 @@ def test_level_up_screen_query_returns_players_with_unspent_skill_points():
 
 
 def test_level_up_screen_query_returns_empty_list_for_missing_club():
-    provider = _ClubProvider({})
+    provider = _club_provider({})
     handler = LevelUpScreenQueryHandler(provider)
 
     result = handler(LevelUpScreenQuery(
@@ -60,23 +60,26 @@ def test_level_up_screen_query_returns_empty_list_for_missing_club():
     assert result.players == []
 
 
-class _ClubProvider:
-    def __init__(self, clubs):
-        self._clubs = clubs
-
-    def get_clubs_for_game(self, _game_id):
-        return self._clubs
+def _club_provider(clubs):
+    provider = Mock()
+    provider.get_clubs_for_game.return_value = clubs
+    return provider
 
 
-class _Club:
-    def __init__(self, players):
-        self.players = players
+def _club(players):
+    club = Mock()
+    club.players = players
+    return club
 
 
-class _Slot:
-    def __init__(self, player):
-        self.player = player
+def _slot(player):
+    slot = Mock()
+    slot.player = player
+    return slot
 
 
-class _Player(SimpleNamespace):
-    pass
+def _player(**attrs):
+    player = Mock()
+    for name, value in attrs.items():
+        setattr(player, name, value)
+    return player

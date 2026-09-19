@@ -5,6 +5,7 @@ Created May 11, 2024
 
 @author montreal91
 """
+from dataclasses import dataclass
 from typing import List
 from typing import NamedTuple
 from typing import Optional
@@ -65,8 +66,8 @@ class CourtInfo(NamedTuple):
 class SavedGamesInfo(NamedTuple):
     names: List[str]
 
-
-class OpponentInfo(NamedTuple):
+@dataclass
+class OpponentInfo:
     club_name: str
     player: Optional[PlayerListInfo]
 
@@ -75,30 +76,20 @@ class PlayerSelectionScreenInfo(NamedTuple):
     players: List[PlayerListInfo]
     opponent: OpponentInfo
 
-
+# TODO: Replace this qlass with Queries
 class GameService:
     def __init__(
             self,
             game_repository,
             game_parameters,
+            competition_repository=None,
     ):
         self._game_repository = game_repository
         self._parameters = game_parameters
+        self._competition_repository = competition_repository
 
     def get_saved_games(self):
         return SavedGamesInfo(names=self._game_repository.get_game_ids())
-
-    def get_main_screen_info(self, game_id, manager_club_id):
-        game = self._game_repository.get_game(game_id)
-        context = game.get_context(manager_club_id)
-
-        info = MainScreenInfo(
-            day=context["day"],
-            balance=context["balance"],
-            club_name=context["club_name"],
-        )
-
-        return info
 
     def get_player_selection_gui_info(self, game_id, manager_club_id):
         context = self._game_repository.get_game(game_id).get_context(manager_club_id)
@@ -114,13 +105,6 @@ class GameService:
             players=players,
             opponent=_opponent_dto_to_info(context.get("opponent", None)),
         )
-
-    def proceed(self, game_id):
-        game = self._game_repository.get_game(game_id)
-        if game is None:
-            return
-        game.proceed_to_next_competition()
-        self._game_repository.save_game(game)
 
     def get_manager_club_id(self, game_id):
         game = self._game_repository.get_game(game_id)
@@ -150,7 +134,7 @@ def _player_to_row_info(player, is_selected, coach_level):
 
 def _opponent_dto_to_info(opponent_dto):
     if opponent_dto is None:
-        return None
+        return OpponentInfo("", None)
 
     player_info = None
 

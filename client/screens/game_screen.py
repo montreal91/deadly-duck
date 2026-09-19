@@ -11,7 +11,6 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 
 from client.game_context import GameContext
-from client.widgets.factories import make_label
 from client.widgets.layout import make_three_column_layout
 from client.widgets.playoffs_bracket_widget import PlayoffsBracketWidget
 from client.widgets.standings_table_widget import StandingsTableWidget
@@ -131,10 +130,9 @@ class GameScreen(Screen):
         self._club_id = GameContext.get_instance().club_id
 
     def update(self):
-        info = self._game_service.get_main_screen_info(self._game_id, self._club_id)
         gui_info = self._query_handler(self._game_id, self._club_id)
 
-        self._layout.title.text = info.club_name
+        self._layout.title.text = gui_info.club_name
         self._date_label.text = f"Date: {gui_info.day}"
         self._season_label.text = f"Your Season: {gui_info.season}"
         self._current_stage_label.text = f"Current Stage: {gui_info.current_competition}"
@@ -193,7 +191,8 @@ class GameScreen(Screen):
             self._playoffs_bracket.update(gui_info.standings)
             self._layout.center_col.add_widget(self._playoffs_bracket.widget)
         else:
-            raise Exception("Unknown competition type.")
+            # Just do nothing if there are no competitions.
+            pass
 
 
 def _on_results(_):

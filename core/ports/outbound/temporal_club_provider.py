@@ -3,18 +3,16 @@ Created August 19, 2026
 
 @author montreal91
 """
-import json
 from sqlite3 import Row
-from typing import Dict, Optional
-from typing import Any
+from typing import Dict
 from typing import Iterable
+from typing import Optional
 
 from core.club import Club
 from core.club import ClubPlayerSlot
 from core.financial import DdTransaction
 from core.player import Player
 from core.ports.outbound.player_mapper import make_player_from_row
-from core.serialization import DdJsonDecoder
 
 
 class TemporalClubProvider:
@@ -33,54 +31,14 @@ class TemporalClubProvider:
 
     def __init__(self, conn=None):
         self._conn = conn
+        self._game_clubs_cache = {}
 
         if self._conn is not None:
             self._conn.row_factory = Row
             self._conn.execute("PRAGMA foreign_keys = ON;")
 
-    def init_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
-        clubs = {}
-        decoder = DdJsonDecoder()
-        decoder.register(Player)
-        decoder.register(ClubPlayerSlot)
-
-        with open("data/clubs.json", "r", encoding="utf-8") as data_file:
-            club_data = json.load(data_file, object_hook=decoder)
-
-        for club in club_data:
-            self._add_club(clubs=clubs, game_id=game_id, club_data=club)
-
-        return clubs
-
-    def _add_club(
-            self,
-            clubs: Dict[str, Club],
-            game_id: str,
-            club_data: Dict[str, Any],
-    ):
-        club = Club(
-            club_id=club_data["club_id"],
-            game_id=game_id,
-            name=club_data["name"],
-            coach_power=club_data["coach_power"],
-        )
-
-        for value in club_data["fame"]:
-            club.add_fame(value)
-
-        for slot in club_data["player_data"]:
-            club.add_player(slot.player)
-            if slot.has_next_contract:
-                club.contract_player(player_id=slot.player.player_id)
-
-        club.account.ProcessTransaction(DdTransaction(
-            club_data["balance"],
-            "Initial balance",
-        ))
-
-        clubs[club.club_id] = club
-
     def save_clubs(self, clubs: Iterable[Club]):
+        self._game_clubs_cache = {}
         clubs = list(clubs)
         if not clubs:
             return
@@ -100,7 +58,10 @@ class TemporalClubProvider:
             self._save_club(club, delete_existing_roster=True)
 
     def get_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
-        return self._load_clubs_for_game(game_id)
+        clubs = self._load_clubs_for_game(game_id)
+        self._game_clubs_cache[game_id] = clubs
+
+        return clubs
 
     def _load_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
         if self._conn is None:
@@ -296,7 +257,7 @@ class TemporalClubProvider:
                 "name": club.name,
                 "balance": club.account.balance,
                 "coach_power": club.coach_power,
-                "selected_player_id": club._selected_player,
+                "selected_player_id": club.get_selected_player_id(),
             },
         )
 

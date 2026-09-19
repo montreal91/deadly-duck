@@ -18,3 +18,28 @@ name = "Clubs Players Roster Entries"
 id = 3
 file = "v003_player_skill_points.sql"
 name = "Player Skill Points"
+
+[[migration]]
+id = 4
+file = "v004_competitions_and_matches.sql"
+name = "Competitions And Matches"
+
+[[migration]]
+id = 5
+file = "v005_competition_object.sql"
+name = "Competition Object"
+
+[[migration]]
+id = 6
+file = "v006_competition_is_over.sql"
+name = "Competition Is Over"
+
+[[migration]]
+id = 7
+file = "v007_drop_competition_game_fk.sql"
+name = "Drop Competition Game Foreign Key"
+
+[[migration]]
+id = 8
+file = "v008_playoff_series.sql"
+name = "Playoff Series"

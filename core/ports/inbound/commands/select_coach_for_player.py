@@ -3,23 +3,33 @@ Created August 17, 2026
 
 @author montreal91
 """
-from typing import NamedTuple
+from dataclasses import dataclass
+
+from core.club import Club
+from core.ports.outbound.game_repository import GameRepository
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 
-class SelectCoachForPlayerCommand(NamedTuple):
+@dataclass(frozen=True)
+class SelectCoachForPlayerCommand:
     game_id: str
     club_id: str
     player_id: str
     coach_index: int
 
 
-class SelectCoachForPlayerCommandResult(NamedTuple):
+@dataclass(frozen=True)
+class SelectCoachForPlayerCommandResult:
     success: bool
     message: str
 
 
 class SelectCoachForPlayerCommandHandler:
-    def __init__(self, game_repository, club_provider):
+    def __init__(
+            self,
+            game_repository: GameRepository,
+            club_provider: TemporalClubProvider
+    ):
         self._game_repository = game_repository
         self._club_provider = club_provider
 
@@ -27,20 +37,36 @@ class SelectCoachForPlayerCommandHandler:
             self,
             command: SelectCoachForPlayerCommand
     ) -> SelectCoachForPlayerCommandResult:
-        game = self._game_repository.get_game(command.game_id)
-
-        if game is None:
+        if not self._game_repository.does_game_exist(command.game_id):
             return SelectCoachForPlayerCommandResult(
                 success=False,
                 message=f"Game with id={command.game_id} not found",
             )
 
-        game.select_coach_for_player(
+        clubs = self._club_provider.get_clubs_for_game(command.game_id)
+        club = clubs.get(command.club_id)
+        if club is None:
+            return SelectCoachForPlayerCommandResult(
+                success=False,
+                message="Incorrect club id.",
+            )
+
+        if not club.has_player(command.player_id):
+            return SelectCoachForPlayerCommandResult(
+                success=False,
+                message="Incorrect player index.",
+            )
+
+        if command.coach_index not in range(len(Club.COACH_LEVELS)):
+            return SelectCoachForPlayerCommandResult(
+                success=False,
+                message="Incorrect coach index.",
+            )
+
+        club.select_coach(
             coach_index=command.coach_index,
             player_id=command.player_id,
-            club_index=command.club_id,
         )
-        self._game_repository.save_game(game)
-        self._club_provider.save_clubs(game.clubs.values())
+        self._club_provider.save_club(club)
 
         return SelectCoachForPlayerCommandResult(success=True, message="")

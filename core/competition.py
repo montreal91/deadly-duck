@@ -4,10 +4,12 @@ Created May 20, 2019
 
 @author montreal91
 """
+import pickle
 from copy import copy
 from enum import Enum
 from itertools import chain
 from typing import Any
+from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Optional
@@ -15,8 +17,6 @@ from uuid import uuid4
 
 from core.match_result import MatchResult
 from core.scheduled_match import ScheduledMatch
-
-ScheduleDay = List[ScheduledMatch]
 
 
 class CompetitionType(Enum):
@@ -29,10 +29,17 @@ class AbstractCompetition:
 
     _club_ids: List[str]
     _competition_id: str
-    _schedule: List[Optional[ScheduleDay]]
+    _schedule: Dict[int, List[ScheduledMatch]]
     _day: int
     _params: Any
-    _results: List[List[MatchResult]]
+    _results: Dict[int, List[MatchResult]]
+    _is_over: bool
+
+    @staticmethod
+    def reconstruct(blob, day: int) -> "AbstractCompetition":
+        res = pickle.loads(blob)
+        res._day = day
+        return res
 
     def __init__(
             self,
@@ -44,20 +51,19 @@ class AbstractCompetition:
         self._competition_id = competition_id or str(uuid4())
         self._day = 0
         self._params = params
-        self._results = []
-        self._schedule = []
+        self._results = {}
+        self._schedule = {}
+        self._is_over = False
 
     @property
     def competition_id(self):
         return self._competition_id
 
     @property
-    def current_matches(self) -> Optional[ScheduleDay]:
+    def current_matches(self) -> List[ScheduledMatch]:
         """List of current matches."""
 
-        if self._day < len(self._schedule):
-            return self._schedule[self._day]
-        return []
+        return self._schedule.get(self._day, [])
 
     @property
     def day(self):
@@ -68,7 +74,7 @@ class AbstractCompetition:
     @property
     def is_over(self) -> bool:
         """Checks if competition is over"""
-        return False
+        return self._is_over
 
     @property
     def match_importance(self) -> int:
@@ -87,7 +93,12 @@ class AbstractCompetition:
         Actually, this method is present here for testing purposes and should
         not be used for production.
         """
-        for match in chain(*self._results):
+        if isinstance(self._results, dict):
+            result_days = self._results.values()
+        else:
+            result_days = self._results
+
+        for match in chain(*result_days):
             yield copy(match)
 
     def contains_club(self, club_pk: str) -> bool:
@@ -107,7 +118,7 @@ class AbstractCompetition:
         """List of matches scheduled for a club."""
 
         schedule = []
-        for day in self._schedule:
+        for day in _schedule_days(self._schedule, self._day):
             if day is None:
                 continue
             for match in day:
@@ -121,7 +132,7 @@ class AbstractCompetition:
         """List of upcoming competition days with optional club match."""
 
         schedule = []
-        for day in self._schedule[self._day:]:
+        for day in _schedule_days(self._schedule, self._day):
             if day is None:
                 schedule.append(None)
                 continue
@@ -147,10 +158,10 @@ class AbstractCompetition:
     def apply_results(self, results: List[MatchResult]):
         """Applies externally processed match results to current matches."""
 
-    def update(self) -> List[MatchResult]:
-        """Updates the state of the competition."""
+    def make_schedule(self):
+        pass
 
-    def _make_schedule(self):
+    def get_full_schedule(self) -> List[ScheduledMatch]:
         pass
 
     def _validate_current_results(self, results: List[MatchResult]):
@@ -174,3 +185,14 @@ class AbstractCompetition:
             assert result.away_pk == match.away_pk, (
                 "Result away club does not match scheduled match."
             )
+
+
+def _schedule_days(schedule, start_day):
+    if isinstance(schedule, list):
+        return schedule[start_day:]
+
+    return [
+        schedule[day_number]
+        for day_number in sorted(schedule)
+        if day_number >= start_day
+    ]
