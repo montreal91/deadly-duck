@@ -31,10 +31,12 @@ class CreateNewGameCommandHandler:
             game_repository,
             game_parameters,
             club_provider,
+            player_assignment_repository=None,
     ):
         self._game_repository = game_repository
         self._parameters = game_parameters
         self._club_provider = club_provider
+        self._player_assignment_repository = player_assignment_repository
 
     def __call__(self, command: CreateNewGameCommand) -> CreateNewGameCommandResult:
         game = Game(
@@ -47,6 +49,15 @@ class CreateNewGameCommandHandler:
 
         clubs = init_clubs_for_game(game_id=command.game_id)
         self._club_provider.save_clubs(clubs.values())
+        if self._player_assignment_repository is not None:
+            for club in clubs.values():
+                for slot in club.players:
+                    self._player_assignment_repository.assign_player(
+                        game_id=command.game_id,
+                        club_id=club.club_id,
+                        player_id=slot.player.player_id,
+                        coach_level=slot.coach_level,
+                    )
 
         game.tmp_init()
 

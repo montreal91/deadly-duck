@@ -17,10 +17,19 @@ _ACTION_COL_WIDTH = 0.25
 
 
 class RosterManagementTable:
-    def __init__(self, on_sign_player, on_fire_player, on_show_player_details):
+    def __init__(
+            self,
+            on_sign_player,
+            on_fire_player,
+            on_show_player_details,
+            transfer_button_text=None,
+            on_transfer_player=None,
+    ):
         self._on_sign_player = on_sign_player
         self._on_fire_player = on_fire_player
         self._on_show_player_details = on_show_player_details
+        self._transfer_button_text = transfer_button_text
+        self._on_transfer_player = on_transfer_player
         self._root = BoxLayout(
             orientation="vertical",
             size_hint_y=None,
@@ -45,6 +54,8 @@ class RosterManagementTable:
                 self._on_sign_player,
                 self._on_fire_player,
                 self._on_show_player_details,
+                self._transfer_button_text,
+                self._on_transfer_player,
             ))
 
 
@@ -84,6 +95,8 @@ def _make_player_row(
         on_sign_player,
         on_fire_player,
         on_show_player_details,
+        transfer_button_text,
+        on_transfer_player,
 ):
     row = BoxLayout(
         orientation="horizontal",
@@ -103,6 +116,8 @@ def _make_player_row(
         on_sign_player,
         on_fire_player,
         on_show_player_details,
+        transfer_button_text,
+        on_transfer_player,
     ))
 
     return row
@@ -177,11 +192,26 @@ def _make_details_button(player_id, on_show_player_details):
     return button
 
 
+def _make_transfer_button(player_id, text, on_transfer_player):
+    button = Button(
+        text=text,
+        font_size=16,
+        size_hint=(1, None),
+        height=dp(35),
+    )
+    button.player_id = player_id
+    button.on_transfer_player = on_transfer_player
+    button.bind(on_press=_on_transfer)
+    return button
+
+
 def _make_action_cell(
         player,
         on_sign_player,
         on_fire_player,
         on_show_player_details,
+        transfer_button_text,
+        on_transfer_player,
 ):
     cell = BoxLayout(
         orientation="horizontal",
@@ -196,6 +226,13 @@ def _make_action_cell(
 
     if player.contract_cost is not None:
         cell.add_widget(_make_sign_button(player.player_id, on_sign_player))
+
+    if transfer_button_text is not None and on_transfer_player is not None:
+        cell.add_widget(_make_transfer_button(
+            player.player_id,
+            transfer_button_text,
+            on_transfer_player,
+        ))
 
     cell.add_widget(_make_fire_button(player.player_id, on_fire_player))
 
@@ -212,3 +249,7 @@ def _on_sign(button):
 
 def _on_details(button):
     button.on_show_player_details(button.player_id)
+
+
+def _on_transfer(button):
+    button.on_transfer_player(button.player_id)

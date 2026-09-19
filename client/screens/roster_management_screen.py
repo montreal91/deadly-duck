@@ -13,10 +13,12 @@ from kivy.uix.widget import Widget
 from client.game_context import GameContext
 from client.widgets.layout import make_two_column_layout
 from client.widgets.roster_management_table import RosterManagementTable
+from core.ports.inbound.commands.assign_player import AssignPlayerCommand
 from core.ports.inbound.commands.fire_player import FirePlayerCommand
 from core.ports.inbound.commands.hire_new_player import HireNewPlayerCommand
 from core.ports.inbound.commands.sign_player import SignPlayerCommand
 from core.queries.roster_management_screen_query import RosterManagementScreenQuery
+from core.queries.roster_management_screen_query import RosterManagementScreenQueryHandler
 
 _ACTION_WIDTH = 350
 _ACTION_HEIGHT = 42
@@ -30,10 +32,11 @@ _MIN_COLUMN_CONTENT_WIDTH = 120
 class RosterManagementScreen(Screen):
     def __init__(
             self,
-            query_handler,
+            query_handler: RosterManagementScreenQueryHandler,
             hire_new_player_command_handler,
             sign_player_command_handler,
             fire_player_command_handler,
+            assign_player_command_handler,
             **kwargs
     ):
         super(RosterManagementScreen, self).__init__(**kwargs)
@@ -41,6 +44,7 @@ class RosterManagementScreen(Screen):
         self._hire_new_player_command_handler = hire_new_player_command_handler
         self._sign_player_command_handler = sign_player_command_handler
         self._fire_player_command_handler = fire_player_command_handler
+        self._assign_player_command_handler = assign_player_command_handler
         self._info = None
 
         self._layout = make_two_column_layout(
@@ -72,9 +76,25 @@ class RosterManagementScreen(Screen):
         self._roster_table = RosterManagementTable(
             on_sign_player=self._on_sign_player,
             on_fire_player=self._on_fire_player,
-            on_show_player_details=self._on_show_player_details,
+            on_show_player_details=_on_show_player_details,
+            transfer_button_text="To Farm",
+            on_transfer_player=self._on_move_to_farm,
         )
         self._layout.center_col.add_widget(self._roster_table.widget)
+
+        self._farm_roster_title = _make_column_label(
+            "Farm Club",
+            self._layout.center_col,
+        )
+        self._layout.center_col.add_widget(self._farm_roster_title)
+        self._farm_roster_table = RosterManagementTable(
+            on_sign_player=self._on_sign_farm_player,
+            on_fire_player=self._on_fire_farm_player,
+            on_show_player_details=_on_show_player_details,
+            transfer_button_text="To Main",
+            on_transfer_player=self._on_move_to_main,
+        )
+        self._layout.center_col.add_widget(self._farm_roster_table.widget)
 
         self._layout.left_col.add_widget(Widget())
         self._layout.center_col.add_widget(Widget())
@@ -88,7 +108,12 @@ class RosterManagementScreen(Screen):
         )
         self._info = self._query_handler(query)
         self._balance_label.text = f"Balance: {self._info.balance:_}".replace("_", " ")
-        self._roster_table.update(self._info.roster)
+        self._roster_table.update(self._info.main_roster)
+        self._farm_roster_title.text = (
+            f"{self._info.farm_club_name}"
+            if self._info.farm_club_name else "Farm Club"
+        )
+        self._farm_roster_table.update(self._info.farm_roster)
 
     def _on_hire_new_player(self, _):
         command = HireNewPlayerCommand(
@@ -118,8 +143,43 @@ class RosterManagementScreen(Screen):
         self._fire_player_command_handler(command)
         self.update()
 
-    def _on_show_player_details(self, player_id):
-        App.get_running_app().switch_to_player_details(player_id)
+    def _on_sign_farm_player(self, player_id):
+        command = SignPlayerCommand(
+            game_id=GameContext.get_instance().game_name,
+            club_id=self._info.farm_club_id,
+            player_id=player_id,
+        )
+
+        self._sign_player_command_handler(command)
+        self.update()
+
+    def _on_fire_farm_player(self, player_id):
+        command = FirePlayerCommand(
+            game_id=GameContext.get_instance().game_name,
+            club_id=self._info.farm_club_id,
+            player_id=player_id,
+        )
+
+        self._fire_player_command_handler(command)
+        self.update()
+
+    def _on_move_to_farm(self, player_id):
+        self._assign_player_command_handler(AssignPlayerCommand(
+            game_id=GameContext.get_instance().game_name,
+            master_club_id=GameContext.get_instance().club_id,
+            target_club_id=self._info.farm_club_id,
+            player_id=player_id,
+        ))
+        self.update()
+
+    def _on_move_to_main(self, player_id):
+        self._assign_player_command_handler(AssignPlayerCommand(
+            game_id=GameContext.get_instance().game_name,
+            master_club_id=GameContext.get_instance().club_id,
+            target_club_id=GameContext.get_instance().club_id,
+            player_id=player_id,
+        ))
+        self.update()
 
 
 def _on_back(_):
@@ -165,3 +225,7 @@ def _column_content_width(column_width):
         column_width - dp(_COLUMN_HORIZONTAL_PADDING),
         dp(_MIN_COLUMN_CONTENT_WIDTH),
     )
+
+
+def _on_show_player_details(player_id):
+    App.get_running_app().switch_to_player_details(player_id)

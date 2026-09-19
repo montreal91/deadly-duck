@@ -3,6 +3,8 @@
 from sqlite3 import Connection
 from typing import Optional
 
+from core.ports.outbound.player_mapper import make_player_from_row
+
 
 class PlayerAssignmentRepository:
     def __init__(self, conn: Connection):
@@ -46,3 +48,51 @@ class PlayerAssignmentRepository:
             (game_id, player_id),
         ).fetchone()
         return None if row is None else row[0]
+
+    def get_players_for_club(self, game_id: str, club_id: str):
+        rows = self._conn.execute(
+            """
+            SELECT
+                player.game_id,
+                player.player_id,
+                player.first_name,
+                player.second_name,
+                player.last_name,
+                player.age,
+                player.technique,
+                player.endurance,
+                player.exhaustion,
+                player.experience,
+                player.skill_points,
+                player.current_stamina,
+                player.reputation,
+                player_assignment.coach_level,
+                "contract".contract_cost,
+                "contract".status AS contract_status
+            FROM player_assignment
+            JOIN player
+              ON player.game_id = player_assignment.game_id
+             AND player.player_id = player_assignment.player_id
+            LEFT JOIN "contract"
+              ON "contract".game_id = player_assignment.game_id
+             AND "contract".player_id = player_assignment.player_id
+             AND "contract".status = 'active'
+            WHERE player_assignment.game_id = ?
+              AND player_assignment.club_id = ?
+            ORDER BY
+                player.experience DESC,
+                player.first_name,
+                player.last_name,
+                player.player_id
+            """,
+            (game_id, club_id),
+        ).fetchall()
+        return [
+            (
+                make_player_from_row(row),
+                row["coach_level"],
+                row["contract_cost"],
+                row["contract_status"],
+            )
+            for row in rows
+        ]

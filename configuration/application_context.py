@@ -13,6 +13,7 @@ from sqlite3 import Row
 
 from core.match_engine import MatchParams
 from core.ports.inbound.commands.fire_player import FirePlayerCommandHandler
+from core.ports.inbound.commands.assign_player import AssignPlayerCommandHandler
 from core.ports.inbound.commands.hire_new_player import HireNewPlayerCommandHandler
 from core.ports.inbound.commands.improve_player_skill_command import (
     ImprovePlayerSkillCommandHandler,
@@ -80,12 +81,17 @@ class ApplicationContext:
         self._player_assignment_repository = PlayerAssignmentRepository(
             self._db_connection,
         )
+        self._assign_player_command_handler = AssignPlayerCommandHandler(
+            self._temporal_club_provider,
+            self._player_assignment_repository,
+        )
         self._params = _get_params()
 
         self._create_game_command_handler = CreateNewGameCommandHandler(
             self._game_repository,
             self._params,
             self._temporal_club_provider,
+            self._player_assignment_repository,
         )
 
         self._select_club_command_handler = SelectClubCommandHandler(
@@ -125,6 +131,8 @@ class ApplicationContext:
 
         self._roster_management_screen_query_handler = RosterManagementScreenQueryHandler(
             self._game_repository,
+            self._temporal_club_provider,
+            self._player_assignment_repository,
         )
 
         self._practice_screen_query_handler = PracticeScreenQueryHandler(
@@ -232,6 +240,10 @@ class ApplicationContext:
     @property
     def fire_player_command_handler(self):
         return self._fire_player_command_handler
+
+    @property
+    def assign_player_command_handler(self):
+        return self._assign_player_command_handler
 
     @property
     def select_coach_for_player_command_handler(self):

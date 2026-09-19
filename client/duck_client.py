@@ -87,6 +87,7 @@ class DuckClientApp(App):
             hire_new_player_command_handler=ac.hire_new_player_command_handler,
             sign_player_command_handler=ac.sign_player_command_handler,
             fire_player_command_handler=ac.fire_player_command_handler,
+            assign_player_command_handler=ac.assign_player_command_handler,
             name="roster_management",
         )
         self._day_results_screen = DayResultsScreen(
