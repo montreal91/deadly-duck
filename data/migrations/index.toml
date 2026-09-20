@@ -58,3 +58,8 @@ name = "Contracts And Player Assignments"
 id = 11
 file = "v011_club_farm_club.sql"
 name = "Club Farm Club"
+
+[[migration]]
+id = 12
+file = "v012_drop_roster_next_contract.sql"
+name = "Drop Roster Next Contract"

@@ -11,8 +11,14 @@ from typing import Dict
 from core.club import Club
 from core.club_data import load_club_info_by_id
 from core.financial import DdTransaction
+from core.financial import DdStaticContractCalculator
 from core.game import Game
+from core.game import GameParams
 from core.player import Player
+from core.ports.outbound.contract_repository import ContractRepository
+from core.ports.outbound.game_repository import GameRepository
+from core.ports.outbound.player_assignment_repository import PlayerAssignmentRepository
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 
 @dataclass(frozen=True)
@@ -28,15 +34,17 @@ class CreateNewGameCommandResult:
 class CreateNewGameCommandHandler:
     def __init__(
             self,
-            game_repository,
-            game_parameters,
-            club_provider,
-            player_assignment_repository=None,
+            game_repository: GameRepository,
+            game_parameters: GameParams,
+            club_provider: TemporalClubProvider,
+            player_assignment_repository: PlayerAssignmentRepository,
+            contract_repository: ContractRepository,
     ):
         self._game_repository = game_repository
         self._parameters = game_parameters
         self._club_provider = club_provider
         self._player_assignment_repository = player_assignment_repository
+        self._contract_repository = contract_repository
 
     def __call__(self, command: CreateNewGameCommand) -> CreateNewGameCommandResult:
         game = Game(
@@ -49,14 +57,27 @@ class CreateNewGameCommandHandler:
 
         clubs = init_clubs_for_game(game_id=command.game_id)
         self._club_provider.save_clubs(clubs.values())
-        if self._player_assignment_repository is not None:
-            for club in clubs.values():
-                for slot in club.players:
-                    self._player_assignment_repository.assign_player(
+        for club in clubs.values():
+            for slot in club.players:
+                self._player_assignment_repository.assign_player(
+                    game_id=command.game_id,
+                    club_id=club.club_id,
+                    player_id=slot.player.player_id,
+                    coach_level=slot.coach_level,
+                )
+
+        contract_calculator = DdStaticContractCalculator(
+            self._parameters.contracts,
+        )
+        for club in clubs.values():
+            for slot in club.players:
+                if slot.has_next_contract:
+                    self._contract_repository.create_future_contract(
                         game_id=command.game_id,
                         club_id=club.club_id,
                         player_id=slot.player.player_id,
-                        coach_level=slot.coach_level,
+                        season_index=game.season_index + 1,
+                        contract_cost=contract_calculator(slot.player.level),
                     )
 
         game.tmp_init()

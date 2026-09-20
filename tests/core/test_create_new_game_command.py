@@ -16,11 +16,17 @@ from core.ports.inbound.commands.create_new_game import CreateNewGameCommandHand
 from core.ports.inbound.commands.select_club import SelectClubCommand
 from core.ports.inbound.commands.select_club import SelectClubCommandHandler
 from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.contract_repository import ContractRepository
 from core.ports.outbound.game_repository import GameRepository
 from core.ports.outbound.match_result_repository import MatchResultRepository
 from core.ports.outbound.player_repository import PlayerRepository
+from core.ports.outbound.player_assignment_repository import PlayerAssignmentRepository
 from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
+from core.queries.roster_management_screen_query import RosterManagementScreenQuery
+from core.queries.roster_management_screen_query import (
+    RosterManagementScreenQueryHandler,
+)
 from persistence.migration_history import init_db
 from tests.core.fixtures.clubs import INITIAL_CLUBS
 from tests.core.fixtures.game import make_game_params
@@ -86,6 +92,8 @@ def test_create_game_then_select_club_persists_all_initial_clubs(tmp_path):
         game_repository,
         make_game_params(),
         club_provider,
+        PlayerAssignmentRepository(conn),
+        contract_repository=ContractRepository(conn),
     )
 
     create_result = create_game(CreateNewGameCommand(game_id))
@@ -141,6 +149,27 @@ def test_create_game_then_select_club_persists_all_initial_clubs(tmp_path):
         club.club_id for club in INITIAL_CLUBS
     }
 
+    roster_result = RosterManagementScreenQueryHandler(
+        game_repository,
+        club_provider,
+        PlayerAssignmentRepository(conn),
+    )(RosterManagementScreenQuery(
+        game_id=game_id,
+        manager_club_id="auckland_aces",
+    ))
+
+    assert roster_result.success
+    assert roster_result.main_roster
+    assert roster_result.farm_roster
+    assert all(
+        player.contract_status == "Signed"
+        for player in roster_result.main_roster
+    )
+    assert all(
+        player.contract_status == "Not Signed"
+        for player in roster_result.farm_roster
+    )
+
     for expected_club in INITIAL_CLUBS:
         persisted_club = persisted_clubs[expected_club.club_id]
 
@@ -149,6 +178,15 @@ def test_create_game_then_select_club_persists_all_initial_clubs(tmp_path):
         assert persisted_club.coach_power == expected_club.coach_power
         assert persisted_club.account.balance == expected_club.balance
         assert len(persisted_club.players) == expected_club.player_count
-        assert sum(
-            slot.has_next_contract for slot in persisted_club.players
-        ) == expected_club.contracted_player_count
+        future_contract_count = conn.execute(
+            '''
+            SELECT COUNT(*)
+            FROM "contract"
+            WHERE game_id = ?
+              AND club_id = ?
+              AND season_index = ?
+              AND status = 'future'
+            ''',
+            (game_id, expected_club.club_id, persisted_game.season_index + 1),
+        ).fetchone()[0]
+        assert future_contract_count == expected_club.contracted_player_count

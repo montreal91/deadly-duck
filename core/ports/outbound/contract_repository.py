@@ -30,3 +30,41 @@ class ContractRepository:
                 """,
                 (game_id, club_id, player_id, season_index, contract_cost),
             )
+
+    def create_future_contract(
+            self,
+            game_id: str,
+            club_id: str,
+            player_id: str,
+            season_index: int,
+            contract_cost: int,
+    ):
+        with self._conn:
+            self._conn.execute(
+                """
+                INSERT INTO "contract" (
+                    game_id,
+                    club_id,
+                    player_id,
+                    season_index,
+                    contract_cost,
+                    status
+                )
+                VALUES (?, ?, ?, ?, ?, 'future')
+                """,
+                (game_id, club_id, player_id, season_index, contract_cost),
+            )
+
+    def has_future_contract(self, game_id: str, player_id: str) -> bool:
+        return self._conn.execute(
+            '''
+            SELECT EXISTS(
+                SELECT 1
+                FROM "contract"
+                WHERE game_id = ?
+                  AND player_id = ?
+                  AND status = 'future'
+            )
+            ''',
+            (game_id, player_id),
+        ).fetchone()[0] == 1

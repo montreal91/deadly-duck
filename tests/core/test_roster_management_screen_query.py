@@ -12,7 +12,7 @@ from core.queries.roster_management_screen_query import (
 from tests.core.fixtures.game import make_persisted_game
 
 
-def test_roster_management_query_returns_main_and_farm_rosters_without_context(
+def test_roster_management_query_shows_active_only_contracts_as_not_signed(
         tmp_path,
 ):
     game, clubs, conn = make_persisted_game(
@@ -87,6 +87,97 @@ def test_roster_management_query_returns_main_and_farm_rosters_without_context(
         )
     ]
     assert [player.player_id for player in result.farm_roster] == [farm_player_id]
-    assert result.main_roster[0].contract_status == "Signed"
-    assert result.farm_roster[0].contract_status == "Signed"
+    # An active contract covers the current season.  It must not be presented
+    # as a next-season contract in the roster screen.
+    assert result.main_roster[0].contract_status == "Not Signed"
+    assert result.farm_roster[0].contract_status == "Not Signed"
     game_repository.get_game.assert_not_called()
+
+
+def test_roster_management_query_shows_future_contracts_as_signed(
+        tmp_path,
+):
+    game, clubs, conn = make_persisted_game(
+        "roster-management-future-contracts-test",
+        tmp_path / "game.sqlite",
+    )
+    master_club = next(
+        club
+        for club in clubs.values()
+        if club.league_id == "master_league"
+    )
+    farm_club = clubs[master_club.farm_club_id]
+    main_player_id = master_club.players[0].player.player_id
+    farm_player_id = farm_club.players[0].player.player_id
+    assignments = PlayerAssignmentRepository(conn)
+    assignments.assign_player(game.game_id, master_club.club_id, main_player_id)
+    assignments.assign_player(game.game_id, farm_club.club_id, farm_player_id)
+    _create_contract(
+        conn,
+        game.game_id,
+        master_club.club_id,
+        main_player_id,
+        game.season_index + 1,
+        12_000,
+        "future",
+    )
+    _create_contract(
+        conn,
+        game.game_id,
+        farm_club.club_id,
+        farm_player_id,
+        game.season_index + 1,
+        9_000,
+        "future",
+    )
+    game_repository = Mock()
+    game_repository.does_game_exist.return_value = True
+    handler = RosterManagementScreenQueryHandler(
+        game_repository,
+        TemporalClubProvider.get_instance(),
+        assignments,
+    )
+
+    result = handler(RosterManagementScreenQuery(
+        game_id=game.game_id,
+        manager_club_id=master_club.club_id,
+    ))
+
+    assert result.success
+    assert result.main_roster[0].contract_status == "Signed"
+    assert result.main_roster[0].contract_cost is None
+    assert result.farm_roster[0].contract_status == "Signed"
+    assert result.farm_roster[0].contract_cost is None
+
+
+def _create_contract(
+        conn,
+        game_id,
+        club_id,
+        player_id,
+        season_index,
+        contract_cost,
+        status,
+):
+    with conn:
+        conn.execute(
+            '''
+            INSERT INTO "contract" (
+                game_id,
+                club_id,
+                player_id,
+                season_index,
+                contract_cost,
+                status
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            ''',
+            (
+                game_id,
+                club_id,
+                player_id,
+                season_index,
+                contract_cost,
+                status,
+            ),
+        )

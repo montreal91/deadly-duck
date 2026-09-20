@@ -38,7 +38,7 @@ class TemporalClubProvider:
             self._conn.execute("PRAGMA foreign_keys = ON;")
 
     def save_clubs(self, clubs: Iterable[Club]):
-        self._game_clubs_cache = {}
+        # self._game_clubs_cache = {}
         clubs = list(clubs)
         if not clubs:
             return
@@ -59,7 +59,7 @@ class TemporalClubProvider:
 
     def get_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
         clubs = self._load_clubs_for_game(game_id)
-        self._game_clubs_cache[game_id] = clubs
+        # self._game_clubs_cache[game_id] = clubs
 
         return clubs
 
@@ -116,7 +116,6 @@ class TemporalClubProvider:
                 slot = club.get_player_slot(player.player_id)
                 slot.coach_level = roster_row["coach_level"]
                 slot.contract_cost = roster_row["contract_cost"]
-                slot.has_next_contract = bool(roster_row["has_next_contract"])
 
             club.select_player(club_row["selected_player_id"])
             clubs[club.club_id] = club
@@ -279,22 +278,19 @@ class TemporalClubProvider:
                 club_id,
                 player_id,
                 coach_level,
-                contract_cost,
-                has_next_contract
+                contract_cost
             )
             VALUES (
                 :game_id,
                 :club_id,
                 :player_id,
                 :coach_level,
-                :contract_cost,
-                :has_next_contract
+                :contract_cost
             )
             ON CONFLICT(game_id, player_id) DO UPDATE SET
                 club_id = excluded.club_id,
                 coach_level = excluded.coach_level,
-                contract_cost = excluded.contract_cost,
-                has_next_contract = excluded.has_next_contract
+                contract_cost = excluded.contract_cost
             """,
             {
                 "game_id": club.game_id,
@@ -302,6 +298,5 @@ class TemporalClubProvider:
                 "player_id": slot.player.player_id,
                 "coach_level": slot.coach_level,
                 "contract_cost": slot.contract_cost,
-                "has_next_contract": int(slot.has_next_contract),
             },
         )

@@ -92,6 +92,7 @@ class ApplicationContext:
             self._params,
             self._temporal_club_provider,
             self._player_assignment_repository,
+            self._contract_repository,
         )
 
         self._select_club_command_handler = SelectClubCommandHandler(
@@ -159,6 +160,7 @@ class ApplicationContext:
             self._game_repository,
             self._temporal_club_provider,
             self._params,
+            self._contract_repository,
         )
 
         self._fire_player_command_handler = FirePlayerCommandHandler(

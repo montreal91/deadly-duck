@@ -156,7 +156,10 @@ class PlayerRepository:
                 club.name AS club_name,
                 roster_entry.coach_level,
                 roster_entry.contract_cost,
-                roster_entry.has_next_contract
+                CASE
+                    WHEN future_contract.player_id IS NULL THEN 0
+                    ELSE 1
+                END AS has_next_contract
             FROM player
             LEFT JOIN roster_entry
               ON roster_entry.game_id = player.game_id
@@ -164,6 +167,11 @@ class PlayerRepository:
             LEFT JOIN club
               ON club.game_id = roster_entry.game_id
              AND club.club_id = roster_entry.club_id
+            LEFT JOIN "contract" AS future_contract
+              ON future_contract.game_id = player.game_id
+             AND future_contract.player_id = player.player_id
+             AND future_contract.club_id = roster_entry.club_id
+             AND future_contract.status = 'future'
             WHERE player.game_id = :game_id
               AND player.player_id = :player_id
             """,

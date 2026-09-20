@@ -67,23 +67,23 @@ class PlayerAssignmentRepository:
                 player.current_stamina,
                 player.reputation,
                 player_assignment.coach_level,
-                "contract".contract_cost,
-                "contract".status AS contract_status
+                next_contract.contract_cost,
+                next_contract.status AS contract_status
             FROM player_assignment
             JOIN player
               ON player.game_id = player_assignment.game_id
              AND player.player_id = player_assignment.player_id
-            LEFT JOIN "contract"
-              ON "contract".game_id = player_assignment.game_id
-             AND "contract".player_id = player_assignment.player_id
-             AND "contract".status = 'active'
+            LEFT JOIN "contract" AS next_contract
+              ON next_contract.game_id = player_assignment.game_id
+             AND next_contract.player_id = player_assignment.player_id
+             AND next_contract.club_id = player_assignment.club_id
+             AND next_contract.status = 'future'
             WHERE player_assignment.game_id = ?
               AND player_assignment.club_id = ?
             ORDER BY
                 player.experience DESC,
                 player.first_name,
-                player.last_name,
-                player.player_id
+                player.last_name
             """,
             (game_id, club_id),
         ).fetchall()

@@ -122,6 +122,6 @@ def _player_to_roster_info(player_data, player_pos):
         technique=player.technique,
         endurance=player.endurance,
         age=player.age,
-        contract_cost=None if contract_status == "active" else contract_cost,
-        contract_status="Signed" if contract_status == "active" else "Not Signed",
+        contract_cost=None if contract_status == "future" else contract_cost,
+        contract_status="Signed" if contract_status == "future" else "Not Signed",
     )
