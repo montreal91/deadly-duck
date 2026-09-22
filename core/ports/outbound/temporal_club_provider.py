@@ -38,7 +38,7 @@ class TemporalClubProvider:
             self._conn.execute("PRAGMA foreign_keys = ON;")
 
     def save_clubs(self, clubs: Iterable[Club]):
-        self._game_clubs_cache = {}
+        # self._game_clubs_cache = {}
         clubs = list(clubs)
         if not clubs:
             return
@@ -59,7 +59,7 @@ class TemporalClubProvider:
 
     def get_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
         clubs = self._load_clubs_for_game(game_id)
-        self._game_clubs_cache[game_id] = clubs
+        # self._game_clubs_cache[game_id] = clubs
 
         return clubs
 
@@ -85,6 +85,8 @@ class TemporalClubProvider:
                 game_id=club_row["game_id"],
                 name=club_row["name"],
                 coach_power=club_row["coach_power"],
+                league_id=club_row["league_id"],
+                farm_club_id=club_row["farm_club_id"],
             )
             club.account.ProcessTransaction(DdTransaction(
                 club_row["balance"],
@@ -94,7 +96,7 @@ class TemporalClubProvider:
             roster_rows = self._conn.execute(
                 """
                 SELECT *
-                FROM roster_entry
+                FROM player_assignment
                 WHERE game_id = :game_id
                   AND club_id = :club_id
                 ORDER BY rowid
@@ -113,8 +115,6 @@ class TemporalClubProvider:
                 club.add_player(player)
                 slot = club.get_player_slot(player.player_id)
                 slot.coach_level = roster_row["coach_level"]
-                slot.contract_cost = roster_row["contract_cost"]
-                slot.has_next_contract = bool(roster_row["has_next_contract"])
 
             club.select_player(club_row["selected_player_id"])
             clubs[club.club_id] = club
@@ -142,7 +142,7 @@ class TemporalClubProvider:
         if delete_existing_roster:
             self._conn.execute(
                 """
-                DELETE FROM roster_entry
+                DELETE FROM player_assignment
                 WHERE game_id = :game_id
                   AND club_id = :club_id
                 """,
@@ -158,7 +158,7 @@ class TemporalClubProvider:
         self._upsert_club(club)
 
         for slot in club.players:
-            self._upsert_roster_entry(club, slot)
+            self._upsert_player_assignment(club, slot)
 
     def _upsert_player(self, game_id: str, player: Optional[Player]):
         if player is None:
@@ -235,6 +235,8 @@ class TemporalClubProvider:
                 name,
                 balance,
                 coach_power,
+                league_id,
+                farm_club_id,
                 selected_player_id
             )
             VALUES (
@@ -243,12 +245,16 @@ class TemporalClubProvider:
                 :name,
                 :balance,
                 :coach_power,
+                :league_id,
+                :farm_club_id,
                 :selected_player_id
             )
             ON CONFLICT(game_id, club_id) DO UPDATE SET
                 name = excluded.name,
                 balance = excluded.balance,
                 coach_power = excluded.coach_power,
+                league_id = excluded.league_id,
+                farm_club_id = excluded.farm_club_id,
                 selected_player_id = excluded.selected_player_id
             """,
             {
@@ -257,41 +263,35 @@ class TemporalClubProvider:
                 "name": club.name,
                 "balance": club.account.balance,
                 "coach_power": club.coach_power,
+                "league_id": club.league_id,
+                "farm_club_id": club.farm_club_id,
                 "selected_player_id": club.get_selected_player_id(),
             },
         )
 
-    def _upsert_roster_entry(self, club: Club, slot: ClubPlayerSlot):
+    def _upsert_player_assignment(self, club: Club, slot: ClubPlayerSlot):
         self._conn.execute(
             """
-            INSERT INTO roster_entry (
+            INSERT INTO player_assignment (
                 game_id,
                 club_id,
                 player_id,
-                coach_level,
-                contract_cost,
-                has_next_contract
+                coach_level
             )
             VALUES (
                 :game_id,
                 :club_id,
                 :player_id,
-                :coach_level,
-                :contract_cost,
-                :has_next_contract
+                :coach_level
             )
             ON CONFLICT(game_id, player_id) DO UPDATE SET
                 club_id = excluded.club_id,
-                coach_level = excluded.coach_level,
-                contract_cost = excluded.contract_cost,
-                has_next_contract = excluded.has_next_contract
+                coach_level = excluded.coach_level
             """,
             {
                 "game_id": club.game_id,
                 "club_id": club.club_id,
                 "player_id": slot.player.player_id,
                 "coach_level": slot.coach_level,
-                "contract_cost": slot.contract_cost,
-                "has_next_contract": int(slot.has_next_contract),
             },
         )

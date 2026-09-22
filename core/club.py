@@ -81,8 +81,10 @@ class Club:
 
     _club_id: str
     _account: DdFinancialAccount
+    _farm_club_id: Optional[str]
     _fame_tracker: DdFameTracker
     _is_controlled: bool
+    _league_id: Optional[str]
     _name: str
     _players: Dict[UUID, ClubPlayerSlot]
     _selected_player: Optional[str]
@@ -92,13 +94,17 @@ class Club:
             club_id,
             game_id,
             name: str,
-            coach_power: int
+            coach_power: int,
+            league_id: Optional[str] = None,
+            farm_club_id: Optional[str] = None,
     ):
         self._club_id = club_id
         self._game_id = game_id
         self._account = DdFinancialAccount()
         self._fame_tracker = DdFameTracker()
         self._is_controlled = False
+        self._league_id = league_id
+        self._farm_club_id = farm_club_id
         self._name = name
         self._players = {}
         self._selected_player = None
@@ -117,6 +123,14 @@ class Club:
     @property
     def game_id(self):
         return self._game_id
+
+    @property
+    def league_id(self) -> Optional[str]:
+        return self._league_id
+
+    @property
+    def farm_club_id(self) -> Optional[str]:
+        return self._farm_club_id
 
     @property
     def coach_power(self):
@@ -206,6 +220,9 @@ class Club:
 
         retirement_age = GameplayConstants.RETIREMENT_AGE.value
         def age_check(player_slot: ClubPlayerSlot) -> bool:
+            if player_slot.player is None:
+                return False
+
             return player_slot.player.age < retirement_age
 
         self._players = {
@@ -218,6 +235,9 @@ class Club:
         """Performs player practice."""
 
         for plr in self.players:
+            if plr.player is None:
+                continue
+
             plr.player.add_experience(
                 plr.player.current_stamina * plr.coach_level
             )

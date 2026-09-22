@@ -113,9 +113,9 @@ class PlayerRepository:
                 player.current_stamina,
                 player.reputation
             FROM player
-            JOIN roster_entry
-              ON roster_entry.game_id = player.game_id
-             AND roster_entry.player_id = player.player_id
+            JOIN player_assignment
+              ON player_assignment.game_id = player.game_id
+             AND player_assignment.player_id = player.player_id
             WHERE player.game_id = :game_id
               AND player.age < :max_age
             ORDER BY player.player_id
@@ -152,18 +152,26 @@ class PlayerRepository:
                 player.skill_points,
                 player.current_stamina,
                 player.reputation,
-                roster_entry.club_id,
+                player_assignment.club_id,
                 club.name AS club_name,
-                roster_entry.coach_level,
-                roster_entry.contract_cost,
-                roster_entry.has_next_contract
+                player_assignment.coach_level,
+                NULL AS contract_cost,
+                CASE
+                    WHEN future_contract.player_id IS NULL THEN 0
+                    ELSE 1
+                END AS has_next_contract
             FROM player
-            LEFT JOIN roster_entry
-              ON roster_entry.game_id = player.game_id
-             AND roster_entry.player_id = player.player_id
+            LEFT JOIN player_assignment
+              ON player_assignment.game_id = player.game_id
+             AND player_assignment.player_id = player.player_id
             LEFT JOIN club
-              ON club.game_id = roster_entry.game_id
-             AND club.club_id = roster_entry.club_id
+              ON club.game_id = player_assignment.game_id
+             AND club.club_id = player_assignment.club_id
+            LEFT JOIN "contract" AS future_contract
+              ON future_contract.game_id = player.game_id
+             AND future_contract.player_id = player.player_id
+             AND future_contract.club_id = player_assignment.club_id
+             AND future_contract.status = 'future'
             WHERE player.game_id = :game_id
               AND player.player_id = :player_id
             """,

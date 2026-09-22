@@ -11,6 +11,7 @@ from unittest.mock import Mock
 from core.ports.inbound.commands.sign_player import SignPlayerCommand
 from core.ports.inbound.commands.sign_player import SignPlayerCommandHandler
 from core.ports.outbound.game_repository import GameRepository
+from core.ports.outbound.contract_repository import ContractRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from tests.core.fixtures.game import make_game_params
 from tests.core.fixtures.game import make_persisted_game
@@ -27,19 +28,11 @@ def test_sign_player_command_persists_contract_and_payment(tmp_path):
     club = clubs[club_id]
     player_id = club.players[0].player.player_id
     initial_balance = club.account.balance
-    conn.execute(
-        """
-        UPDATE roster_entry
-        SET has_next_contract = 0
-        WHERE game_id = ? AND player_id = ?
-        """,
-        ("game", player_id),
-    )
-    conn.commit()
     handler = SignPlayerCommandHandler(
         game_repository,
         TemporalClubProvider.get_instance(),
         make_game_params(),
+        ContractRepository(conn),
     )
 
     result = handler(SignPlayerCommand(
@@ -50,12 +43,12 @@ def test_sign_player_command_persists_contract_and_payment(tmp_path):
 
     persisted_contract = conn.execute(
         """
-        SELECT has_next_contract
-        FROM roster_entry
+        SELECT club_id, player_id, season_index, contract_cost, status
+        FROM "contract"
         WHERE game_id = ? AND player_id = ?
         """,
         ("game", player_id),
-    ).fetchone()[0]
+    ).fetchone()
     persisted_balance = conn.execute(
         """
         SELECT balance
@@ -65,7 +58,13 @@ def test_sign_player_command_persists_contract_and_payment(tmp_path):
         ("game", club_id),
     ).fetchone()[0]
     assert result.success
-    assert persisted_contract == 1
+    assert tuple(persisted_contract) == (
+        club_id,
+        player_id,
+        game.season_index + 1,
+        10_000,
+        "future",
+    )
     assert persisted_balance == initial_balance - 10_000
 
 
@@ -78,11 +77,15 @@ def test_sign_player_command_does_not_save_when_player_is_already_signed(tmp_pat
     game_repository.save_game(game)
     club_id = next(iter(clubs))
     player_id = clubs[club_id].players[0].player.player_id
+    ContractRepository(conn).create_future_contract(
+        "game", club_id, player_id, game.season_index + 1, 10_000,
+    )
     club_provider = Mock(wraps=TemporalClubProvider.get_instance())
     handler = SignPlayerCommandHandler(
         game_repository,
         club_provider,
         make_game_params(),
+        ContractRepository(conn),
     )
 
     result = handler(SignPlayerCommand(

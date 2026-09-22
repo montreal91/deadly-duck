@@ -12,8 +12,10 @@ from core.ports.inbound.commands.create_new_game import init_clubs_for_game
 from core.ports.inbound.commands.hire_new_player import HireNewPlayerCommand
 from core.ports.inbound.commands.hire_new_player import HireNewPlayerCommandHandler
 from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.contract_repository import ContractRepository
 from core.ports.outbound.game_repository import GameRepository
 from core.ports.outbound.match_result_repository import MatchResultRepository
+from core.ports.outbound.player_assignment_repository import PlayerAssignmentRepository
 from core.ports.outbound.scheduled_match_repository import ScheduledMatchRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from persistence.migration_history import init_db
@@ -47,6 +49,8 @@ def test_hire_new_player_adds_player_and_charges_club(tmp_path):
         game_repository,
         club_provider,
         make_game_params(),
+        ContractRepository(conn),
+        PlayerAssignmentRepository(conn),
     )
 
     result = handler(HireNewPlayerCommand(game_id="game", club_id=club_id))
@@ -55,3 +59,71 @@ def test_hire_new_player_adds_player_and_charges_club(tmp_path):
     assert result.success
     assert len(persisted_club.players) == initial_player_count + 1
     assert persisted_club.account.balance == initial_balance - 10_000
+    contract = conn.execute(
+        """
+        SELECT club_id, player_id, season_index, contract_cost, status
+        FROM "contract"
+        """
+    ).fetchone()
+    assignment = conn.execute(
+        """
+        SELECT club_id, player_id, coach_level
+        FROM player_assignment
+        """
+    ).fetchone()
+    assert tuple(contract) == (
+        club_id,
+        assignment[1],
+        game.season_index,
+        10_000,
+        "active",
+    )
+    assert tuple(assignment) == (club_id, contract[1], 0)
+
+
+def test_hire_new_player_rejects_apprentice_league_club(tmp_path):
+    db_path = tmp_path / "hire-apprentice-player.sqlite"
+    init_db(db_path)
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    CompetitionRepository.tmp_initialize(conn)
+    ScheduledMatchRepository.tmp_init(conn)
+    MatchResultRepository.tmp_init(conn)
+    TemporalClubProvider.initialize(conn)
+    conn.execute("INSERT INTO game (game_id) VALUES ('game')")
+    conn.commit()
+
+    club_provider = TemporalClubProvider.get_instance()
+    club_provider.save_clubs(init_clubs_for_game("game").values())
+    game = make_game(game_id="game", conn=conn)
+    game_repository = GameRepository(conn)
+    game_repository.save_game(game)
+    apprentice_club_id = next(
+        club.club_id
+        for club in game.clubs.values()
+        if club.league_id == "apprentice_league"
+    )
+    initial_player_count = len(game.clubs[apprentice_club_id].players)
+    handler = HireNewPlayerCommandHandler(
+        game_repository,
+        club_provider,
+        make_game_params(),
+        ContractRepository(conn),
+        PlayerAssignmentRepository(conn),
+    )
+
+    result = handler(HireNewPlayerCommand(
+        game_id="game",
+        club_id=apprentice_club_id,
+    ))
+
+    persisted_club = TemporalClubProvider(conn).get_clubs_for_game("game")[
+        apprentice_club_id
+    ]
+    assert not result.success
+    assert result.message == "Only Master League clubs can hire players."
+    assert len(persisted_club.players) == initial_player_count
+    assert conn.execute("SELECT COUNT(*) FROM \"contract\"").fetchone()[0] == 0
+    assert conn.execute(
+        "SELECT COUNT(*) FROM player_assignment"
+    ).fetchone()[0] == 0

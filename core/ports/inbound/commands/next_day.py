@@ -28,10 +28,12 @@ class NextDayCommandHandler:
             game_repository: GameRepository,
             club_repository: TemporalClubProvider,
             competition_repository: CompetitionRepository,
+            contract_repository,
     ):
         self._game_repository = game_repository
         self._club_repository = club_repository
         self._competition_repository = competition_repository
+        self._contract_repository = contract_repository
 
     def __call__(self, command: NextDayCommand) -> NextDayCommandResult:
         game: Optional[Game] = self._game_repository.get_game(command.game_id)
@@ -44,8 +46,11 @@ class NextDayCommandHandler:
 
         clubs = self._club_repository.get_clubs_for_game(command.game_id)
 
-        res, reason = game.update(clubs)
+        update_result = game.update(clubs)
         self._game_repository.save_game(game)
         self._club_repository.save_clubs(clubs.values())
 
-        return NextDayCommandResult(success=res, reason=reason)
+        for contract in update_result.new_contracts:
+            self._contract_repository.save_contract(contract)
+
+        return NextDayCommandResult(success=update_result.success, reason=update_result.reason)

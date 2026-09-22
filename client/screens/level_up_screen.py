@@ -257,7 +257,7 @@ class LevelUpScreen(Screen):
             self._render()
             return
 
-        self._message = result.message
+        self._message = result.reason
         self._render_player_stats()
 
     def _apply_successful_skill_improvement(self, player, skill_points):

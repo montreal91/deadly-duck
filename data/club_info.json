@@ -1,0 +1,218 @@
+﻿[
+    {
+        "club_id":  "auckland_aces",
+        "country":  "New Zealand",
+        "city":  "Auckland",
+        "motto":  "Acing every point."
+    },
+    {
+        "club_id":  "brisbane_vipers",
+        "country":  "Australia",
+        "city":  "Brisbane",
+        "motto":  "Brisbane Vipers motto"
+    },
+    {
+        "club_id":  "canberra_masters",
+        "country":  "Australia",
+        "city":  "Canberra",
+        "motto":  "Discipline decides."
+    },
+    {
+        "club_id":  "dandenong_pianists",
+        "country":  "Australia",
+        "city":  "Dandenong",
+        "motto":  "Play the tune."
+    },
+    {
+        "club_id":  "melbourne_rockets",
+        "country":  "Australia",
+        "city":  "Melbourne",
+        "motto":  "Let\u0027s rock!."
+    },
+    {
+        "club_id":  "sydney_hearts",
+        "country":  "Australia",
+        "city":  "Sydney",
+        "motto":  "Never lose your heart."
+    },
+    {
+        "club_id":  "sydney_queens",
+        "country":  "Australia",
+        "city":  "Sydney",
+        "motto":  "The Show Must Go On"
+    },
+    {
+        "club_id":  "tasmanian_devils",
+        "country":  "Australia",
+        "city":  "Hobart",
+        "motto":  "Devilish Power"
+    },
+    {
+        "club_id":  "adelaide_falcons",
+        "country":  "Australia",
+        "city":  "Adelaide",
+        "motto":  "Flying high"
+    },
+    {
+        "club_id":  "saigon_suns",
+        "country":  "Vietnam",
+        "city":  "Ho Chi Minh City",
+        "motto":  "Shining bright."
+    },
+    {
+        "club_id":  "darwin_ducks",
+        "country":  "Australia",
+        "city":  "Darwin",
+        "motto":  "Quack! Quack! Quack!"
+    },
+    {
+        "club_id":  "jakarta_jaguars",
+        "country":  "Indonesia",
+        "city":  "Jakarta",
+        "motto":  "Hear our roar!"
+    },
+    {
+        "club_id":  "perth_punks",
+        "country":  "Australia",
+        "city":  "Perth",
+        "motto":  "We are the rebels"
+    },
+    {
+        "club_id":  "hong_kong_netrunners",
+        "country":  "Singapore",
+        "city":  "Singapore",
+        "motto":  "Netrunners motto."
+    },
+    {
+        "club_id":  "melbourne_tech",
+        "country":  "Australia",
+        "city":  "Melbourne",
+        "motto":  "Precision is progress."
+    },
+    {
+        "club_id":  "western_furies",
+        "country":  "Australia",
+        "city":  "Perth",
+        "motto":  "Relentless power"
+    },
+    {
+        "club_id":  "selangor_royals",
+        "country":  "Malaysia",
+        "city":  "Kuala Lumpur",
+        "motto":  "The motto of Selangor Royals"
+    },
+    {
+        "club_id":  "wellington_wardens",
+        "country":  "New Zealand",
+        "city":  "Wellington",
+        "motto":  "The motto of Wellington Wardens"
+    },
+    {
+        "club_id": "farm_club_0",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_1",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_2",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_3",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_4",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_5",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_6",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_7",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_8",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_9",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_10",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_11",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_12",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_13",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_14",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_15",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_16",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    },
+    {
+        "club_id": "farm_club_17",
+        "country": "Australia",
+        "city": "Melbourne",
+        "motto": "Learn. Compete. Progress."
+    }
+]

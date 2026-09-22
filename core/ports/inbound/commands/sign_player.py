@@ -34,12 +34,14 @@ class SignPlayerCommandHandler:
             game_repository: GameRepository,
             club_provider: TemporalClubProvider,
             game_parameters: GameParams,
+            contract_repository,
     ):
         self._game_repository = game_repository
         self._club_provider = club_provider
         self._contract_calculator = DdStaticContractCalculator(
             game_parameters.contracts
         )
+        self._contract_repository = contract_repository
 
     def __call__(self, command: SignPlayerCommand) -> SignPlayerCommandResult:
         if not self._game_repository.does_game_exist(command.game_id):
@@ -54,7 +56,10 @@ class SignPlayerCommandHandler:
         if player_slot is None:
             return SignPlayerCommandResult(False, "Incorrect player id.")
 
-        if player_slot.has_next_contract:
+        if self._contract_repository.has_future_contract(
+                command.game_id,
+                command.player_id,
+        ):
             return SignPlayerCommandResult(
                 False,
                 "This player already has a contract for the next season.",
@@ -78,11 +83,20 @@ class SignPlayerCommandHandler:
                 f"Insufficient funds.\nYou need at least ${cost}.",
             )
 
-        club.contract_player(command.player_id)
+        game = self._game_repository.get_game(command.game_id)
+        if game is None:
+            return SignPlayerCommandResult(False, "Game not found.")
         club.account.ProcessTransaction(DdTransaction(
             -cost,
             f"Renewed player contract with {player.initials} ",
         ))
         self._club_provider.save_club(club)
+        self._contract_repository.create_future_contract(
+            game_id=command.game_id,
+            club_id=command.club_id,
+            player_id=command.player_id,
+            season_index=game.season_index + 1,
+            contract_cost=cost,
+        )
 
         return SignPlayerCommandResult(success=True, message="Ok")
