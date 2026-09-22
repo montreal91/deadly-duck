@@ -1,9 +1,27 @@
-"""Persistence for player employment contracts."""
+"""
+Created September 19, 2026
+
+@author montreal91
+
+Persistence for player employment contracts.
+"""
 
 from sqlite3 import Connection
 
+from core.contract import Contract
+
 
 class ContractRepository:
+    _TMP_INSTANCE = None
+
+    @staticmethod
+    def tmp_init(conn: Connection):
+        ContractRepository._TMP_INSTANCE = ContractRepository(conn)
+
+    @staticmethod
+    def tmp_get_instance():
+        return ContractRepository._TMP_INSTANCE
+
     def __init__(self, conn: Connection):
         self._conn = conn
 
@@ -15,6 +33,11 @@ class ContractRepository:
             season_index: int,
             contract_cost: int,
     ):
+        self.save_contract(Contract(
+            game_id, club_id, player_id, season_index, contract_cost, "active",
+        ))
+
+    def save_contract(self, contract: Contract):
         with self._conn:
             self._conn.execute(
                 """
@@ -26,9 +49,16 @@ class ContractRepository:
                     contract_cost,
                     status
                 )
-                VALUES (?, ?, ?, ?, ?, 'active')
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (game_id, club_id, player_id, season_index, contract_cost),
+                (
+                    contract.game_id,
+                    contract.club_id,
+                    contract.player_id,
+                    contract.season_index,
+                    contract.contract_cost,
+                    contract.status,
+                ),
             )
 
     def create_future_contract(
@@ -39,25 +69,13 @@ class ContractRepository:
             season_index: int,
             contract_cost: int,
     ):
-        with self._conn:
-            self._conn.execute(
-                """
-                INSERT INTO "contract" (
-                    game_id,
-                    club_id,
-                    player_id,
-                    season_index,
-                    contract_cost,
-                    status
-                )
-                VALUES (?, ?, ?, ?, ?, 'future')
-                """,
-                (game_id, club_id, player_id, season_index, contract_cost),
-            )
+        self.save_contract(Contract(
+            game_id, club_id, player_id, season_index, contract_cost, "future",
+        ))
 
     def has_future_contract(self, game_id: str, player_id: str) -> bool:
         return self._conn.execute(
-            '''
+            """
             SELECT EXISTS(
                 SELECT 1
                 FROM "contract"
@@ -65,6 +83,6 @@ class ContractRepository:
                   AND player_id = ?
                   AND status = 'future'
             )
-            ''',
+            """,
             (game_id, player_id),
         ).fetchone()[0] == 1

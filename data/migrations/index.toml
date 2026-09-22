@@ -63,3 +63,8 @@ name = "Club Farm Club"
 id = 12
 file = "v012_drop_roster_next_contract.sql"
 name = "Drop Roster Next Contract"
+
+[[migration]]
+id = 13
+file = "v013_drop_roster_entry.sql"
+name = "Drop Roster Entry"

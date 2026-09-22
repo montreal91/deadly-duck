@@ -67,6 +67,7 @@ class ApplicationContext:
         ScheduledMatchRepository.tmp_init(self._db_connection)
         MatchResultRepository.tmp_init(self._db_connection)
         PlayerRepository.tmp_init(self._db_connection)
+        ContractRepository.tmp_init(self._db_connection)
 
         self._temporal_club_provider = TemporalClubProvider.get_instance()
         self._competition_repository = CompetitionRepository.tmp_get_instance()
@@ -77,7 +78,7 @@ class ApplicationContext:
             self._db_connection,
         )
         self._player_repository = PlayerRepository.tmp_get_instance()
-        self._contract_repository = ContractRepository(self._db_connection)
+        self._contract_repository = ContractRepository.tmp_get_instance()
         self._player_assignment_repository = PlayerAssignmentRepository(
             self._db_connection,
         )
@@ -108,6 +109,7 @@ class ApplicationContext:
             self._game_repository,
             self._temporal_club_provider,
             self._competition_repository,
+            self._contract_repository,
         )
 
         self._game_service = GameService(

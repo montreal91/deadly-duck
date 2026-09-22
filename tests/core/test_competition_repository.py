@@ -18,6 +18,7 @@ from core.ports.inbound.commands.create_new_game import init_clubs_for_game
 from core.ports.inbound.commands.next_day import NextDayCommand
 from core.ports.inbound.commands.next_day import NextDayCommandHandler
 from core.ports.outbound.competition_repository import CompetitionRepository
+from core.ports.outbound.contract_repository import ContractRepository
 from core.ports.outbound.game_repository import GameRepository
 from core.playoffs import Playoff
 from core.playoffs import PlayoffParams
@@ -208,6 +209,7 @@ def test_next_day_handler_saves_current_competition():
     CompetitionRepository.tmp_initialize(conn)
     ScheduledMatchRepository.tmp_init(conn)
     MatchResultRepository.tmp_init(conn)
+    ContractRepository.tmp_init(conn)
     TemporalClubProvider.initialize(conn)
 
     game_repository = GameRepository(conn)
@@ -228,6 +230,7 @@ def test_next_day_handler_saves_current_competition():
         game_repository=game_repository,
         club_repository=TemporalClubProvider.get_instance(),
         competition_repository=competition_repository,
+        contract_repository=ContractRepository.tmp_get_instance(),
     )
 
     handler(NextDayCommand("game"))
@@ -402,8 +405,17 @@ def _make_connection() -> sqlite3.Connection:
             player_id TEXT NOT NULL,
             coach_level INTEGER NOT NULL,
             contract_cost INTEGER,
-            has_next_contract INTEGER NOT NULL,
             PRIMARY KEY (game_id, player_id)
+        );
+
+        CREATE TABLE "contract" (
+            game_id TEXT NOT NULL,
+            club_id TEXT NOT NULL,
+            player_id TEXT NOT NULL,
+            season_index INTEGER NOT NULL,
+            contract_cost INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            PRIMARY KEY (game_id, player_id, season_index)
         );
 
         CREATE TABLE scheduled_match (

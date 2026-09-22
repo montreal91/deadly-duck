@@ -21,3 +21,5 @@ dist/
 main.spec
 build/
 *.spec
+ignored/
+AGENTS.md

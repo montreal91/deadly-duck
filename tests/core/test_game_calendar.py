@@ -10,12 +10,16 @@ from unittest.mock import Mock
 import pytest
 
 from core.competition import CompetitionType
+from core.club import Club
 from core.game import Game
+from core.financial import DdStaticContractCalculator
+from core.player import Player
 from core.playoffs import Playoff
 from core.ports.inbound.commands.next_day import NextDayCommand
 from core.ports.inbound.commands.next_day import NextDayCommandHandler
 from core.ports.outbound.competition_repository import CompetitionRepository
 from core.ports.outbound.game_repository import GameRepository
+from core.ports.outbound.contract_repository import ContractRepository
 from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 from tests.core.fixtures.game import make_game
 from tests.core.fixtures.game import make_persisted_game
@@ -31,11 +35,82 @@ def test_game_starts_on_first_season_calendar_date(tmp_path):
 def test_successful_game_update_advances_calendar_date(tmp_path):
     game, clubs, _ = make_persisted_game("calendar-test", tmp_path / "game.sqlite")
 
-    success, _ = game.update(clubs)
+    result = game.update(clubs)
 
-    assert success
+    assert result.success
     assert game.current_date == date(2082, 2, 22)
     assert game.get_context(_first_club_id(game))["day"] == "2082-Feb-22"
+
+
+def test_ai_assigns_best_half_of_organization_to_main_club():
+    game = Game.__new__(Game)
+    game._game_id = "game"
+    game._season_index = 0
+    game._manager_club_id = "controlled-master"
+    game._contract_calculator = DdStaticContractCalculator([10_000])
+    game._player_factory = Mock()
+    game._player_factory.create_player.side_effect = [
+        _make_level_zero_player(index)
+        for index in range(8)
+    ]
+    ai_master = Club(
+        "ai-master",
+        "game",
+        "AI Master",
+        2,
+        "master_league",
+        "ai-farm",
+    )
+    ai_farm = Club(
+        "ai-farm",
+        "game",
+        "AI Farm",
+        0,
+        "apprentice_league",
+    )
+    controlled_master = Club(
+        "controlled-master",
+        "game",
+        "Controlled Master",
+        2,
+        "master_league",
+        "controlled-farm",
+    )
+    controlled_farm = Club(
+        "controlled-farm",
+        "game",
+        "Controlled Farm",
+        0,
+        "apprentice_league",
+    )
+    low_level_player = _make_level_zero_player("existing")
+    high_level_player = _make_level_zero_player("existing-farm")
+    high_level_player._experience = 10_000
+    ai_master.add_player(low_level_player)
+    ai_farm.add_player(high_level_player)
+
+    clubs = {
+        club.club_id: club
+        for club in (
+            ai_master,
+            ai_farm,
+            controlled_master,
+            controlled_farm,
+        )
+    }
+
+    game._hire_players_if_needed(clubs)
+    game._assign_players(clubs)
+
+    assert len(ai_master.players) == 3
+    assert len(ai_farm.players) == 4
+    assert any(
+        slot.player is high_level_player
+        for slot in ai_master.players
+    )
+    assert len(controlled_master.players) == 0
+    assert len(controlled_farm.players) == 0
+    assert game._player_factory.create_player.call_count == 5
 
 
 def test_regular_season_practice_day_persists_player_experience(tmp_path):
@@ -47,14 +122,6 @@ def test_regular_season_practice_day_persists_player_experience(tmp_path):
     game_repository.save_game(game)
     club_id = next(iter(clubs))
     player = clubs[club_id].players[0].player
-    conn.execute(
-        """
-        UPDATE roster_entry
-        SET coach_level = 1
-        WHERE game_id = ? AND player_id = ?
-        """,
-        ("practice-test", player.player_id),
-    )
     conn.commit()
     initial_experience, current_stamina = conn.execute(
         """
@@ -64,11 +131,17 @@ def test_regular_season_practice_day_persists_player_experience(tmp_path):
         """,
         ("practice-test", player.player_id),
     ).fetchone()
+
+    assert initial_experience == 2750
+    assert current_stamina == 80
+    assert clubs[club_id].coach_power == 2
+
     assert game.cmp.current_matches == []
     handler = NextDayCommandHandler(
         game_repository=game_repository,
         club_repository=TemporalClubProvider.get_instance(),
         competition_repository=CompetitionRepository.tmp_get_instance(),
+        contract_repository=ContractRepository(conn),
     )
 
     result = handler(NextDayCommand("practice-test"))
@@ -82,7 +155,7 @@ def test_regular_season_practice_day_persists_player_experience(tmp_path):
         ("practice-test", player.player_id),
     ).fetchone()[0]
     assert result.success
-    assert persisted_experience == initial_experience + current_stamina
+    assert persisted_experience == initial_experience + current_stamina * 2
 
 
 def test_regular_season_match_day_persists_club_income(tmp_path):
@@ -97,6 +170,7 @@ def test_regular_season_match_day_persists_club_income(tmp_path):
         game_repository=game_repository,
         club_repository=TemporalClubProvider.get_instance(),
         competition_repository=CompetitionRepository.tmp_get_instance(),
+        contract_repository=ContractRepository(conn),
     )
     practice_day_result = handler(NextDayCommand("income-test"))
     balance_before_match = conn.execute(
@@ -187,8 +261,8 @@ def test_regular_season_end_starts_playoffs(tmp_path):
     regular_season_length = len(game.cmp._schedule)
 
     for _ in range(regular_season_length):
-        success, reason = game.update(clubs)
-        assert success, reason
+        result = game.update(clubs)
+        assert result.success, result.reason
 
     assert isinstance(game.cmp, Playoff)
 
@@ -206,8 +280,8 @@ def test_regular_seasons_start_separate_playoffs_for_each_league(tmp_path):
     )
 
     for _ in range(regular_season_length):
-        success, reason = game.update(clubs)
-        assert success, reason
+        result = game.update(clubs)
+        assert result.success, result.reason
 
     playoffs = [
         competition
@@ -351,3 +425,15 @@ def _insert_clubs(conn, game):
                     "club_id": club_id,
                 },
             )
+
+
+def _make_level_zero_player(_):
+    player = Player(
+        first_name="First",
+        second_name="Second",
+        last_name="Last",
+        age=16,
+        technique=0,
+        endurance=0,
+    )
+    return player

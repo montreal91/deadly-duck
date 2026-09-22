@@ -19,15 +19,11 @@ def test_roster_management_query_shows_active_only_contracts_as_not_signed(
         "roster-management-test",
         tmp_path / "game.sqlite",
     )
-    master_club = next(
-        club
-        for club in clubs.values()
-        if club.league_id == "master_league"
-    )
+    master_club = clubs["darwin_ducks"]
     farm_club = clubs[master_club.farm_club_id]
     main_player_id = master_club.players[0].player.player_id
     second_main_player = master_club.players[1].player
-    farm_player_id = farm_club.players[0].player.player_id
+    farm_player_id = master_club.players[2].player.player_id
     assignments = PlayerAssignmentRepository(conn)
     contracts = ContractRepository(conn)
     assignments.assign_player(game.game_id, master_club.club_id, main_player_id)
@@ -78,15 +74,38 @@ def test_roster_management_query_shows_active_only_contracts_as_not_signed(
     assert result.balance == master_club.account.balance
     assert result.farm_club_id == farm_club.club_id
     assert result.farm_club_name == farm_club.name
+    expected_main_players = [
+        slot.player
+        for slot in master_club.players
+        if slot.player.player_id != farm_player_id
+    ]
+    assert len(expected_main_players) > 0
+    expected_farm_players = [
+        *(slot.player for slot in farm_club.players),
+        master_club.players[2].player,
+    ]
     assert [player.player_id for player in result.main_roster] == [
         player.player_id
         for player in sorted(
-            [master_club.players[0].player, second_main_player],
-            key=lambda player: player.level,
-            reverse=True,
+            expected_main_players,
+            key=lambda player: (
+                -player.experience,
+                player.first_name,
+                player.last_name,
+            ),
         )
     ]
-    assert [player.player_id for player in result.farm_roster] == [farm_player_id]
+    assert [player.player_id for player in result.farm_roster] == [
+        player.player_id
+        for player in sorted(
+            expected_farm_players,
+            key=lambda player: (
+                -player.experience,
+                player.first_name,
+                player.last_name,
+            ),
+        )
+    ]
     # An active contract covers the current season.  It must not be presented
     # as a next-season contract in the roster screen.
     assert result.main_roster[0].contract_status == "Not Signed"
@@ -101,14 +120,10 @@ def test_roster_management_query_shows_future_contracts_as_signed(
         "roster-management-future-contracts-test",
         tmp_path / "game.sqlite",
     )
-    master_club = next(
-        club
-        for club in clubs.values()
-        if club.league_id == "master_league"
-    )
+    master_club = clubs["darwin_ducks"]
     farm_club = clubs[master_club.farm_club_id]
     main_player_id = master_club.players[0].player.player_id
-    farm_player_id = farm_club.players[0].player.player_id
+    farm_player_id = master_club.players[1].player.player_id
     assignments = PlayerAssignmentRepository(conn)
     assignments.assign_player(game.game_id, master_club.club_id, main_player_id)
     assignments.assign_player(game.game_id, farm_club.club_id, farm_player_id)

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from core.ports.outbound.player_assignment_repository import (
     PlayerAssignmentRepository,
 )
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 _MASTER_LEAGUE_ID = "master_league"
 _INVALID_ASSIGNMENT_ERROR = "Player cannot be assigned to this club."
@@ -28,7 +29,11 @@ class AssignPlayerCommandResult:
 
 
 class AssignPlayerCommandHandler:
-    def __init__(self, club_provider, player_assignment_repository):
+    def __init__(
+            self,
+            club_provider: TemporalClubProvider,
+            player_assignment_repository: PlayerAssignmentRepository
+    ):
         self._club_provider = club_provider
         self._player_assignment_repository = player_assignment_repository
 

@@ -11,7 +11,6 @@ import logging
 import time
 from datetime import date
 from datetime import timedelta
-from random import randint
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -19,13 +18,13 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Set
-from typing import Tuple
 
 from configuration.config_game import GameplayConstants
 from core.club import Club
 from core.club import ClubPlayerSlot
 from core.competition import AbstractCompetition
 from core.competition import CompetitionType
+from core.contract import Contract
 from core.financial import DdPracticeCalculator
 from core.financial import DdStaticContractCalculator
 from core.financial import DdTransaction
@@ -46,6 +45,7 @@ from core.regular_championship import DdStandingsRowStruct
 from core.regular_championship import RegularChampionship
 from core.scheduled_match import ScheduledMatch
 from core.skill_upgrade_system import upgrade_skills
+from core.update_result import UpdateResult
 
 _CLUB_ID_ERROR = "Incorrect club id."
 _UNCONTRACTED_PLAYERS_ERROR = (
@@ -129,6 +129,7 @@ class Game:
         self._params = params
         self._player_factory = PlayerFactory()
         self._results = []
+        # self._new_contracts = []
 
         self._season_fame = {}
         self._contract_calculator = DdStaticContractCalculator(
@@ -143,7 +144,6 @@ class Game:
         self._season_index = 0
 
         self._start_regular_championship(self._clubs)
-        self._generate_free_agents()
 
     @property
     def day(self):
@@ -245,7 +245,7 @@ class Game:
         self._manager_club_id = club_id
         self._clubs[club_id].set_controlled(is_controlled)
 
-    def update(self, clubs: Dict[str, Club]):
+    def update(self, clubs: Dict[str, Club]) -> UpdateResult:
         """
         Updates game state.
 
@@ -264,18 +264,19 @@ class Game:
                 clubs[club_pk].set_controlled(False)
 
         if self.is_over:
-            return False, "The game is over"
+            return UpdateResult(False, "The game is over")
 
         if self.season_over and not self._contract_check:
-            return False, _UNCONTRACTED_PLAYERS_ERROR
+            return UpdateResult(False, _UNCONTRACTED_PLAYERS_ERROR)
 
         if cmp is not None and self._decision_required(cmp, clubs):
-            return False, "You have to select player for the next match."
+            return UpdateResult(False, "You have to select player for the next match.")
 
         if not self._training_check:
-            return False, "You have insufficient funds to perform such kind of training."
+            return UpdateResult(False, "You have insufficient funds to perform such kind of training.")
 
-        self._hire_players_if_needed(clubs)
+        new_contracts = self._hire_players_if_needed(clubs)
+        self._assign_players(clubs)
         self._perform_practice(clubs)
         self._play_one_day(clubs)
 
@@ -296,7 +297,7 @@ class Game:
         self._advance_current_date()
         self._updated_ts = time.time_ns() // 1_000_000
 
-        return True, "Ok"
+        return UpdateResult(True, "Ok", new_contracts)
 
     def _is_regular_season_over(self) -> bool:
         repo = CompetitionRepository.tmp_get_instance()
@@ -381,28 +382,6 @@ class Game:
         slots = [(s.player.level, s.coach_level) for s in club.players if s.player is not None]
         return sum(self._practice_calculator(*slot) for slot in slots)
 
-    def _generate_free_agents(self):
-        new_agents = []
-        for _ in range(randint(3, 10)):
-            new_agents.append(self._player_factory.create_player(
-                age=randint(
-                    GameplayConstants.STARTING_AGE.value,
-                    GameplayConstants.RETIREMENT_AGE.value - 1
-                ),
-                level=randint(1, 10),
-            ))
-        new_agents.sort(
-            key=lambda x: x.level,
-            reverse=True,
-        )
-        self._free_agents = new_agents
-
-    def _get_free_agents(self) -> List[Tuple[Player, int]]:
-        res = []
-        for agent in self._free_agents:
-            res.append((agent, self._contract_calculator(agent.level),))
-        return res
-
     def _get_opponent(self, cmp: Optional[AbstractCompetition], pk: str) -> Optional[OpponentDto]:
         def schedule_filter(pair: ScheduledMatch):
             if pair.home_pk == pk:
@@ -448,17 +427,77 @@ class Game:
 
         return [set_contract_prices(slot) for slot in self._clubs[pk].players if slot.player is not None]
 
-    def _hire_players_if_needed(self, clubs: Dict[str, Club]):
-        for club in clubs.values():
-            if self._is_manager_club(club.club_id):
+    def _hire_players_if_needed(self, clubs: Dict[str, Club]) -> List[Contract]:
+        res = []
+
+        for master_club in clubs.values():
+            if master_club.farm_club_id is None:
                 continue
-            techs = [slot.player.actual_technique < 5 for slot in club.players if slot.player is not None]
-            if all(techs):
-                new_player = self._player_factory.create_player(
-                    level=0,
-                    age=GameplayConstants.STARTING_AGE.value,
-                )
-                club.add_player(new_player)
+            if self._is_manager_club(master_club.club_id):
+                continue
+
+            res.extend(self._hire_until_roster_is_full(master_club))
+
+        return res
+
+    def _hire_until_roster_is_full(self, club: Club) -> List[Contract]:
+        new_contracts = []
+
+        while len(club.players) < GameplayConstants.PLAYERS_PER_CLUB_SYSTEM.value:
+            player = self._player_factory.create_player(
+                level=0,
+                age=GameplayConstants.STARTING_AGE.value,
+            )
+            club.add_player(player)
+            contract_cost = self._contract_calculator(player.level)
+            new_contracts.extend((
+                Contract(
+                    self._game_id,
+                    club.club_id,
+                    player.player_id,
+                    self._season_index,
+                    contract_cost,
+                    "active",
+                ),
+                Contract(
+                    self._game_id,
+                    club.club_id,
+                    player.player_id,
+                    self._season_index + 1,
+                    contract_cost,
+                    "future",
+                ),
+            ))
+
+        return new_contracts
+
+    def _assign_players(self, clubs: Dict[str, Club]):
+        for main_club in clubs.values():
+            farm_club = _get_farm_club(main_club.club_id, clubs)
+
+            if farm_club is None:
+                continue
+            if self._is_manager_club(main_club.club_id):
+                continue
+
+            players = [
+                slot.player
+                for club in (main_club, farm_club)
+                for slot in club.players
+                if slot.player is not None
+            ]
+            players.sort(key=lambda plr: plr.level, reverse=True)
+            main_player_count = len(players) // 2
+
+            for club in (main_club, farm_club):
+                for slot in club.players:
+                    if slot.player is not None:
+                        club.pop_player(slot.player.player_id)
+
+            for player in players[:main_player_count]:
+                main_club.add_player(player)
+            for player in players[main_player_count:]:
+                farm_club.add_player(player)
 
     def _is_club_valid(self, pk: str, club: Club, cmp: Optional[AbstractCompetition]) -> bool:
         if cmp is None:
@@ -677,6 +716,13 @@ class Game:
         [clubs[pk].set_coach_power(2) for pk in medium_clubs]
         [clubs[pk].set_coach_power(1) for pk in weaksy_clubs]
 
+        for master_club in clubs.values():
+            if master_club.farm_club_id is None:
+                continue
+            farm_club = clubs.get(master_club.farm_club_id)
+            if farm_club is not None:
+                farm_club.set_coach_power(master_club.coach_power)
+
 
 def _make_playoff_seeds(
         standings: List[DdStandingsRowStruct],
@@ -753,3 +799,15 @@ def _get_playing_player_ids(matches: List[ScheduledMatch], clubs: Dict[str, Club
                 player_ids.add(player.player_id)
 
     return player_ids
+
+
+def _get_farm_club(club_id: str, clubs: Dict[str, Club]) -> Optional[Club]:
+    if club_id not in clubs:
+        return None
+
+    fk_id = clubs[club_id].farm_club_id
+
+    if fk_id is None:
+        return None
+
+    return clubs.get(fk_id, None)

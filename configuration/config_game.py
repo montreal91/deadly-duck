@@ -19,6 +19,7 @@ class GameplayConstants(Enum):
     STAMINA_RECOVERY_PER_DAY = 25
     STARTING_AGE = 16
     SKILL_POINTS_PER_LEVEL = 1
+    PLAYERS_PER_CLUB_SYSTEM = 6
 
 
 class DdLeagueConfig:

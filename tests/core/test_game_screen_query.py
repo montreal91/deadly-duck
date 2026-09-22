@@ -180,8 +180,8 @@ def test_game_screen_query_after_playoff_end_does_not_crash(tmp_path):
     regular_season_length = len(cmp._schedule or [])
 
     for _ in range(regular_season_length + 9):
-        success, reason = game.update(clubs)
-        assert success, reason
+        result = game.update(clubs)
+        assert result.success, result.reason
 
     handler = GameScreenGuiQueryHandler(
         game_repository=_game_repository(game),
@@ -201,8 +201,8 @@ def test_game_screen_query_shows_bracket_when_playoffs_start(tmp_path):
 
     regular_season_length = len(game.cmp._schedule)
     for _ in range(regular_season_length):
-        success, reason = game.update(clubs)
-        assert success, reason
+        result = game.update(clubs)
+        assert result.success, result.reason
 
     assert isinstance(game.cmp, Playoff)
 

@@ -96,7 +96,7 @@ class TemporalClubProvider:
             roster_rows = self._conn.execute(
                 """
                 SELECT *
-                FROM roster_entry
+                FROM player_assignment
                 WHERE game_id = :game_id
                   AND club_id = :club_id
                 ORDER BY rowid
@@ -115,7 +115,6 @@ class TemporalClubProvider:
                 club.add_player(player)
                 slot = club.get_player_slot(player.player_id)
                 slot.coach_level = roster_row["coach_level"]
-                slot.contract_cost = roster_row["contract_cost"]
 
             club.select_player(club_row["selected_player_id"])
             clubs[club.club_id] = club
@@ -143,7 +142,7 @@ class TemporalClubProvider:
         if delete_existing_roster:
             self._conn.execute(
                 """
-                DELETE FROM roster_entry
+                DELETE FROM player_assignment
                 WHERE game_id = :game_id
                   AND club_id = :club_id
                 """,
@@ -159,7 +158,7 @@ class TemporalClubProvider:
         self._upsert_club(club)
 
         for slot in club.players:
-            self._upsert_roster_entry(club, slot)
+            self._upsert_player_assignment(club, slot)
 
     def _upsert_player(self, game_id: str, player: Optional[Player]):
         if player is None:
@@ -270,33 +269,29 @@ class TemporalClubProvider:
             },
         )
 
-    def _upsert_roster_entry(self, club: Club, slot: ClubPlayerSlot):
+    def _upsert_player_assignment(self, club: Club, slot: ClubPlayerSlot):
         self._conn.execute(
             """
-            INSERT INTO roster_entry (
+            INSERT INTO player_assignment (
                 game_id,
                 club_id,
                 player_id,
-                coach_level,
-                contract_cost
+                coach_level
             )
             VALUES (
                 :game_id,
                 :club_id,
                 :player_id,
-                :coach_level,
-                :contract_cost
+                :coach_level
             )
             ON CONFLICT(game_id, player_id) DO UPDATE SET
                 club_id = excluded.club_id,
-                coach_level = excluded.coach_level,
-                contract_cost = excluded.contract_cost
+                coach_level = excluded.coach_level
             """,
             {
                 "game_id": club.game_id,
                 "club_id": club.club_id,
                 "player_id": slot.player.player_id,
                 "coach_level": slot.coach_level,
-                "contract_cost": slot.contract_cost,
             },
         )
