@@ -38,7 +38,7 @@ def test_fire_player_command_persists_roster_removal(tmp_path):
     roster_entry_count = conn.execute(
         """
         SELECT COUNT(*)
-        FROM roster_entry
+            FROM player_assignment
         WHERE game_id = ? AND player_id = ?
         """,
         ("game", player_id),

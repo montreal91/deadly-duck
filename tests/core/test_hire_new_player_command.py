@@ -60,15 +60,17 @@ def test_hire_new_player_adds_player_and_charges_club(tmp_path):
     assert len(persisted_club.players) == initial_player_count + 1
     assert persisted_club.account.balance == initial_balance - 10_000
     contract = conn.execute(
-        """
+        f"""
         SELECT club_id, player_id, season_index, contract_cost, status
         FROM "contract"
+        WHERE player_id='{result.new_player_id}'
         """
     ).fetchone()
     assignment = conn.execute(
-        """
+        f"""
         SELECT club_id, player_id, coach_level
         FROM player_assignment
+        WHERE player_id='{result.new_player_id}'
         """
     ).fetchone()
     assert tuple(contract) == (
@@ -123,7 +125,15 @@ def test_hire_new_player_rejects_apprentice_league_club(tmp_path):
     assert not result.success
     assert result.message == "Only Master League clubs can hire players."
     assert len(persisted_club.players) == initial_player_count
-    assert conn.execute("SELECT COUNT(*) FROM \"contract\"").fetchone()[0] == 0
-    assert conn.execute(
-        "SELECT COUNT(*) FROM player_assignment"
-    ).fetchone()[0] == 0
+
+    apprentice_contracts = conn.execute(
+        f"SELECT COUNT(*) FROM \"contract\" WHERE club_id='{apprentice_club_id}'"
+    ).fetchone()[0]
+
+    assert apprentice_contracts == 0
+
+    apprentice_assignments = conn.execute(
+        f"SELECT COUNT(*) FROM player_assignment WHERE club_id='{apprentice_club_id}'"
+    ).fetchone()[0]
+
+    assert apprentice_assignments == 0

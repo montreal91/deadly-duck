@@ -30,6 +30,7 @@ class HireNewPlayerCommand:
 class HireNewPlayerCommandResult:
     success: bool
     message: str
+    new_player_id: str = ""
 
 
 class HireNewPlayerCommandHandler:
@@ -107,4 +108,4 @@ class HireNewPlayerCommandHandler:
             player_id=player.player_id,
         )
 
-        return HireNewPlayerCommandResult(success=True, message="OK")
+        return HireNewPlayerCommandResult(success=True, message="OK", new_player_id=player.player_id)

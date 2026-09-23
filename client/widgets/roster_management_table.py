@@ -224,7 +224,7 @@ def _make_action_cell(
         on_show_player_details,
     ))
 
-    if player.contract_cost is not None:
+    if player.contract_status == "Not Signed":
         cell.add_widget(_make_sign_button(player.player_id, on_sign_player))
 
     if transfer_button_text is not None and on_transfer_player is not None:

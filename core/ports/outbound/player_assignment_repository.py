@@ -74,9 +74,18 @@ class PlayerAssignmentRepository:
               ON player.game_id = player_assignment.game_id
              AND player.player_id = player_assignment.player_id
             LEFT JOIN "contract" AS next_contract
-              ON next_contract.game_id = player_assignment.game_id
+             ON next_contract.game_id = player_assignment.game_id
              AND next_contract.player_id = player_assignment.player_id
-             AND next_contract.club_id = player_assignment.club_id
+             AND (
+                 next_contract.club_id = player_assignment.club_id
+                 OR EXISTS (
+                     SELECT 1
+                     FROM club AS master_club
+                     WHERE master_club.game_id = player_assignment.game_id
+                       AND master_club.club_id = next_contract.club_id
+                       AND master_club.farm_club_id = player_assignment.club_id
+                 )
+             )
              AND next_contract.status = 'future'
             WHERE player_assignment.game_id = ?
               AND player_assignment.club_id = ?

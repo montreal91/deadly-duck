@@ -399,12 +399,11 @@ def _make_connection() -> sqlite3.Connection:
             PRIMARY KEY (game_id, player_id)
         );
 
-        CREATE TABLE roster_entry (
+        CREATE TABLE player_assignment (
             game_id TEXT NOT NULL,
             club_id TEXT NOT NULL,
             player_id TEXT NOT NULL,
             coach_level INTEGER NOT NULL,
-            contract_cost INTEGER,
             PRIMARY KEY (game_id, player_id)
         );
 

@@ -139,7 +139,7 @@ def test_roster_management_query_shows_future_contracts_as_signed(
     _create_contract(
         conn,
         game.game_id,
-        farm_club.club_id,
+        master_club.club_id,
         farm_player_id,
         game.season_index + 1,
         9_000,

@@ -129,7 +129,6 @@ class Game:
         self._params = params
         self._player_factory = PlayerFactory()
         self._results = []
-        # self._new_contracts = []
 
         self._season_fame = {}
         self._contract_calculator = DdStaticContractCalculator(
@@ -717,9 +716,10 @@ class Game:
         [clubs[pk].set_coach_power(1) for pk in weaksy_clubs]
 
         for master_club in clubs.values():
-            if master_club.farm_club_id is None:
+            farm_club_id = master_club.farm_club_id
+            if farm_club_id is None:
                 continue
-            farm_club = clubs.get(master_club.farm_club_id)
+            farm_club = clubs.get(farm_club_id)
             if farm_club is not None:
                 farm_club.set_coach_power(master_club.coach_power)
 
