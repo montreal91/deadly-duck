@@ -86,3 +86,27 @@ class ContractRepository:
             """,
             (game_id, player_id),
         ).fetchone()[0] == 1
+
+    def activate_future_contracts(self, game_id: str, season_index: int):
+        """Makes contracts signed for a new season part of its active roster."""
+        with self._conn:
+            self._conn.execute(
+                """
+                UPDATE "contract"
+                SET status = 'terminated'
+                WHERE game_id = ?
+                  AND season_index < ?
+                  AND status = 'active'
+                """,
+                (game_id, season_index),
+            )
+            self._conn.execute(
+                """
+                UPDATE "contract"
+                SET status = 'active'
+                WHERE game_id = ?
+                  AND season_index = ?
+                  AND status = 'future'
+                """,
+                (game_id, season_index),
+            )

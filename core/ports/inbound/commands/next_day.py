@@ -46,11 +46,19 @@ class NextDayCommandHandler:
 
         clubs = self._club_repository.get_clubs_for_game(command.game_id)
 
+        previous_season_index = game.season_index
         update_result = game.update(clubs)
         self._game_repository.save_game(game)
         self._club_repository.save_clubs(clubs.values())
 
         for contract in update_result.new_contracts:
             self._contract_repository.save_contract(contract)
+
+        if game.season_index > previous_season_index:
+            # TODO: Put it in the proper place
+            self._contract_repository.activate_future_contracts(
+                game_id=command.game_id,
+                season_index=game.season_index,
+            )
 
         return NextDayCommandResult(success=update_result.success, reason=update_result.reason)

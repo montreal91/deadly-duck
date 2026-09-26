@@ -170,7 +170,16 @@ class PlayerRepository:
             LEFT JOIN "contract" AS future_contract
               ON future_contract.game_id = player.game_id
              AND future_contract.player_id = player.player_id
-             AND future_contract.club_id = player_assignment.club_id
+             AND (
+                 future_contract.club_id = player_assignment.club_id
+                 OR EXISTS (
+                     SELECT 1
+                     FROM club AS master_club
+                     WHERE master_club.game_id = player_assignment.game_id
+                       AND master_club.club_id = future_contract.club_id
+                       AND master_club.farm_club_id = player_assignment.club_id
+                 )
+             )
              AND future_contract.status = 'future'
             WHERE player.game_id = :game_id
               AND player.player_id = :player_id

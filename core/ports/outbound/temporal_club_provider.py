@@ -115,11 +115,33 @@ class TemporalClubProvider:
                 club.add_player(player)
                 slot = club.get_player_slot(player.player_id)
                 slot.coach_level = roster_row["coach_level"]
+                contract_row = self._get_future_contract(
+                    game_id=game_id,
+                    player_id=player.player_id,
+                )
+                if contract_row is not None:
+                    slot.has_next_contract = True
+                    slot.contract_cost = contract_row["contract_cost"]
 
             club.select_player(club_row["selected_player_id"])
             clubs[club.club_id] = club
 
         return clubs
+
+    def _get_future_contract(self, game_id: str, player_id: str):
+        return self._conn.execute(
+            """
+            SELECT contract_cost
+            FROM "contract"
+            WHERE game_id = :game_id
+              AND player_id = :player_id
+              AND status = 'future'
+            """,
+            {
+                "game_id": game_id,
+                "player_id": player_id,
+            },
+        ).fetchone()
 
     def _load_players_for_game(self, game_id: str) -> Dict[str, Player]:
         rows = self._conn.execute(
@@ -270,6 +292,11 @@ class TemporalClubProvider:
         )
 
     def _upsert_player_assignment(self, club: Club, slot: ClubPlayerSlot):
+        player = slot.player
+
+        if player is None:
+            return
+
         self._conn.execute(
             """
             INSERT INTO player_assignment (
@@ -291,7 +318,7 @@ class TemporalClubProvider:
             {
                 "game_id": club.game_id,
                 "club_id": club.club_id,
-                "player_id": slot.player.player_id,
+                "player_id": player.player_id,
                 "coach_level": slot.coach_level,
             },
         )
