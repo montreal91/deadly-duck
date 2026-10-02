@@ -313,14 +313,6 @@ class Game:
         )
 
     @property
-    def _can_practice(self) -> bool:
-        cmp = self.cmp
-        if cmp is None or cmp.current_matches:
-            return False
-
-        return _get_competition_type(cmp) == CompetitionType.CHAMPIONSHIP
-
-    @property
     def _contract_check(self) -> bool:
         def check_club(c: Club) -> bool:
             for slot in c.players:
@@ -530,16 +522,7 @@ class Game:
         self._start_regular_championship(clubs)
 
     def _perform_practice(self, clubs: Dict[str, Club]):
-        if not self._can_practice:
-            return
-
-        for club in clubs.values():
-            if self._is_manager_club(club.club_id):
-                club.account.ProcessTransaction(DdTransaction(
-                    -self._calculate_club_practice_cost(club),
-                    f"Practice on {self._formatted_current_date}"
-                ))
-            club.perform_practice()
+        pass
 
     def _play_one_day(self, clubs: Dict[str, Club]):
         repo = CompetitionRepository.tmp_get_instance()
