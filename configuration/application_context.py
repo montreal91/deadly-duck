@@ -168,6 +168,7 @@ class ApplicationContext:
         self._fire_player_command_handler = FirePlayerCommandHandler(
             self._game_repository,
             self._temporal_club_provider,
+            self._contract_repository,
         )
 
         self._select_coach_for_player_command_handler = SelectCoachForPlayerCommandHandler(

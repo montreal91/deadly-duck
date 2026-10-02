@@ -87,6 +87,22 @@ class ContractRepository:
             (game_id, player_id),
         ).fetchone()[0] == 1
 
+    # TODO: Consider these updates in the future.
+    #       It might be the case of business logic migrating to the repository.
+    def terminate_player_contracts(self, game_id: str, player_id: str):
+        """Terminates the player's active and future contracts."""
+        with self._conn:
+            self._conn.execute(
+                """
+                UPDATE "contract"
+                SET status = 'terminated'
+                WHERE game_id = ?
+                  AND player_id = ?
+                  AND status IN ('active', 'future')
+                """,
+                (game_id, player_id),
+            )
+
     def activate_future_contracts(self, game_id: str, season_index: int):
         """Makes contracts signed for a new season part of its active roster."""
         with self._conn:
