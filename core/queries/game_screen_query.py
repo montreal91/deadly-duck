@@ -190,9 +190,16 @@ def _count_players_with_unspent_skill_points(clubs, manager_club_id) -> int:
     if club is None:
         return 0
 
+    farm_club = clubs.get(club.farm_club_id or "")
+
+    if farm_club is None:
+        farm_club_players = []
+    else:
+        farm_club_players = farm_club.players
+
     return sum(
         int(slot.player.skill_points > 0)
-        for slot in club.players
+        for slot in club.players + farm_club_players
     )
 
 

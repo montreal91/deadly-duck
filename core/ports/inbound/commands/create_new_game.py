@@ -59,25 +59,42 @@ class CreateNewGameCommandHandler:
         self._club_provider.save_clubs(clubs.values())
         for club in clubs.values():
             for slot in club.players:
+                player = slot.player
+                if player is None:
+                    continue
+
                 self._player_assignment_repository.assign_player(
                     game_id=command.game_id,
                     club_id=club.club_id,
-                    player_id=slot.player.player_id,
+                    player_id=player.player_id,
                     coach_level=slot.coach_level,
                 )
 
         contract_calculator = DdStaticContractCalculator(
             self._parameters.contracts,
         )
+
         for club in clubs.values():
             for slot in club.players:
+                player = slot.player
+                if player is None:
+                    continue
+
+                self._contract_repository.create_active_contract(
+                    game_id=command.game_id,
+                    club_id=club.club_id,
+                    player_id=player.player_id,
+                    season_index=game.season_index,
+                    contract_cost=contract_calculator(player.level),
+                )
+
                 if slot.has_next_contract:
                     self._contract_repository.create_future_contract(
                         game_id=command.game_id,
                         club_id=club.club_id,
-                        player_id=slot.player.player_id,
+                        player_id=player.player_id,
                         season_index=game.season_index + 1,
-                        contract_cost=contract_calculator(slot.player.level),
+                        contract_cost=contract_calculator(player.level),
                     )
 
         game.tmp_init()

@@ -190,3 +190,49 @@ def test_create_game_then_select_club_persists_all_initial_clubs(tmp_path):
             (game_id, expected_club.club_id, persisted_game.season_index + 1),
         ).fetchone()[0]
         assert future_contract_count == expected_club.contracted_player_count
+
+
+def test_create_game_creates_current_contracts_for_starting_players(tmp_path):
+    db_path = tmp_path / "starting-player-contracts.sqlite"
+    init_db(db_path)
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    CompetitionRepository.tmp_initialize(conn)
+    ScheduledMatchRepository.tmp_init(conn)
+    MatchResultRepository.tmp_init(conn)
+    PlayerRepository.tmp_init(conn)
+    TemporalClubProvider.initialize(conn)
+
+    game_id = "new-game"
+    create_game = CreateNewGameCommandHandler(
+        GameRepository(conn),
+        make_game_params(),
+        TemporalClubProvider.get_instance(),
+        PlayerAssignmentRepository(conn),
+        contract_repository=ContractRepository(conn),
+    )
+
+    create_game(CreateNewGameCommand(game_id))
+
+    starting_player_count = conn.execute(
+        """
+        SELECT COUNT(*)
+        FROM player
+        WHERE game_id = ?
+        """,
+        (game_id,),
+    ).fetchone()[0]
+
+    assert starting_player_count == 34
+
+    active_contract_count = conn.execute(
+        """
+        SELECT COUNT(*)
+        FROM "contract"
+        WHERE game_id = ?
+          AND status = 'active'
+        """,
+        (game_id,),
+    ).fetchone()[0]
+
+    assert active_contract_count == starting_player_count

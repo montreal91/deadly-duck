@@ -7,6 +7,7 @@ Persistence for player employment contracts.
 """
 
 from sqlite3 import Connection
+from typing import Optional
 
 from core.contract import Contract
 
@@ -72,6 +73,36 @@ class ContractRepository:
         self.save_contract(Contract(
             game_id, club_id, player_id, season_index, contract_cost, "future",
         ))
+
+    def get_current_contract_for_player(self, game_id: str, player_id: str) -> Optional[Contract]:
+        row = self._conn.execute(
+            """
+            SELECT
+                game_id,
+                club_id,
+                player_id,
+                season_index,
+                contract_cost,
+                status
+            FROM "contract"
+            WHERE game_id = ?
+              AND player_id = ?
+              AND status = 'active'
+            """,
+            (game_id, player_id),
+        ).fetchone()
+
+        if row is None:
+            return None
+
+        return Contract(
+            game_id=row[0],
+            club_id=row[1],
+            player_id=row[2],
+            season_index=row[3],
+            contract_cost=row[4],
+            status=row[5],
+        )
 
     def has_future_contract(self, game_id: str, player_id: str) -> bool:
         return self._conn.execute(

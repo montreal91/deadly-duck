@@ -11,6 +11,7 @@ from core.ports.outbound.game_repository import GameRepository
 from core.ports.outbound.player_assignment_repository import (
     PlayerAssignmentRepository,
 )
+from core.ports.outbound.temporal_club_provider import TemporalClubProvider
 
 
 @dataclass(frozen=True)
@@ -47,7 +48,7 @@ class RosterManagementScreenQueryHandler:
     def __init__(
             self,
             game_repository: GameRepository,
-            club_provider,
+            club_provider: TemporalClubProvider,
             player_assignment_repository: PlayerAssignmentRepository,
     ):
         self._game_repository = game_repository
@@ -79,7 +80,7 @@ class RosterManagementScreenQueryHandler:
                 farm_club_name="",
             )
 
-        farm_club = clubs.get(manager_club.farm_club_id)
+        farm_club = clubs.get(manager_club.farm_club_id or "")
         main_roster = _make_roster(
             self._player_assignment_repository.get_players_for_club(
                 query.game_id,

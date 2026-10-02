@@ -101,6 +101,8 @@ class GameService:
             for player in context["user_players"]
         ]
 
+        players.sort(key=lambda player: (player.level, player.name), reverse=True)
+
         return PlayerSelectionScreenInfo(
             players=players,
             opponent=_opponent_dto_to_info(context.get("opponent", None)),

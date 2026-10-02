@@ -38,7 +38,6 @@ class TemporalClubProvider:
             self._conn.execute("PRAGMA foreign_keys = ON;")
 
     def save_clubs(self, clubs: Iterable[Club]):
-        # self._game_clubs_cache = {}
         clubs = list(clubs)
         if not clubs:
             return
@@ -59,7 +58,6 @@ class TemporalClubProvider:
 
     def get_clubs_for_game(self, game_id: str) -> Dict[str, Club]:
         clubs = self._load_clubs_for_game(game_id)
-        # self._game_clubs_cache[game_id] = clubs
 
         return clubs
 

@@ -3,6 +3,8 @@ Created August 20, 2026
 
 @author montreal91
 """
+from dataclasses import replace
+
 from kivy.app import App
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
@@ -125,7 +127,7 @@ class LevelUpScreen(Screen):
 
         for player in self._players:
             button = Button(
-                text=player.full_name,
+                text=_player_list_label(player),
                 font_size=_PLAYER_BUTTON_FONT_SIZE,
                 size_hint=(1, None),
                 height=dp(_PLAYER_BUTTON_HEIGHT),
@@ -157,6 +159,7 @@ class LevelUpScreen(Screen):
         self._player_stats_col.add_widget(_make_name_label(player.full_name))
 
         rows = (
+            ("Club", player.club_name),
             ("Level", player.level),
             (
                 "Skill Points",
@@ -257,11 +260,12 @@ class LevelUpScreen(Screen):
             self._render()
             return
 
-        self._message = result.reason
+        self._message = result.message
         self._render_player_stats()
 
     def _apply_successful_skill_improvement(self, player, skill_points):
-        updated_player = player._replace(
+        updated_player = replace(
+            player,
             technique=(
                 player.technique
                 + _skill_delta(skill_points[_SKILL_TECHNIQUE])
@@ -291,6 +295,10 @@ def _button_color(is_selected):
     if is_selected:
         return 0.35, 0.55, 0.80, 1
     return 1, 1, 1, 1
+
+
+def _player_list_label(player):
+    return f"{player.full_name}\n({player.club_name})"
 
 
 def _make_name_label(name):

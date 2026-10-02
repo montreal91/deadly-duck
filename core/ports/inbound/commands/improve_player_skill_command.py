@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Dict
 
 from core.player import SkillSet
+from core.ports.outbound.contract_repository import ContractRepository
 from core.ports.outbound.game_repository import GameRepository
 from core.ports.outbound.player_repository import PlayerRepository
 
@@ -35,9 +36,11 @@ class ImprovePlayerSkillCommandHandler:
             self,
             game_repository: GameRepository,
             player_repository: PlayerRepository,
+            contract_repository: ContractRepository,
     ):
         self._game_repository = game_repository
         self._player_repository = player_repository
+        self._contract_repository = contract_repository
 
     def __call__(
             self,
@@ -73,26 +76,35 @@ class ImprovePlayerSkillCommandHandler:
                 message="Skill points cannot be negative.",
             )
 
-        points_to_spend = sum(command.skill_points.values())
-        roster_info = self._player_repository.get_player_with_roster_info(
+        player = self._player_repository.get_player(command.game_id, command.player_id)
+
+        if player is None:
+            return ImprovePlayerSkillCommandResult(
+                success=False,
+                message=f"Player with id {command.player_id} not found.",
+            )
+
+        contract = self._contract_repository.get_current_contract_for_player(
             command.game_id,
             command.player_id
         )
 
-        if roster_info is None:
+        if contract is None:
             return ImprovePlayerSkillCommandResult(
                 success=False,
-                message="Player not found.",
+                message=f"Player with id {command.player_id} does not have any valid contract.",
             )
 
-        if roster_info.club_id != command.club_id:
+        if contract.club_id != command.club_id:
             return ImprovePlayerSkillCommandResult(
                 success=False,
-                message="Incorrect player id.",
+                message=(
+                    f"Player with id {command.player_id} "
+                    f"does not have a contract with the club {command.club_id}."
+                ),
             )
 
-        player = roster_info.player
-
+        points_to_spend = sum(command.skill_points.values())
         if points_to_spend > player.skill_points:
             return ImprovePlayerSkillCommandResult(
                 success=False,
