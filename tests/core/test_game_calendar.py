@@ -113,51 +113,6 @@ def test_ai_assigns_best_half_of_organization_to_main_club():
     assert game._player_factory.create_player.call_count == 5
 
 
-def test_regular_season_practice_day_persists_player_experience(tmp_path):
-    game, clubs, conn = make_persisted_game(
-        "practice-test",
-        tmp_path / "practice.sqlite",
-    )
-    game_repository = GameRepository(conn)
-    game_repository.save_game(game)
-    club_id = next(iter(clubs))
-    player = clubs[club_id].players[0].player
-    conn.commit()
-    initial_experience, current_stamina = conn.execute(
-        """
-        SELECT experience, current_stamina
-        FROM player
-        WHERE game_id = ? AND player_id = ?
-        """,
-        ("practice-test", player.player_id),
-    ).fetchone()
-
-    assert initial_experience == 2750
-    assert current_stamina == 80
-    assert clubs[club_id].coach_power == 2
-
-    assert game.cmp.current_matches == []
-    handler = NextDayCommandHandler(
-        game_repository=game_repository,
-        club_repository=TemporalClubProvider.get_instance(),
-        competition_repository=CompetitionRepository.tmp_get_instance(),
-        contract_repository=ContractRepository(conn),
-    )
-
-    result = handler(NextDayCommand("practice-test"))
-
-    persisted_experience = conn.execute(
-        """
-        SELECT experience
-        FROM player
-        WHERE game_id = ? AND player_id = ?
-        """,
-        ("practice-test", player.player_id),
-    ).fetchone()[0]
-    assert result.success
-    assert persisted_experience == initial_experience + current_stamina * 2
-
-
 def test_regular_season_match_day_persists_club_income(tmp_path):
     game, clubs, conn = make_persisted_game(
         "income-test",

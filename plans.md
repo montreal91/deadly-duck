@@ -9,10 +9,10 @@ Plans for upcoming versions
 * [x] 12 clubs in playoffs
   * Top 4 seeds get a Bye in the first round
 * [x] Persistence for matches and competitions
-* [ ] Farm clubs
+* [x] Farm clubs
   * [x] Farm clubs core (leagues, competitions, playoffs)
-  * [ ] Moving players to and from farm clubs
-  * [ ] Ui support
+  * [x] Moving players to and from farm clubs
+  * [x] Ui support
 * [ ] Press
   * [ ] Dummy world news (How many people were killed in Night City today)
   * [ ] Simple Blogger model

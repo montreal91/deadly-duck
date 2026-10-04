@@ -14,9 +14,10 @@ def test_non_controlled_club_spends_player_skill_points():
     player = Player(technique=50, endurance=40)
     player.add_experience(level_exp(1))
     club = _make_club("ai_club", player)
+    manager_club = _make_club("manager_club", player)
 
     upgrade_skills(
-        clubs={club.club_id: club},
+        clubs={club.club_id: club, manager_club.club_id: manager_club},
         manager_club_id="manager_club",
     )
 
