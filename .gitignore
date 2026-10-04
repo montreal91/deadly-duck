@@ -14,8 +14,12 @@ configuration/oauth_*
 .mypy_cache/
 .saves
 *.csv
+!data/clubs.csv
+!data/players.csv
 .logs/traceback*
 dist/
 main.spec
 build/
 *.spec
+ignored/
+AGENTS.md

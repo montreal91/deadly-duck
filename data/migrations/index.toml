@@ -43,3 +43,28 @@ name = "Drop Competition Game Foreign Key"
 id = 8
 file = "v008_playoff_series.sql"
 name = "Playoff Series"
+
+[[migration]]
+id = 9
+file = "v009_club_league.sql"
+name = "Club League"
+
+[[migration]]
+id = 10
+file = "v010_contracts_and_player_assignments.sql"
+name = "Contracts And Player Assignments"
+
+[[migration]]
+id = 11
+file = "v011_club_farm_club.sql"
+name = "Club Farm Club"
+
+[[migration]]
+id = 12
+file = "v012_drop_roster_next_contract.sql"
+name = "Drop Roster Next Contract"
+
+[[migration]]
+id = 13
+file = "v013_drop_roster_entry.sql"
+name = "Drop Roster Entry"

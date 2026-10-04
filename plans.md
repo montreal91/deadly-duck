@@ -9,12 +9,13 @@ Plans for upcoming versions
 * [x] 12 clubs in playoffs
   * Top 4 seeds get a Bye in the first round
 * [x] Persistence for matches and competitions
-* [ ] Farm clubs
-  * [ ] Farm clubs core (leagues, competitions, playoffs)
-  * [ ] Moving players to and from farm clubs
-  * [ ] Ui support
-* [ ] Player temperaments (Melancholic, Choleric, Phlegmatic, Sanguine)
-  * They do nothing for now, but give a little bit of personality to the players.
+* [x] Farm clubs
+  * [x] Farm clubs core (leagues, competitions, playoffs)
+  * [x] Moving players to and from farm clubs
+  * [x] Ui support
+* [ ] Press
+  * [ ] Dummy world news (How many people were killed in Night City today)
+  * [ ] Simple Blogger model
 * [ ] Juice as long-term player resource
   * [ ] The Juice is not restored and spent for every match
   * [ ] _(maybe)_ If match is won, it takes less juice
@@ -28,6 +29,9 @@ Plans for upcoming versions
 
 ## Later Versions
 
+* [ ] (Bug) Trying to continue game which is created but the club is not selected
+* [ ] Player temperaments (Melancholic, Choleric, Phlegmatic, Sanguine)
+  * They do nothing for now, but give a little bit of personality to the players.
 * [ ] Skip playoffs if not participating
 * [ ] Basic UI color palette
 * [ ] Widget for the five last matches of the opponent

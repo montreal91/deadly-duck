@@ -32,7 +32,7 @@ def test_select_coach_for_player_command_persists_coach_level(tmp_path):
     player_id = clubs[club_id].players[0].player.player_id
     conn.execute(
         """
-        UPDATE roster_entry
+            UPDATE player_assignment
         SET coach_level = 0
         WHERE game_id = ? AND player_id = ?
         """,
@@ -54,7 +54,7 @@ def test_select_coach_for_player_command_persists_coach_level(tmp_path):
     persisted_coach_level = conn.execute(
         """
         SELECT coach_level
-        FROM roster_entry
+            FROM player_assignment
         WHERE game_id = ? AND player_id = ?
         """,
         ("game", player_id),

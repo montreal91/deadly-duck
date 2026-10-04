@@ -117,6 +117,8 @@ class GameScreenGuiQueryHandler:
         competition = _get_current_competition(
             game_id,
             self._competition_repository,
+            manager_club_id,
+            clubs,
         )
         competition_type = _get_competition_type(
             competition,
@@ -188,21 +190,61 @@ def _count_players_with_unspent_skill_points(clubs, manager_club_id) -> int:
     if club is None:
         return 0
 
+    farm_club = clubs.get(club.farm_club_id or "")
+
+    if farm_club is None:
+        farm_club_players = []
+    else:
+        farm_club_players = farm_club.players
+
     return sum(
         int(slot.player.skill_points > 0)
-        for slot in club.players
+        for slot in club.players + farm_club_players
     )
 
 
 def _get_current_competition(
         game_id,
         competition_repository: CompetitionRepository,
+        manager_club_id,
+        clubs,
 ) -> Optional[AbstractCompetition]:
     competitions = competition_repository.get_ongoing_competitions(game_id)
     if not competitions:
         return None
 
+    manager_club = clubs.get(manager_club_id)
+    manager_league_id = getattr(manager_club, "league_id", None)
+    membership_aware_competitions = [
+        competition
+        for competition in competitions
+        if hasattr(competition, "contains_club")
+    ]
+
+    if manager_league_id is not None:
+        for competition in membership_aware_competitions:
+            if _competition_has_league(
+                    competition,
+                    manager_league_id,
+                    clubs,
+            ):
+                return competition
+
+    for competition in membership_aware_competitions:
+        if competition.contains_club(manager_club_id):
+            return competition
+
+    if membership_aware_competitions:
+        return None
+
     return competitions[0]
+
+
+def _competition_has_league(competition, league_id, clubs) -> bool:
+    return any(
+        getattr(clubs.get(club_id), "league_id", None) == league_id
+        for club_id in getattr(competition, "_club_ids", [])
+    )
 
 
 def _get_competition_type(

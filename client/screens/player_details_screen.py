@@ -70,7 +70,7 @@ class PlayerDetailsScreen(Screen):
 
         if not query_result.success:
             self._layout.center_col.add_widget(make_label(
-                text=query_result.message,
+                text=query_result.reason,
                 font_size=30,
             ))
             self._layout.center_col.add_widget(Widget())

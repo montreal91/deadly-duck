@@ -3,9 +3,12 @@ Created Aug 20, 2026
 
 @author montreal91
 """
+from pathlib import Path
 from unittest.mock import Mock
 
 from core.club import Club
+from core.contract import Contract
+from core.game import Game
 from core.player import Player
 from core.player import level_exp
 from core.ports.inbound.commands.improve_player_skill_command import (
@@ -14,13 +17,14 @@ from core.ports.inbound.commands.improve_player_skill_command import (
 from core.ports.inbound.commands.improve_player_skill_command import (
     ImprovePlayerSkillCommandHandler,
 )
+from core.ports.outbound.contract_repository import ContractRepository
 from core.ports.outbound.game_repository import GameRepository
 from core.ports.outbound.player_repository import PlayerRepository
 from core.ports.outbound.player_repository import PlayerRosterInfo
 from tests.core.fixtures.game import make_persisted_game
 
 
-def test_improve_player_skill_command_persists_improved_player(tmp_path):
+def test_improve_player_skill_command_persists_improved_player(tmp_path: Path):
     game, clubs, conn = make_persisted_game(
         "game",
         tmp_path / "improve-player-skill.sqlite",
@@ -40,9 +44,20 @@ def test_improve_player_skill_command_persists_improved_player(tmp_path):
         ("game", player.player_id),
     )
     conn.commit()
+    contract_repository = ContractRepository(conn)
+
+    contract_repository.create_active_contract(
+        game_id=game.game_id,
+        club_id=club_id,
+        player_id=player.player_id,
+        season_index=game.season_index,
+        contract_cost=100000,
+    )
+
     handler = ImprovePlayerSkillCommandHandler(
         game_repository,
         player_repository,
+        contract_repository,
     )
 
     result = handler(ImprovePlayerSkillCommand(
@@ -68,9 +83,11 @@ def test_improve_player_skill_command_rejects_missing_game():
     game_repository = _game_repository(None)
     club_provider = _club_provider()
     player_repository = _player_repository(None)
+    contract_repository = Mock(spec=ContractRepository)
     handler = ImprovePlayerSkillCommandHandler(
         game_repository,
         player_repository,
+        contract_repository,
     )
 
     result = handler(ImprovePlayerSkillCommand(
@@ -95,9 +112,12 @@ def test_improve_player_skill_command_improves_player_and_saves_game():
     game_repository = _game_repository(game)
     club_provider = _club_provider()
     player_repository = _player_repository(player)
+    contract_repository = _contract_repository(game, player.player_id, club.club_id)
+
     handler = ImprovePlayerSkillCommandHandler(
         game_repository,
         player_repository,
+        contract_repository,
     )
 
     result = handler(ImprovePlayerSkillCommand(
@@ -129,6 +149,7 @@ def test_improve_player_skill_command_rejects_invalid_skill_key():
     handler = ImprovePlayerSkillCommandHandler(
         game_repository,
         player_repository,
+        Mock(spec=ContractRepository),
     )
 
     result = handler(ImprovePlayerSkillCommand(
@@ -157,6 +178,7 @@ def test_improve_player_skill_command_rejects_negative_skill_points():
     handler = ImprovePlayerSkillCommandHandler(
         game_repository,
         player_repository,
+        Mock(spec=ContractRepository),
     )
 
     result = handler(ImprovePlayerSkillCommand(
@@ -185,6 +207,7 @@ def test_improve_player_skill_command_rejects_overspending():
     handler = ImprovePlayerSkillCommandHandler(
         game_repository,
         player_repository,
+        Mock(spec=ContractRepository),
     )
 
     result = handler(ImprovePlayerSkillCommand(
@@ -222,6 +245,7 @@ def test_improve_player_skill_command_rejects_player_from_wrong_club():
     handler = ImprovePlayerSkillCommandHandler(
         game_repository,
         player_repository,
+        Mock(spec=ContractRepository),
     )
 
     result = handler(ImprovePlayerSkillCommand(
@@ -263,6 +287,19 @@ def _game_repository(game):
     repository.does_game_exist.return_value = game is not None
     return repository
 
+def _contract_repository(game: Game, player_id: str, club_id: str):
+    repository = Mock(spec=ContractRepository)
+    repository.get_current_contract_for_player.return_value = Contract(
+        player_id=player_id,
+        game_id=game.game_id,
+        club_id=club_id,
+        season_index=game.season_index,
+        contract_cost=100000,
+        status="ACTIVE",
+    )
+
+    return repository
+
 
 def _club_provider():
     return Mock()
@@ -270,6 +307,7 @@ def _club_provider():
 
 def _player_repository(player, club_id="club"):
     repository = Mock()
+    repository.get_player.return_value = player
     repository.get_player_with_roster_info.return_value = (
         None
         if player is None

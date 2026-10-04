@@ -12,8 +12,11 @@ from core.ports.outbound.competition_repository import CompetitionRepository
 from core.ports.outbound.match_result_repository import MatchResultRepository
 from core.queries.game_screen_query import GameScreenGuiQueryHandler
 from core.queries.game_screen_query import PlayoffStandings
+from core.regular_championship import RegularChampionship
+from core.regular_championship import RegularChampionshipStandingsRow
 from core.scheduled_match import ScheduledMatch
 from tests.core.fixtures.game import make_persisted_game
+from tests.core.fixtures.game import make_game_params
 
 
 def test_game_screen_query_converts_remaining_matches_to_upcoming_days():
@@ -177,8 +180,8 @@ def test_game_screen_query_after_playoff_end_does_not_crash(tmp_path):
     regular_season_length = len(cmp._schedule or [])
 
     for _ in range(regular_season_length + 9):
-        success, reason = game.update(clubs)
-        assert success, reason
+        result = game.update(clubs)
+        assert result.success, result.reason
 
     handler = GameScreenGuiQueryHandler(
         game_repository=_game_repository(game),
@@ -198,8 +201,8 @@ def test_game_screen_query_shows_bracket_when_playoffs_start(tmp_path):
 
     regular_season_length = len(game.cmp._schedule)
     for _ in range(regular_season_length):
-        success, reason = game.update(clubs)
-        assert success, reason
+        result = game.update(clubs)
+        assert result.success, result.reason
 
     assert isinstance(game.cmp, Playoff)
 
@@ -214,6 +217,52 @@ def test_game_screen_query_shows_bracket_when_playoffs_start(tmp_path):
 
     assert isinstance(result.standings, PlayoffStandings)
     assert result.standings.rows
+
+
+def test_game_screen_query_returns_only_manager_master_league_data():
+    game = _game(current_matches=[], remaining_matches=[])
+    master_competition = RegularChampionship(
+        ["master-manager", "master-opponent"],
+        make_game_params().championship_params,
+    )
+    apprentice_competition = RegularChampionship(
+        ["farm-manager", "farm-opponent"],
+        make_game_params().championship_params,
+    )
+    master_competition._competition_id = "master-competition"
+    apprentice_competition._competition_id = "apprentice-competition"
+    competition_repository = Mock()
+    competition_repository.get_ongoing_competitions.return_value = [
+        apprentice_competition,
+        master_competition,
+    ]
+    match_result_repository = Mock()
+    match_result_repository.get_regular_championship_standings.return_value = [
+        RegularChampionshipStandingsRow("master-manager", 1, 2, 12),
+        RegularChampionshipStandingsRow("master-opponent", 1, 0, 8),
+    ]
+    handler = GameScreenGuiQueryHandler(
+        game_repository=_game_repository(game),
+        club_provider=_club_provider({
+            "master-manager": _club("Master Manager"),
+            "master-opponent": _club("Master Opponent"),
+            "farm-manager": _club("Farm Manager"),
+            "farm-opponent": _club("Farm Opponent"),
+        }),
+        match_result_repository=match_result_repository,
+        competition_repository=competition_repository,
+    )
+
+    result = handler("game", "master-manager")
+
+    assert [row.club_id for row in result.standings.rows] == [
+        "master-manager",
+        "master-opponent",
+    ]
+    match_result_repository.get_regular_championship_standings.assert_called_once_with(
+        "game",
+        "master-competition",
+    )
 
 
 def _create_schedule_result_tables(conn):

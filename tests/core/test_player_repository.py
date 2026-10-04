@@ -82,13 +82,11 @@ def _make_connection():
             PRIMARY KEY (game_id, club_id)
         );
 
-        CREATE TABLE roster_entry (
+        CREATE TABLE player_assignment (
             game_id TEXT NOT NULL,
             club_id TEXT NOT NULL,
             player_id TEXT NOT NULL,
             coach_level INTEGER NOT NULL,
-            contract_cost INTEGER NOT NULL,
-            has_next_contract INTEGER NOT NULL,
             PRIMARY KEY (game_id, player_id)
         );
 
@@ -117,17 +115,15 @@ def _make_connection():
     _insert_player(conn, "other-game", "other-game-player", age=20)
     conn.execute(
         """
-        INSERT INTO roster_entry (
+        INSERT INTO player_assignment (
             game_id,
             club_id,
             player_id,
-            coach_level,
-            contract_cost,
-            has_next_contract
+            coach_level
         )
         VALUES
-            ('game', 'club', 'player', 0, 0, 1),
-            ('game', 'club', 'retired-player', 0, 0, 1)
+            ('game', 'club', 'player', 0),
+            ('game', 'club', 'retired-player', 0)
         """
     )
     return conn

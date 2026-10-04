@@ -46,6 +46,9 @@ def test_level_up_screen_query_returns_players_with_unspent_skill_points():
     assert result.players[0].technique == 55
     assert result.players[0].endurance == 45
     assert result.players[0].available_skill_points == 2
+    assert result.players[0].club_name == provider.get_clubs_for_game.return_value[
+        "club"
+    ].name
 
 
 def test_level_up_screen_query_returns_empty_list_for_missing_club():
